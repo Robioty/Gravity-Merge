@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gravity Merge: 8-Tier Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background: #0f172a; font-family: 'Segoe UI', sans-serif; touch-action: none; }
+        #ui { position: absolute; top: 20px; left: 20px; color: white; pointer-events: none; z-index: 10; }
+        #preview-container { 
+            position: absolute; top: 20px; right: 20px; background: rgba(30, 41, 59, 0.8); 
+            padding: 15px; border-radius: 15px; border: 1px solid #38bdf8; text-align: center;
+        }
+        #controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: center; z-index: 10; }
+        .btn { background: #38bdf8; color: white; border: none; padding: 15px 30px; border-radius: 12px; font-weight: bold; }
+        canvas { display: block; margin: 0 auto; background: radial-gradient(circle, #1e293b 0%, #0f172a 100%); }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div id="score" style="font-size: 3em; font-weight: 900; line-height: 1;">0</div>
+        <div style="font-size: 0.8em; opacity: 0.6;">BEST: <span id="high-score">0</span></div>
+    </div>
+
+    <div id="preview-container">
+        <div style="color: #38bdf8; font-size: 0.7em; font-weight: bold; margin-bottom: 5px;">NEXT</div>
+        <canvas id="preview-canvas" width="60" height="60"></canvas>
+    </div>
+
+    <div id="controls">
+        <button class="btn" onclick="flipGravity()">FLIP GRAVITY</button>
+    </div>
+
+<script>
+    const { Engine, Render, Runner, Bodies, Composite, Events } = Matter;
+    const engine = Engine.create();
+    const width = Math.min(window.innerWidth, 450), height = window.innerHeight;
+    const render = Render.create({
+        element: document.body, engine: engine,
+        options: { width, height, wireframes: false, background: 'transparent' }
+    });
+
+    // --- 8 PROGRESSIVE TIERS ---
+    const BALL_TYPES = [
+        { label: 'Marble', r: 12, col: '#00f2ff', score: 2 },
+        { label: 'Rubber', r: 22, col: '#ff007f', score: 5 },
+        { label: 'Tennis', r: 32, col: '#ccff00', score: 10 },
+        { label: 'Steel', r: 45, col: '#94a3b8', score: 20 },
+        { label: 'Bowling', r: 60, col: '#8b5cf6', score: 40 },
+        { label: 'Gold', r: 80, col: '#fbbf24', score: 80 },
+        { label: 'Giant', r: 105, col: '#ef4444', score: 150 },
+        { label: 'Wrecking', r: 135, col: '#1e293b', score: 300 }
+    ];
+
+    let score = 0, nextLevel = 0, currentX = width/2, isFlipped = false, canDrop = true;
+    const highscoreDisplay = document.getElementById('high-score');
+    highscoreDisplay.innerText = localStorage.getItem('mergeBest') || 0;
+
+    // Preview Logic
+    const preCanvas = document.getElementById('preview-canvas');
+    const preCtx = preCanvas.getContext('2d');
+
+    function drawPreview() {
+        preCtx.clearRect(0, 0, 60, 60);
+        const type = BALL_TYPES[nextLevel];
+        preCtx.beginPath();
+        // Scale down the preview if the ball is too big
+        const displayRadius = Math.min(type.r * 0.4, 25);
+        preCtx.arc(30, 30, displayRadius, 0, Math.PI * 2);
+        preCtx.fillStyle = type.col;
+        preCtx.fill();
+        preCtx.strokeStyle = "white";
+        preCtx.lineWidth = 2;
+        preCtx.stroke();
+    }
+
+    function spawn(x, y, lvl) {
+        const t = BALL_TYPES[lvl];
+        const b = Bodies.circle(x, y, t.r, {
+            restitution: lvl === 1 ? 0.8 : 0.3, // Rubber is still bouncy
+            render: { fillStyle: t.col, strokeStyle: '#fff', lineWidth: 2 },
+            plugin: { level: lvl }
+        });
+        Composite.add(engine.world, b);
+    }
+
+    window.addEventListener('pointermove', (e) => {
+        const rect = render.canvas.getBoundingClientRect();
+        currentX = Math.max(30, Math.min(width - 30, e.clientX - rect.left));
+    });
+
+    window.addEventListener('pointerup', () => {
+        if (!canDrop) return;
+        spawn(currentX, isFlipped ? height - 60 : 60, nextLevel);
+        
+        canDrop = false;
+        setTimeout(() => { canDrop = true; }, 500);
+        
+        // Randomly pick next ball from first 3 tiers only
+        nextLevel = Math.floor(Math.random() * 3);
+        drawPreview();
+    });
+
+    function flipGravity() {
+        isFlipped = !isFlipped;
+        engine.gravity.y = isFlipped ? -1 : 1;
+        if(window.navigator.vibrate) window.navigator.vibrate(50);
+    }
+
+    // Walls
+    Composite.add(engine.world, [
+        Bodies.rectangle(width/2, -10, width, 25, { isStatic: true }),
+        Bodies.rectangle(width/2, height+10, width, 25, { isStatic: true }),
+        Bodies.rectangle(-10, height/2, 25, height, { isStatic: true }),
+        Bodies.rectangle(width+10, height/2, 25, height, { isStatic: true })
+    ]);
+
+    Events.on(engine, 'collisionStart', (e) => {
+        e.pairs.forEach(p => {
+            if (p.bodyA.plugin?.level === p.bodyB.plugin?.level && p.bodyA.plugin?.level < BALL_TYPES.length - 1) {
+                const lvl = p.bodyA.plugin.level + 1;
+                score += BALL_TYPES[p.bodyA.plugin.level].score;
+                document.getElementById('score').innerText = score;
+                
+                if (score > (localStorage.getItem('mergeBest') || 0)) {
+                    localStorage.setItem('mergeBest', score);
+                    highscoreDisplay.innerText = score;
+                }
+
+                if(window.navigator.vibrate) window.navigator.vibrate(30);
+                Composite.remove(engine.world, [p.bodyA, p.bodyB]);
+                spawn((p.bodyA.position.x + p.bodyB.position.x)/2, (p.bodyA.position.y + p.bodyB.position.y)/2, lvl);
+            }
+        });
+    });
+
+    // Visual Aim Guide
+    Events.on(render, 'afterRender', () => {
+        const ctx = render.context;
+        ctx.globalAlpha = 0.2;
+        ctx.fillStyle = BALL_TYPES[nextLevel].col;
+        ctx.beginPath();
+        ctx.arc(currentX, isFlipped ? height - 60 : 60, BALL_TYPES[nextLevel].r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    });
+
+    drawPreview();
+    Render.run(render);
+    Runner.run(Runner.create(), engine);
+</script>
+</body>
+</html>
