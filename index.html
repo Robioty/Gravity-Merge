@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Gravity Merge Elite</title>
+    <title>Gravity Merge Final</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         html, body { 
@@ -11,6 +11,10 @@
             background: #0f172a; background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%); 
             font-family: 'Segoe UI', sans-serif; touch-action: none; color: white; 
         }
+        
+        /* FIX: Remove the faint blue box when tapping buttons */
+        * { -webkit-tap-highlight-color: transparent; outline: none; }
+
         #ui { position: absolute; top: 15px; left: 15px; right: 15px; z-index: 10; display: flex; justify-content: space-between; pointer-events: none; }
         .menu-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 12px; border-radius: 12px; cursor: pointer; pointer-events: auto; backdrop-filter: blur(10px); }
         
@@ -29,7 +33,7 @@
         @keyframes bounceUp { 0% { transform: scale(0.5); opacity: 0; } 20% { transform: scale(1.3); opacity: 1; } 100% { transform: translateY(-60px); opacity: 0; } }
 
         #gravity-cooldown { position: fixed; right: 40px; bottom: 175px; width: 6px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; display: none; }
-        #gravity-bar { width: 100%; height: 100%; background: #38bdf8; transform-origin: bottom; }
+        #gravity-bar { width: 100%; height: 100%; background: #38bdf8; transform-origin: bottom; transition: transform 0.1s linear; }
     </style>
 </head>
 <body>
@@ -69,7 +73,8 @@
 <script>
     const { Engine, Render, Runner, Bodies, Composite, Events, Body } = Matter;
     const engine = Engine.create();
-    // Physics Smoothing
+    
+    // Smooth Physics Settings
     engine.positionIterations = 10;
     engine.velocityIterations = 10;
 
@@ -87,9 +92,11 @@
     ];
 
     function renderLeaderboard() {
-        const lb = JSON.parse(localStorage.getItem('gm_leaderboard') || '[]');
+        const lbData = localStorage.getItem('gm_leaderboard');
+        const lb = lbData ? JSON.parse(lbData) : [];
+        
         const html = lb.length ? lb.map((entry, i) => `
-            <div class="lb-entry"><span>#${i+1} PLAYER</span><span>${entry.toLocaleString()}</span></div>
+            <div class="lb-entry"><span>#${i+1} PLAYER</span><span>${Number(entry).toLocaleString()}</span></div>
         `).join('') : '<div style="text-align:center; opacity:0.5">No scores yet</div>';
         
         ['lb-start', 'lb-pause', 'lb-end'].forEach(id => {
@@ -97,11 +104,14 @@
             if(el) el.innerHTML = `<div style="font-size:0.7em; opacity:0.5; margin-bottom:5px; letter-spacing:1px">HALL OF FAME</div>` + html;
         });
 
-        if(lb[0]) document.getElementById('top-score-ui').innerText = lb[0].toLocaleString();
+        // FIX: Ensure UI shows only the single top number, not the object
+        const bestScore = lb.length > 0 ? lb[0] : 0;
+        document.getElementById('top-score-ui').innerText = Number(bestScore).toLocaleString();
     }
 
     function saveScore(newScore) {
-        let lb = JSON.parse(localStorage.getItem('gm_leaderboard') || '[]');
+        let lbData = localStorage.getItem('gm_leaderboard');
+        let lb = lbData ? JSON.parse(lbData) : [];
         if (newScore > (lb[0] || 0)) document.getElementById('new-record-tag').style.display = 'block';
         lb.push(newScore);
         lb.sort((a, b) => b - a);
@@ -133,7 +143,7 @@
         const b = Bodies.circle(x, y, t.r, { 
             restitution: 0.3, 
             friction: 0.1,
-            frictionAir: 0.02, // Smoothing movement
+            frictionAir: 0.02, 
             render: { fillStyle: t.col }, 
             plugin: { level: lvl } 
         });
@@ -184,7 +194,7 @@
         if (isPaused || isGameOver) return;
         
         if (gravityCharge < 100) {
-            gravityCharge += 0.4;
+            gravityCharge += 0.45;
             document.getElementById('gravity-bar').style.transform = `scaleY(${gravityCharge/100})`;
         }
 
@@ -192,7 +202,6 @@
         const sy = isFlipped ? height - 90 : 90;
         const ready = Math.min(1, (Date.now() - lastDrop) / 800);
 
-        // Preview
         ctx.globalAlpha = ready < 1 ? 0.2 : 0.5;
         ctx.fillStyle = BALL_TYPES[nextLevel].col;
         ctx.beginPath(); ctx.arc(currentX, sy, BALL_TYPES[nextLevel].r, 0, Math.PI*2); ctx.fill();
@@ -206,7 +215,6 @@
             if (b.isStatic || b.plugin.level === undefined) return;
             const r = b.circleRadius;
             
-            // Radial Shimmer
             const grad = ctx.createRadialGradient(b.position.x - r*0.3, b.position.y - r*0.3, r*0.1, b.position.x, b.position.y, r);
             grad.addColorStop(0, 'rgba(255,255,255,0.3)');
             grad.addColorStop(1, 'rgba(0,0,0,0.2)');
