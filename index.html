@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Gravity Merge Elite</title>
+    <title>Gravity Merge Master</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         html, body { 
@@ -16,6 +16,7 @@
         }
 
         #flash { position: fixed; inset: 0; background: white; opacity: 0; pointer-events: none; z-index: 99; transition: opacity 0.1s; }
+        
         #ui { position: absolute; top: 15px; left: 15px; z-index: 10; display: flex; align-items: flex-start; gap: 15px; pointer-events: none; }
         .menu-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 12px; border-radius: 12px; cursor: pointer; pointer-events: auto; font-size: 1.2em; backdrop-filter: blur(10px); }
         
@@ -32,12 +33,12 @@
             width: 280px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         }
         
-        #settings-panel { top: 75px; left: 15px; transform: none; width: 180px; }
-        .setting-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.85em; width: 100%; margin-bottom: 10px; }
-        .toggle { width: 36px; height: 18px; background: #334155; border-radius: 20px; position: relative; cursor: pointer; }
-        .toggle.on { background: #38bdf8; }
-        .toggle::after { content: ''; position: absolute; width: 14px; height: 14px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: 0.2s; }
-        .toggle.on::after { left: 20px; }
+        .leader-row { width: 100%; display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-family: monospace; }
+        #name-input { background: rgba(255,255,255,0.1); border: 1px solid #38bdf8; color: white; text-align: center; font-size: 1.5em; width: 100px; border-radius: 8px; margin: 10px 0; text-transform: uppercase; }
+
+        #side-controls { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        #cooldown-bar-wrap { width: 6px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; position: relative; display: none; }
+        #cooldown-fill { width: 100%; height: 0%; background: #38bdf8; position: absolute; bottom: 0; transition: height 0.1s linear; }
 
         .btn { background: #38bdf8; color: white; border: none; padding: 12px 30px; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%; }
         canvas { display: block; margin: 0 auto; background: transparent !important; }
@@ -54,10 +55,20 @@
     </div>
 
     <div id="settings-panel" class="glass-panel">
-        <div class="setting-item"><span>Sound</span><div id="audio-toggle" class="toggle on" onclick="updateSetting('audio')"></div></div>
-        <div class="setting-item"><span>Shake</span><div id="shake-toggle" class="toggle on" onclick="updateSetting('shake')"></div></div>
-        <div class="setting-item"><span>Laser</span><div id="laser-toggle" class="toggle on" onclick="updateSetting('laser')"></div></div>
+        <div style="width:100%; margin-bottom:15px; font-weight:bold; border-bottom:1px solid #333">SETTINGS</div>
+        <div style="width:100%; display:flex; justify-content:space-between; margin-bottom:10px;"><span>Sound</span><div id="audio-toggle" class="toggle on" onclick="updateSetting('audio')"></div></div>
+        <div style="width:100%; display:flex; justify-content:space-between; margin-bottom:10px;"><span>Shake</span><div id="shake-toggle" class="toggle on" onclick="updateSetting('shake')"></div></div>
         <button class="btn" style="background:#ef4444" onclick="location.reload()">RESTART</button>
+    </div>
+
+    <div id="game-over-panel" class="glass-panel">
+        <h2 id="end-msg" style="margin:0; color:#38bdf8;">GAME OVER</h2>
+        <div id="new-high-score-ui" style="display:none; text-align:center;">
+            <p>NEW HIGH SCORE!</p>
+            <input type="text" id="name-input" maxlength="3" placeholder="AAA">
+        </div>
+        <div id="leaderboard-list" style="width:100%; margin:15px 0;"></div>
+        <button class="btn" onclick="saveAndRestart()">PLAY AGAIN</button>
     </div>
 
     <div id="overlay" style="position:fixed; inset:0; background:rgba(15,23,42,0.9); z-index:200; display:flex; flex-direction:column; align-items:center; justify-content:center;">
@@ -67,7 +78,8 @@
 
     <div id="progress-wrapper"><div id="progress-fill"></div></div>
     
-    <div id="side-controls" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:12px;">
+    <div id="side-controls">
+        <div id="cooldown-bar-wrap"><div id="cooldown-fill"></div></div>
         <button id="g-toggle" class="menu-btn" style="display:none; width:54px; height:54px; border-radius:50%; color:#38bdf8; border:2px solid #38bdf8;" onclick="flipGravity()">G</button>
     </div>
 
@@ -88,8 +100,8 @@
             osc.connect(gain); gain.connect(this.ctx.destination);
             osc.start(); osc.stop(this.ctx.currentTime + duration);
         },
-        drop() { this.play(150, 'sine', 0.2, 0.3); },
-        merge(lvl) { this.play(200 + (lvl * 100), 'triangle', 0.3, 0.2); },
+        drop() { this.play(150, 'sine', 0.2, 0.2); },
+        merge(lvl) { this.play(200 + (lvl * 80), 'triangle', 0.3, 0.15); },
         flip() { this.play(80, 'sawtooth', 0.5, 0.1); },
         combo() { this.play(800, 'sine', 0.1, 0.2); }
     };
@@ -101,8 +113,9 @@
 
     let settings = { shake: true, audio: true, laser: true };
     let gameStats = { score: 0, combo: 0, lastMergeTime: 0 };
-    let nextLevel = 0, currentX = width/2, isGameOver = false, isStarted = false, isGravityFlipped = false;
+    let nextLevel = 0, currentX = width/2, isGameOver = false, isStarted = false, isGravityFlipped = false, cooldownActive = false;
     let particles = [];
+    const COOLDOWN_TIME = 5000;
 
     const BALL_TYPES = [
         { r: 15, col: '#22d3ee', score: 2 }, { r: 25, col: '#f43f5e', score: 5 },
@@ -119,6 +132,15 @@
     function updateSetting(type) {
         settings[type] = !settings[type];
         document.getElementById(type + '-toggle').classList.toggle('on');
+    }
+
+    function createParticles(x, y, color) {
+        for (let i = 0; i < 10; i++) {
+            particles.push({
+                x, y, vx: (Math.random() - 0.5) * 8, vy: (Math.random() - 0.5) * 8, 
+                life: 1.0, color 
+            });
+        }
     }
 
     function spawnFloatingText(x, y, text, color) {
@@ -145,6 +167,7 @@
         });
         if (isMerge) {
             AudioEngine.merge(lvl);
+            createParticles(x, y, t.col);
             if (lvl > 4) triggerFlash();
         } else {
             AudioEngine.drop();
@@ -156,16 +179,37 @@
         AudioEngine.init();
         document.getElementById('overlay').style.display = 'none';
         document.getElementById('g-toggle').style.display = 'block';
+        document.getElementById('cooldown-bar-wrap').style.display = 'block';
+        updateUIBest();
         isStarted = true;
         Render.run(render);
         Runner.run(Runner.create(), engine);
     }
 
+    function updateUIBest() {
+        const lb = JSON.parse(localStorage.getItem('gm_leaderboard') || '[]');
+        document.getElementById('high-score-ui').innerText = lb[0]?.score || 0;
+    }
+
     function flipGravity() {
+        if (cooldownActive || isGameOver) return;
         AudioEngine.flip();
         engine.gravity.y *= -1; 
         isGravityFlipped = !isGravityFlipped;
         triggerFlash();
+        
+        cooldownActive = true;
+        const fill = document.getElementById('cooldown-fill');
+        let start = Date.now();
+        const timer = setInterval(() => {
+            let elapsed = Date.now() - start;
+            fill.style.height = (100 - (elapsed/COOLDOWN_TIME)*100) + "%";
+            if (elapsed >= COOLDOWN_TIME) {
+                clearInterval(timer);
+                cooldownActive = false;
+                fill.style.height = "0%";
+            }
+        }, 50);
     }
 
     Events.on(engine, 'collisionStart', (e) => {
@@ -173,16 +217,12 @@
             const a = p.bodyA, b = p.bodyB;
             if (a.plugin?.level === b.plugin?.level && a.plugin?.level !== undefined) {
                 const lvl = a.plugin.level + 1;
-                if (lvl >= BALL_TYPES.length) return;
+                if (lvl >= BALL_TYPES.length) { endGame("VICTORY!"); return; }
                 
                 const now = Date.now();
-                if(now - gameStats.lastMergeTime < 700) {
-                    gameStats.combo++;
-                    AudioEngine.combo();
-                } else {
-                    gameStats.combo = 1;
-                }
+                gameStats.combo = (now - gameStats.lastMergeTime < 700) ? gameStats.combo + 1 : 1;
                 gameStats.lastMergeTime = now;
+                if(gameStats.combo > 1) AudioEngine.combo();
                 
                 const points = BALL_TYPES[a.plugin.level].score * gameStats.combo;
                 gameStats.score += points;
@@ -192,27 +232,78 @@
                 
                 Composite.remove(engine.world, [a, b]);
                 spawn((a.position.x + b.position.x) / 2, (a.position.y + b.position.y) / 2, lvl, true);
-                
                 document.getElementById('progress-fill').style.width = (lvl / 7 * 100) + '%';
             }
         });
     });
 
+    function endGame(msg = "GAME OVER") {
+        isGameOver = true;
+        document.getElementById('end-msg').innerText = msg;
+        document.getElementById('game-over-panel').style.display = 'flex';
+        let lb = JSON.parse(localStorage.getItem('gm_leaderboard') || '[]');
+        if(lb.length < 5 || gameStats.score > lb[lb.length-1].score) {
+            document.getElementById('new-high-score-ui').style.display = 'block';
+        }
+        renderLeaderboard();
+    }
+
+    function renderLeaderboard() {
+        let lb = JSON.parse(localStorage.getItem('gm_leaderboard') || '[]');
+        document.getElementById('leaderboard-list').innerHTML = lb.map((e, i) => `
+            <div class="leader-row"><span>#${i+1} ${e.name}</span><span>${e.score}</span></div>
+        `).join('') || '<div style="opacity:0.5;text-align:center;">No High Scores</div>';
+    }
+
+    function saveAndRestart() {
+        const input = document.getElementById('name-input');
+        if(document.getElementById('new-high-score-ui').style.display === 'block') {
+            let lb = JSON.parse(localStorage.getItem('gm_leaderboard') || '[]');
+            lb.push({ name: (input.value || 'AAA').toUpperCase(), score: gameStats.score });
+            lb.sort((a,b) => b.score - a.score);
+            localStorage.setItem('gm_leaderboard', JSON.stringify(lb.slice(0, 5)));
+        }
+        location.reload();
+    }
+
     Events.on(render, 'afterRender', () => {
         const ctx = render.context;
-        if (settings.laser && isStarted) {
+        // Particles
+        particles.forEach((p, i) => {
+            p.x += p.vx; p.y += p.vy; p.life -= 0.02;
+            ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+            ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
+            if (p.life <= 0) particles.splice(i, 1);
+        });
+        ctx.globalAlpha = 1;
+
+        if (isStarted && !isGameOver) {
+            const spawnY = isGravityFlipped ? height - 90 : 90;
+            // Laser
             ctx.setLineDash([5, 15]); ctx.strokeStyle = "rgba(255,255,255,0.1)";
-            ctx.beginPath(); ctx.moveTo(currentX, isGravityFlipped ? height - 90 : 90);
+            ctx.beginPath(); ctx.moveTo(currentX, spawnY);
             ctx.lineTo(currentX, isGravityFlipped ? 0 : height); ctx.stroke();
             
-            // Preview Circle
-            ctx.globalAlpha = 0.3;
+            // Preview Ball & Glow
+            ctx.globalAlpha = 0.4;
             ctx.fillStyle = BALL_TYPES[nextLevel].col;
-            ctx.beginPath(); 
-            ctx.arc(currentX, isGravityFlipped ? height - 90 : 90, BALL_TYPES[nextLevel].r, 0, Math.PI*2);
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(currentX, spawnY, BALL_TYPES[nextLevel].r, 0, Math.PI*2); ctx.fill();
             ctx.globalAlpha = 1.0;
         }
+
+        // PRESTIGE BALL LOOK
+        Composite.allBodies(engine.world).forEach(b => {
+            if (b.isStatic || b.plugin.level === undefined) return;
+            const r = b.circleRadius;
+            // Shine
+            ctx.beginPath(); ctx.arc(b.position.x - r*0.3, b.position.y - r*0.3, r*0.2, 0, Math.PI*2);
+            ctx.fillStyle = "rgba(255,255,255,0.3)"; ctx.fill();
+            // Inner Shadow
+            ctx.beginPath(); ctx.arc(b.position.x, b.position.y, r, 0, Math.PI*2);
+            const grad = ctx.createRadialGradient(b.position.x, b.position.y, r*0.8, b.position.x, b.position.y, r);
+            grad.addColorStop(0, 'rgba(0,0,0,0)'); grad.addColorStop(1, 'rgba(0,0,0,0.4)');
+            ctx.fillStyle = grad; ctx.fill();
+        });
     });
 
     window.addEventListener('pointermove', (e) => { currentX = Math.max(30, Math.min(width - 30, e.clientX)); });
