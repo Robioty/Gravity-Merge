@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Gravity Merge Master</title>
+    <title>Gravity Merge: Supernova</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         :root { --accent: #38bdf8; --gold: #fbbf24; }
@@ -16,17 +16,19 @@
         .btn { background: var(--accent); color: white; border: none; padding: 16px; border-radius: 14px; font-weight: bold; cursor: pointer; width: 220px; font-size: 1.1em; margin-top: 10px; }
         .theme-selector { display: flex; gap: 10px; margin: 20px 0; pointer-events: auto; }
         .theme-opt { padding: 10px; border: 2px solid rgba(255,255,255,0.1); border-radius: 15px; cursor: pointer; background: rgba(255,255,255,0.05); width: 65px; font-size: 0.8em; }
-        .theme-opt.active { border-color: var(--accent); background: rgba(56,189,248,0.2); }
+        .theme-opt.active { border-color: var(--accent); background: rgba(56,189,248,0.2); transform: scale(1.05); }
         .leaderboard { width: 100%; max-width: 280px; margin-top: 20px; background: rgba(255,255,255,0.05); border-radius: 15px; padding: 15px; font-size: 0.9em; }
         .score-entry { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
         input { background: rgba(255,255,255,0.1); border: 1px solid var(--accent); color: white; padding: 12px; border-radius: 10px; width: 200px; text-align: center; margin-bottom: 10px; }
-        .combo-text { position: absolute; font-weight: 900; pointer-events: none; z-index: 30; animation: popUp 0.7s ease-out forwards; }
-        @keyframes popUp { 0% { transform: scale(0.5); opacity: 0; } 20% { opacity: 1; transform: scale(1.2); } 100% { transform: translateY(-40px); opacity: 0; } }
+        .pop-text { position: absolute; font-weight: 900; pointer-events: none; z-index: 30; text-align: center; animation: popUp 0.8s ease-out forwards; }
+        @keyframes popUp { 0% { transform: scale(0.5); opacity: 0; } 20% { opacity: 1; transform: scale(1.1); } 100% { transform: translateY(-50px); opacity: 0; } }
         #gravity-cooldown { position: fixed; right: 20px; bottom: 100px; width: 6px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 3px; display: none; }
-        #gravity-fill { width: 100%; height: 100%; background: var(--gold); transform-origin: bottom; transition: transform 0.1s linear; }
+        #gravity-fill { width: 100%; height: 100%; background: var(--gold); transform-origin: bottom; }
+        #event-banner { position: fixed; top: 120px; width: 100%; text-align: center; color: #f472b6; font-weight: 900; font-size: 1.5em; display: none; z-index: 200; text-shadow: 0 0 10px #f472b6; }
     </style>
 </head>
 <body>
+    <div id="event-banner">BLACK HOLE DETECTED!</div>
     <div id="ui">
         <button class="menu-btn" onclick="togglePause()">⚙️</button>
         <div id="score-container">
@@ -38,16 +40,16 @@
     <div id="start-screen" class="overlay">
         <h1 style="font-size: 2.5em; margin: 0;">GRAVITY <span style="color:var(--accent)">MERGE</span></h1>
         <div class="theme-selector">
-            <div class="theme-opt active" onclick="setTheme('classic', this)">⚪<br>Classic</div>
-            <div class="theme-opt" onclick="setTheme('cosmos', this)">🪐<br>Planets</div>
-            <div class="theme-opt" onclick="setTheme('glass', this)">💎<br>Glass</div>
+            <div class="theme-opt active" id="opt-classic" onclick="setTheme('classic')">⚪<br>Classic</div>
+            <div class="theme-opt" id="opt-cosmos" onclick="setTheme('cosmos')">🪐<br>Planets</div>
+            <div class="theme-opt" id="opt-glass" onclick="setTheme('glass')">💎<br>Glass</div>
         </div>
         <button class="btn" onclick="startGame()">START GAME</button>
         <div class="leaderboard" id="main-leaderboard"></div>
     </div>
 
     <div id="game-over-screen" class="overlay" style="display:none">
-        <h2 style="color:#ef4444">GAME OVER</h2>
+        <h2 id="status-title" style="color:#ef4444">GAME OVER</h2>
         <h1 id="final-score" style="font-size: 3em; margin: 5px 0;">0</h1>
         <div id="name-input-area">
             <input type="text" id="player-name" placeholder="YOUR NAME" maxlength="10">
@@ -60,31 +62,32 @@
     <button id="g-btn" class="menu-btn" style="position:fixed; right:25px; bottom:100px; width:60px; height:60px; border-radius:50%; border:2px solid var(--gold); color:var(--gold); font-weight:bold; display:none;" onclick="flipGravity()">G</button>
 
 <script>
-    const { Engine, Render, Runner, Bodies, Composite, Events } = Matter;
+    const { Engine, Render, Runner, Bodies, Composite, Events, Body } = Matter;
     const engine = Engine.create();
     const width = Math.min(window.innerWidth, 450), height = window.innerHeight;
     const render = Render.create({ element: document.body, engine, options: { width, height, wireframes: false, background: 'transparent' } });
 
-    let score = 0, nextLevel = 0, isGameOver = false, isPaused = false, isFlipped = false;
+    let score = 0, nextLevel = 0, isGameOver = false, isPaused = false, isFlipped = false, sunPulse = 0;
     let currentX = width/2, gravityCharge = 100, lastDrop = 0, combo = 1, lastMerge = 0, selectedTheme = 'classic';
+    let blackHoleActive = false, blackHoleTimer = 0;
 
     const THEMES = {
         classic: ['#22d3ee', '#f43f5e', '#a3e635', '#94a3b8', '#8b5cf6', '#fbbf24', '#ef4444'],
-        cosmos: ['#86efac', '#67e8f9', '#f9a8d4', '#c084fc', '#fb923c', '#fde047', '#ffffff'],
-        glass: ['rgba(56,189,248,0.5)', 'rgba(244,114,182,0.5)', 'rgba(74,222,128,0.5)', 'rgba(148,163,184,0.5)', 'rgba(167,139,250,0.5)', 'rgba(250,204,21,0.5)', 'rgba(248,113,113,0.5)']
+        cosmos: ['#9ca3af', '#fb923c', '#38bdf8', '#ef4444', '#facc15', '#a78bfa', '#fde047'],
+        glass: ['rgba(56,189,248,0.4)', 'rgba(244,114,182,0.4)', 'rgba(74,222,128,0.4)', 'rgba(148,163,184,0.4)', 'rgba(167,139,250,0.4)', 'rgba(250,204,21,0.4)', 'rgba(248,113,113,0.4)']
     };
 
-    function setTheme(t, el) {
+    const PLANET_NAMES = ["Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "The Sun"];
+
+    function setTheme(t) {
         selectedTheme = t;
         document.querySelectorAll('.theme-opt').forEach(opt => opt.classList.remove('active'));
-        el.classList.add('active');
+        document.getElementById('opt-' + t).classList.add('active');
     }
 
     function initLeaderboard() {
         const scores = JSON.parse(localStorage.getItem('gm_scores') || '[]');
-        const html = scores.slice(0, 5).map((s, i) => `
-            <div class="score-entry"><span>${i+1}. ${s.name}</span><span>${s.score}</span></div>
-        `).join('') || 'No scores yet';
+        const html = scores.slice(0, 5).map((s, i) => `<div class="score-entry"><span>${i+1}. ${s.name}</span><span>${s.score}</span></div>`).join('') || 'No scores yet';
         document.getElementById('main-leaderboard').innerHTML = `<b>LEADERBOARD</b><br>${html}`;
     }
 
@@ -93,7 +96,7 @@
         let scores = JSON.parse(localStorage.getItem('gm_scores') || '[]');
         scores.push({ name, score });
         scores.sort((a, b) => b.score - a.score);
-        localStorage.setItem('gm_scores', JSON.stringify(scores.slice(0, 10)));
+        localStorage.setItem('gm_scores', JSON.stringify(scores.slice(0, 5)));
         document.getElementById('name-input-area').innerHTML = '<h4>SCORE SAVED!</h4>';
     }
 
@@ -101,7 +104,8 @@
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('g-btn').style.display = 'block';
         document.getElementById('gravity-cooldown').style.display = 'block';
-        document.getElementById('best-score').innerText = localStorage.getItem('gm_best') || 0;
+        const best = localStorage.getItem('gm_best');
+        document.getElementById('best-score').innerText = (best && best !== '[object Object]') ? best : 0;
         Render.run(render);
         Runner.run(Runner.create(), engine);
     }
@@ -118,30 +122,39 @@
             if (a.plugin?.level === b.plugin?.level && a.plugin?.level !== undefined) {
                 const lvl = a.plugin.level + 1;
                 if (lvl >= 7) return;
-                const now = Date.now();
-                combo = (now - lastMerge < 800) ? combo + 1 : 1;
-                lastMerge = now;
-                const points = [2, 5, 10, 20, 40, 80, 150][a.plugin.level] * combo;
-                score += points;
+                
+                // Black Hole Chance logic
+                if (lvl > 3 && Math.random() < 0.1 && !blackHoleActive) triggerBlackHole();
+
+                const points = [2, 5, 10, 20, 40, 80, 150][a.plugin.level] * (Date.now() - lastMerge < 800 ? ++combo : combo = 1);
+                lastMerge = Date.now(); score += points;
                 document.getElementById('score-label').innerText = score;
                 const mx = (a.position.x + b.position.x)/2, my = (a.position.y + b.position.y)/2;
                 Composite.remove(engine.world, [a, b]);
                 spawn(mx, my, lvl);
                 
                 const txt = document.createElement('div');
-                txt.className = 'combo-text';
-                txt.style.left = mx + 'px'; txt.style.top = my + 'px';
-                txt.innerHTML = `+${points}${combo > 1 ? ' x'+combo : ''}`;
+                txt.className = 'pop-text';
+                txt.style.left = (mx - 50) + 'px'; txt.style.top = my + 'px';
+                txt.style.color = THEMES[selectedTheme][lvl];
+                txt.innerHTML = selectedTheme === 'cosmos' ? `<span style="font-size:0.6em;display:block">DISCOVERED:</span>${PLANET_NAMES[lvl].toUpperCase()}` : `+${points}${combo > 1 ? ' x'+combo : ''}`;
                 document.body.appendChild(txt);
-                setTimeout(() => txt.remove(), 700);
+                setTimeout(() => txt.remove(), 800);
             }
         });
     });
 
-    function flipGravity() {
-        if (gravityCharge < 100) return;
-        isFlipped = !isFlipped; engine.gravity.y *= -1; gravityCharge = 0;
+    function triggerBlackHole() {
+        blackHoleActive = true;
+        blackHoleTimer = 400; // ~6.6 seconds
+        document.getElementById('event-banner').style.display = 'block';
+        setTimeout(() => { 
+            blackHoleActive = false; 
+            document.getElementById('event-banner').style.display = 'none';
+        }, 6600);
     }
+
+    function flipGravity() { if (gravityCharge >= 100) { isFlipped = !isFlipped; engine.gravity.y *= -1; gravityCharge = 0; } }
 
     Events.on(render, 'afterRender', () => {
         if (isPaused || isGameOver) return;
@@ -150,33 +163,66 @@
             gravityCharge += 0.25;
             document.getElementById('gravity-fill').style.transform = `scaleY(${gravityCharge/100})`;
         }
-        const limitY = isFlipped ? height - 150 : 150;
+        sunPulse = (sunPulse + 0.05) % (Math.PI * 2);
+
+        // Black Hole Visual & Force
+        if (blackHoleActive) {
+            const bhX = width/2, bhY = height/2;
+            ctx.save();
+            ctx.shadowBlur = 20; ctx.shadowColor = '#f472b6';
+            ctx.fillStyle = '#000';
+            ctx.beginPath(); ctx.arc(bhX, bhY, 25 + Math.sin(sunPulse)*5, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#f472b6'; ctx.lineWidth = 2; ctx.stroke();
+            ctx.restore();
+        }
+
         Composite.allBodies(engine.world).forEach(b => {
             if (b.isStatic || b.plugin.level === undefined) return;
+            
+            // Black Hole Physics
+            if (blackHoleActive) {
+                const dx = width/2 - b.position.x, dy = height/2 - b.position.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 250) {
+                    Body.applyForce(b, b.position, { x: dx * 0.000005 * b.mass, y: dy * 0.000005 * b.mass });
+                }
+            }
+
+            if (selectedTheme === 'cosmos' && b.plugin.level === 6) { // THE SUN
+                ctx.save();
+                ctx.shadowBlur = 15 + Math.sin(sunPulse) * 10;
+                ctx.shadowColor = '#fbbf24';
+                ctx.strokeStyle = '#fde047'; ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.arc(b.position.x, b.position.y, b.circleRadius + 2, 0, Math.PI * 2); ctx.stroke();
+                ctx.restore();
+            }
+
+            const limitY = isFlipped ? height - 150 : 150;
             if (((!isFlipped && b.position.y < limitY) || (isFlipped && b.position.y > limitY)) && Math.abs(b.velocity.y) < 0.2) {
                 if (!b.warn) b.warn = Date.now();
                 if (Date.now() - b.warn > 3000) {
                     isGameOver = true;
                     document.getElementById('game-over-screen').style.display = 'flex';
                     document.getElementById('final-score').innerText = score;
-                    if (score > (localStorage.getItem('gm_best') || 0)) localStorage.setItem('gm_best', score);
+                    const best = localStorage.getItem('gm_best');
+                    if (score > (best && best !== '[object Object]' ? parseInt(best) : 0)) localStorage.setItem('gm_best', score);
                 }
             } else b.warn = null;
         });
     });
 
     window.addEventListener('pointermove', (e) => currentX = Math.max(40, Math.min(width-40, e.clientX)));
-    window.addEventListener('pointerup', () => {
-        if (isPaused || isGameOver || Date.now() - lastDrop < 600 || document.querySelector('.overlay:not([style*="none"])')) return;
+    window.addEventListener('pointerup', (e) => {
+        if (isPaused || isGameOver || Date.now() - lastDrop < 600 || e.target.closest('.menu-btn, .overlay')) return;
         spawn(currentX, isFlipped ? height - 90 : 90, nextLevel);
-        nextLevel = Math.floor(Math.random() * 3);
-        lastDrop = Date.now();
+        nextLevel = Math.floor(Math.random() * 3); lastDrop = Date.now();
     });
 
     function togglePause() {
         isPaused = !isPaused; engine.timing.timeScale = isPaused ? 0 : 1;
         document.getElementById('game-over-screen').style.display = isPaused ? 'flex' : 'none';
-        if (isPaused) document.getElementById('name-input-area').style.display = 'none';
+        document.getElementById('name-input-area').style.display = isPaused ? 'none' : 'block';
+        document.getElementById('status-title').innerText = isPaused ? 'PAUSED' : 'GAME OVER';
     }
 
     initLeaderboard();
