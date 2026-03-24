@@ -5,97 +5,79 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Gravity Merge</title>
+    <title>Gravity Merge: Glossy</title>
 
     <link rel="icon" type="image/png" href="https://replicate.delivery/pbxt/H1qX9bA78O0D8L5U1e4j2i3V1d7m8l9k0j8h7g6f5e4d3c2b1/image_icon.png">
     <link rel="apple-touch-icon" href="https://replicate.delivery/pbxt/H1qX9bA78O0D8L5U1e4j2i3V1d7m8l9k0j8h7g6f5e4d3c2b1/image_icon.png">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; background: #0f172a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: none; transition: transform 0.05s; }
+        body { margin: 0; overflow: hidden; background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%); font-family: 'Segoe UI', sans-serif; touch-action: none; }
         #ui { position: absolute; top: 15px; left: 15px; color: white; z-index: 10; display: flex; align-items: flex-start; gap: 15px; pointer-events: none; }
-        
-        .home-btn { 
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); 
-            color: white; padding: 10px; border-radius: 10px; cursor: pointer; pointer-events: auto;
-            font-size: 1.2em; backdrop-filter: blur(5px);
-        }
-
-        #preview-container { position: absolute; top: 15px; right: 15px; background: rgba(30, 41, 59, 0.6); padding: 8px; border-radius: 15px; border: 1px solid rgba(56, 189, 248, 0.2); }
-        #overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.98); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; color: white; text-align: center; padding: 20px; }
-        
-        .stats-box { background: #1e293b; padding: 15px; border-radius: 15px; width: 85%; margin: 10px 0; border: 1px solid #334155; }
-        .stat-row { display: flex; justify-content: space-between; margin: 5px 0; font-size: 0.85em; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 3px; }
-        
-        .leaderboard { margin-top: 10px; width: 100%; border-top: 1px solid #38bdf8; padding-top: 10px; }
-        .leader-entry { display: flex; justify-content: space-between; padding: 4px 10px; background: rgba(56, 189, 248, 0.1); border-radius: 5px; margin-bottom: 4px; font-weight: bold; }
-        .gold { color: #fbbf24; }
-
-        #side-controls { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); z-index: 50; }
-        .g-btn { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 2px solid #38bdf8; width: 50px; height: 50px; border-radius: 50%; font-weight: 900; cursor: pointer; display: none; backdrop-filter: blur(5px); }
-        
-        .btn { background: #38bdf8; color: white; border: none; padding: 15px 40px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1.1em; box-shadow: 0 4px 0 #0369a1; }
-        .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #0369a1; }
-        canvas { display: block; margin: 0 auto; }
+        .home-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 10px; border-radius: 12px; cursor: pointer; pointer-events: auto; font-size: 1.2em; backdrop-filter: blur(10px); }
+        #preview-container { position: absolute; top: 15px; right: 15px; background: rgba(15, 23, 42, 0.4); padding: 8px; border-radius: 20px; border: 1px solid rgba(56, 189, 248, 0.2); backdrop-filter: blur(5px); }
+        #overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; color: white; text-align: center; padding: 20px; backdrop-filter: blur(15px); }
+        .stats-box { background: rgba(30, 41, 59, 0.8); padding: 20px; border-radius: 20px; width: 85%; margin: 15px 0; border: 1px solid rgba(56, 189, 248, 0.3); }
+        .stat-row { display: flex; justify-content: space-between; margin: 8px 0; font-size: 0.9em; opacity: 0.9; }
+        .leader-entry { display: flex; justify-content: space-between; padding: 6px 12px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; margin-bottom: 5px; }
+        .gold { color: #38bdf8; text-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
+        #side-controls { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); z-index: 50; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        .g-btn { background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 2px solid #38bdf8; width: 54px; height: 54px; border-radius: 50%; font-weight: 900; cursor: pointer; display: none; backdrop-filter: blur(5px); box-shadow: 0 0 15px rgba(56, 189, 248, 0.2); transition: all 0.3s; }
+        .g-btn.disabled { opacity: 0.2; filter: grayscale(1); }
+        #cooldown-bar-wrap { width: 4px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; display: none; }
+        #cooldown-fill { width: 100%; height: 0%; background: #38bdf8; }
+        .btn { background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%); color: white; border: none; padding: 16px 45px; border-radius: 14px; font-weight: bold; cursor: pointer; font-size: 1.1em; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4); }
+        canvas { display: block; margin: 0 auto; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); }
     </style>
 </head>
 <body>
     <div id="ui">
         <button class="home-btn" onclick="location.reload()">🏠</button>
         <div>
-            <div id="score-label" style="font-size: 2.5em; font-weight: 900; line-height: 1;">0</div>
-            <div style="font-size: 0.7em; opacity: 0.5;">BEST: <span id="high-score-ui">0</span></div>
+            <div id="score-label" style="font-size: 2.8em; font-weight: 900; line-height: 1; color: #f8fafc;">0</div>
+            <div style="font-size: 0.75em; opacity: 0.6; letter-spacing: 1px;">BEST: <span id="high-score-ui">0</span></div>
         </div>
     </div>
-
     <div id="preview-container"><canvas id="preview-canvas" width="45" height="45"></canvas></div>
-
-    <div id="side-controls"><button id="g-toggle" class="g-btn" onclick="flipGravity()">G</button></div>
-
+    <div id="side-controls">
+        <div id="cooldown-bar-wrap"><div id="cooldown-fill"></div></div>
+        <button id="g-toggle" class="g-btn" onclick="flipGravity()">G</button>
+    </div>
     <div id="overlay">
-        <h1 id="status-text" style="font-size: 2.5em; margin: 0; color: #38bdf8;">GRAVITY MERGE</h1>
-        
+        <h1 id="status-text" style="font-size: 3em; margin: 0; letter-spacing: -1px;">GRAVITY<br><span style="color: #38bdf8;">MERGE</span></h1>
         <div id="stats-display" class="stats-box" style="display:none;">
-            <div class="stat-row"><span>This Run:</span> <b id="stat-score" class="gold">0</b></div>
-            <div class="stat-row"><span>Biggest Ball:</span> <b id="stat-biggest">-</b></div>
-            
-            <div class="leaderboard">
-                <div style="font-size: 0.7em; margin-bottom: 5px; opacity: 0.7;">LOCAL TOP 3</div>
-                <div id="leader-list"></div>
-            </div>
+            <div class="stat-row"><span>Final Score</span> <b id="stat-score" class="gold">0</b></div>
+            <div class="stat-row"><span>Top Marble</span> <b id="stat-biggest">-</b></div>
+            <div id="leader-list" style="margin-top:15px"></div>
         </div>
-
-        <button id="main-btn" class="btn" onclick="initGame()">START GAME</button>
+        <button id="main-btn" class="btn" onclick="initGame()">PLAY NOW</button>
     </div>
 
 <script>
-    const { Engine, Render, Runner, Bodies, Composite, Events } = Matter;
-    
-    const engine = Engine.create({ positionIterations: 15, velocityIterations: 15 });
+    const { Engine, Render, Runner, Bodies, Composite, Events, Body } = Matter;
+    const engine = Engine.create({ positionIterations: 10, velocityIterations: 10 });
     const width = Math.min(window.innerWidth, 450), height = window.innerHeight;
-    const render = Render.create({ 
-        element: document.body, engine: engine, 
-        options: { width, height, wireframes: false, background: 'transparent', pixelRatio: window.devicePixelRatio, antialiasing: true } 
-    });
+    const render = Render.create({ element: document.body, engine: engine, options: { width, height, wireframes: false, background: 'transparent', pixelRatio: window.devicePixelRatio, antialiasing: true } });
 
     const BALL_TYPES = [
-        { label: 'Marble', r: 15, col: '#00f2ff', score: 2, mass: 1 },
-        { label: 'Rubber', r: 25, col: '#ff007f', score: 5, mass: 0.5 },
-        { label: 'Tennis', r: 35, col: '#ccff00', score: 10, mass: 2 },
-        { label: 'Steel', r: 48, col: '#94a3b8', score: 20, mass: 15 }, 
-        { label: 'Bowling', r: 65, col: '#8b5cf6', score: 40, mass: 30 },
-        { label: 'Gold', r: 85, col: '#fbbf24', score: 80, mass: 60 },
-        { label: 'Giant', r: 110, col: '#ef4444', score: 150, mass: 120 },
-        { label: 'Wrecking', r: 140, col: '#1e293b', score: 1000, mass: 300 }
+        { label: 'Neon', r: 15, col: '#22d3ee', score: 2, mass: 1 },
+        { label: 'Candy', r: 25, col: '#f43f5e', score: 5, mass: 1.2 },
+        { label: 'Lime', r: 35, col: '#a3e635', score: 10, mass: 2.5 },
+        { label: 'Chrome', r: 48, col: '#94a3b8', score: 20, mass: 18 }, 
+        { label: 'Amethyst', r: 65, col: '#8b5cf6', score: 40, mass: 35 },
+        { label: 'Gold', r: 85, col: '#fbbf24', score: 80, mass: 70 },
+        { label: 'Ruby', r: 110, col: '#ef4444', score: 150, mass: 140 },
+        { label: 'Obsidian', r: 140, col: '#0f172a', score: 1000, mass: 400 }
     ];
 
     let gameStats = { score: 0, maxLevel: 0 };
-    let nextLevel = 0, currentX = width/2, isGameOver = false, canDrop = true, isStarted = false;
-    const dropLineY = 125;
+    let nextLevel = 0, currentX = width/2, isGameOver = false, canDrop = true, isStarted = false, isGravityFlipped = false, cooldownActive = false;
+    const COOLDOWN_TIME = 5000, padding = 130;
 
     function initGame() {
         document.getElementById('overlay').style.display = 'none';
         document.getElementById('g-toggle').style.display = 'block';
+        document.getElementById('cooldown-bar-wrap').style.display = 'block';
         updateUIBest();
         isStarted = true;
         Render.run(render);
@@ -112,20 +94,32 @@
         const preCtx = document.getElementById('preview-canvas').getContext('2d');
         preCtx.clearRect(0, 0, 45, 45);
         const t = BALL_TYPES[nextLevel];
-        preCtx.beginPath();
-        preCtx.arc(22, 22, Math.min(t.r * 0.3, 16), 0, Math.PI*2);
-        preCtx.fillStyle = t.col; preCtx.fill();
+        
+        // Draw shiny preview
+        const grad = preCtx.createRadialGradient(22 - 5, 22 - 5, 2, 22, 22, 18);
+        grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.2, t.col); grad.addColorStop(1, '#000000');
+        preCtx.fillStyle = grad;
+        preCtx.beginPath(); preCtx.arc(22, 22, 15, 0, Math.PI*2); preCtx.fill();
     }
 
-    function spawn(x, y, lvl) {
+    function spawn(x, y, lvl, isMerge = false) {
         const t = BALL_TYPES[lvl];
         const b = Bodies.circle(x, y, t.r, {
-            restitution: lvl === 1 ? 0.6 : 0.1,
-            friction: 0.3,
-            density: t.mass * 0.002,
-            render: { fillStyle: t.col, strokeStyle: 'transparent' },
-            plugin: { level: lvl }
+            restitution: 0.2, friction: 0.1, density: t.mass * 0.001,
+            render: { fillStyle: t.col, strokeStyle: 'transparent' }, 
+            plugin: { level: lvl, created: Date.now(), isMerge: isMerge }
         });
+
+        // "Pop" animation for merges
+        if(isMerge) {
+            b.circleRadius = 1;
+            Body.scale(b, 0.1, 0.1);
+            let grow = setInterval(() => {
+                if(b.circleRadius >= t.r) clearInterval(grow);
+                Body.scale(b, 1.15, 1.15);
+            }, 20);
+        }
+
         Composite.add(engine.world, b);
         if(lvl > gameStats.maxLevel) gameStats.maxLevel = lvl;
     }
@@ -137,19 +131,28 @@
 
     window.addEventListener('pointermove', (e) => handleInput(e.clientX));
     window.addEventListener('touchmove', (e) => handleInput(e.touches[0].clientX));
-
     window.addEventListener('pointerup', () => {
         if (!canDrop || isGameOver || !isStarted) return;
-        spawn(currentX, 85, nextLevel);
+        spawn(currentX, isGravityFlipped ? height - 90 : 90, nextLevel);
         canDrop = false;
-        setTimeout(() => { canDrop = true; }, 550);
+        setTimeout(() => { canDrop = true; }, 500);
         nextLevel = Math.floor(Math.random() * 3);
         drawPreview();
     });
 
     function flipGravity() {
-        engine.gravity.y *= -1;
-        if(window.navigator.vibrate) window.navigator.vibrate(35);
+        if (cooldownActive || isGameOver) return;
+        engine.gravity.y *= -1; isGravityFlipped = !isGravityFlipped;
+        cooldownActive = true;
+        const btn = document.getElementById('g-toggle'), fill = document.getElementById('cooldown-fill');
+        btn.classList.add('disabled');
+        let start = Date.now();
+        const timer = setInterval(() => {
+            let elapsed = Date.now() - start;
+            fill.style.height = (100 - (elapsed / COOLDOWN_TIME) * 100) + "%";
+            if (elapsed >= COOLDOWN_TIME) { clearInterval(timer); cooldownActive = false; btn.classList.remove('disabled'); fill.style.height = "0%"; }
+        }, 50);
+        if(window.navigator.vibrate) window.navigator.vibrate(40);
     }
 
     Events.on(engine, 'collisionStart', (e) => {
@@ -159,34 +162,22 @@
                 const lvl = a.plugin.level + 1;
                 gameStats.score += BALL_TYPES[a.plugin.level].score;
                 document.getElementById('score-label').innerText = gameStats.score;
-
-                if (lvl >= 4) {
-                    document.body.style.transform = `translate(${Math.random()*8}px, ${Math.random()*8}px)`;
-                    setTimeout(() => { document.body.style.transform = 'translate(0,0)'; }, 50);
-                }
-
                 Composite.remove(engine.world, [a, b]);
-                spawn((a.position.x + b.position.x)/2, (a.position.y + b.position.y)/2, lvl);
-                if (lvl === 7) endGame("VICTORY");
+                spawn((a.position.x + b.position.x)/2, (a.position.y + b.position.y)/2, lvl, true);
+                if (lvl === 7) endGame("VICTORY!");
             }
         });
     });
 
     setInterval(() => {
         if (isGameOver || !isStarted) return;
+        const currentLoseY = isGravityFlipped ? height - padding : padding;
         Composite.allBodies(engine.world).forEach(b => {
-            if (!b.isStatic && b.position.y < dropLineY && Math.abs(b.velocity.y) < 0.04) endGame("FULL!");
+            if (!b.isStatic && Math.abs(b.velocity.y) < 0.05 && (Date.now() - b.plugin.created > 2000)) {
+                if (isGravityFlipped ? (b.position.y > currentLoseY) : (b.position.y < currentLoseY)) endGame("STACKED!");
+            }
         });
-    }, 2500);
-
-    function saveScore(newScore) {
-        let scores = JSON.parse(localStorage.getItem('mergeHistory') || '[]');
-        scores.push(newScore);
-        scores.sort((a, b) => b - a);
-        scores = [...new Set(scores)].slice(0, 3);
-        localStorage.setItem('mergeHistory', JSON.stringify(scores));
-        return scores;
-    }
+    }, 1000);
 
     function endGame(msg) {
         isGameOver = true;
@@ -195,12 +186,11 @@
         document.getElementById('status-text').innerText = msg;
         document.getElementById('stat-score').innerText = gameStats.score;
         document.getElementById('stat-biggest').innerText = BALL_TYPES[gameStats.maxLevel].label;
-        
-        const topScores = saveScore(gameStats.score);
-        document.getElementById('leader-list').innerHTML = topScores.map((s, i) => `
-            <div class="leader-entry"><span>#${i+1}</span><span class="${s === gameStats.score ? 'gold' : ''}">${s}</span></div>
-        `).join('');
-
+        let scores = JSON.parse(localStorage.getItem('mergeHistory') || '[]');
+        scores.push(gameStats.score); scores.sort((a, b) => b - a);
+        scores = [...new Set(scores)].slice(0, 3);
+        localStorage.setItem('mergeHistory', JSON.stringify(scores));
+        document.getElementById('leader-list').innerHTML = scores.map((s, i) => `<div class="leader-entry"><span>#${i+1}</span><span class="${s === gameStats.score ? 'gold' : ''}">${s}</span></div>`).join('');
         document.getElementById('main-btn').innerText = "RETRY";
         document.getElementById('main-btn').onclick = () => location.reload();
     }
@@ -208,19 +198,44 @@
     Events.on(render, 'afterRender', () => {
         if (!isStarted) return;
         const ctx = render.context;
+        const bodies = Composite.allBodies(engine.world);
+
+        // Draw Meta-Gloss on every ball
+        bodies.forEach(b => {
+            if (b.isStatic || b.plugin.level === undefined) return;
+            const t = BALL_TYPES[b.plugin.level];
+            
+            // Draw Highlight (Glint)
+            ctx.beginPath();
+            ctx.arc(b.position.x - b.circleRadius * 0.3, b.position.y - b.circleRadius * 0.3, b.circleRadius * 0.2, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(255,255,255,0.4)";
+            ctx.fill();
+
+            // Draw Inner Shadow (Depth)
+            ctx.beginPath();
+            ctx.arc(b.position.x, b.position.y, b.circleRadius, 0, Math.PI * 2);
+            const grad = ctx.createRadialGradient(b.position.x, b.position.y, b.circleRadius * 0.8, b.position.x, b.position.y, b.circleRadius);
+            grad.addColorStop(0, "rgba(0,0,0,0)");
+            grad.addColorStop(1, "rgba(0,0,0,0.3)");
+            ctx.fillStyle = grad;
+            ctx.fill();
+        });
+
+        // Preview and Line
+        const currentLoseY = isGravityFlipped ? height - padding : padding;
+        const spawnY = isGravityFlipped ? height - 90 : 90;
         ctx.globalAlpha = 0.1; ctx.fillStyle = BALL_TYPES[nextLevel].col;
-        ctx.beginPath(); ctx.arc(currentX, 85, BALL_TYPES[nextLevel].r, 0, Math.PI * 2); ctx.fill();
-        ctx.globalAlpha = 1;
-        ctx.setLineDash([5, 10]); ctx.strokeStyle = "rgba(255,255,255,0.1)";
-        ctx.beginPath(); ctx.moveTo(0, dropLineY); ctx.lineTo(width, dropLineY); ctx.stroke();
+        ctx.beginPath(); ctx.arc(currentX, spawnY, BALL_TYPES[nextLevel].r, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1; ctx.setLineDash([5, 10]); ctx.strokeStyle = "rgba(255,255,255,0.15)";
+        ctx.beginPath(); ctx.moveTo(0, currentLoseY); ctx.lineTo(width, currentLoseY); ctx.stroke();
     });
 
     const wallOpts = { isStatic: true, render: { fillStyle: '#1e293b' } };
     Composite.add(engine.world, [
-        Bodies.rectangle(width/2, height+15, width, 30, wallOpts),
-        Bodies.rectangle(width/2, -15, width, 30, wallOpts),
-        Bodies.rectangle(-15, height/2, 30, height, wallOpts),
-        Bodies.rectangle(width+15, height/2, 30, height, wallOpts)
+        Bodies.rectangle(width/2, height+25, width, 50, wallOpts),
+        Bodies.rectangle(width/2, -25, width, 50, wallOpts),
+        Bodies.rectangle(-25, height/2, 50, height, wallOpts),
+        Bodies.rectangle(width+25, height/2, 50, height, wallOpts)
     ]);
 </script>
 </body>
