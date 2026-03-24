@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Gravity Merge Expansion</title>
+    <title>Gravity Merge Master</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         :root { --accent: #38bdf8; }
@@ -27,10 +27,10 @@
             width: 320px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); max-height: 80vh; overflow-y: auto;
         }
         .btn { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 14px; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%; pointer-events: auto; }
-        .secondary-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }
+        .secondary-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); margin-top: 5px; }
 
-        .theme-card { display: flex; gap: 10px; width: 100%; margin-top: 10px; }
-        .theme-opt { flex: 1; padding: 10px; border: 2px solid rgba(255,255,255,0.1); border-radius: 12px; text-align: center; cursor: pointer; pointer-events: auto; }
+        .theme-card { display: flex; gap: 8px; width: 100%; margin-top: 15px; margin-bottom: 5px; }
+        .theme-opt { flex: 1; padding: 12px 5px; border: 2px solid rgba(255,255,255,0.1); border-radius: 12px; text-align: center; cursor: pointer; pointer-events: auto; font-size: 0.8em; }
         .theme-opt.active { border-color: var(--accent); background: rgba(56, 189, 248, 0.2); }
 
         .leaderboard-box { width: 100%; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 10px; margin: 10px 0; font-family: monospace; font-size: 0.85em; }
@@ -41,8 +41,6 @@
 
         #gravity-cooldown { position: fixed; right: 20px; bottom: 100px; width: 6px; height: 65px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; display: none; }
         #gravity-bar { width: 100%; height: 100%; background: var(--accent); transform-origin: bottom; }
-        
-        .guide-text { font-size: 0.8em; line-height: 1.4; opacity: 0.8; margin: 10px 0; }
     </style>
 </head>
 <body>
@@ -57,26 +55,23 @@
     </div>
 
     <div id="overlay" style="position:fixed; inset:0; background:rgba(15,23,42,0.98); z-index:200; display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 20px;">
-        <h1 style="font-size: 3em; margin:0; text-align: center;">GRAVITY<br><span style="color:var(--accent)">MERGE</span></h1>
+        <h1 style="font-size: 3em; margin:0; text-align: center; line-height: 0.8;">GRAVITY<br><span style="color:var(--accent); font-size: 0.8em;">MERGE</span></h1>
         
         <div class="theme-card">
-            <div class="theme-opt active" id="theme-classic" onclick="setTheme('classic')">⚪<br><small>Classic</small></div>
-            <div class="theme-opt" id="theme-cosmos" onclick="setTheme('cosmos')">🪐<br><small>Cosmos</small></div>
-            <div class="theme-opt" id="theme-run" onclick="setTheme('run')">🎢<br><small>Marble Run</small></div>
+            <div class="theme-opt active" id="theme-classic" onclick="setTheme('classic')">⚪<br>Classic</div>
+            <div class="theme-opt" id="theme-cosmos" onclick="setTheme('cosmos')">🪐<br>Cosmos</div>
+            <div class="theme-opt" id="theme-run" onclick="setTheme('run')">🎢<br>Run</div>
         </div>
 
         <div class="leaderboard-box" id="lb-start"></div>
-        
         <button class="btn" onclick="initGame()" style="padding:18px;">START GAME</button>
-        <button class="btn secondary-btn" onclick="toggleGuide()">HOW TO PLAY & PATCH NOTES</button>
+        <button class="btn secondary-btn" onclick="toggleGuide()">HOW TO PLAY</button>
     </div>
 
     <div id="guide-panel" class="glass-panel">
         <h3>GUIDE & PATCHES</h3>
-        <p class="guide-text"><b>Planets:</b> Merge max-level planets to create a <b>Black Hole</b> that pushes nearby objects away for 30s.<br><br><b>Marble Run:</b> Small marbles (blue/pink) that hit the side lanes are transported to the bottom!</p>
-        <hr style="width:100%; opacity:0.1">
-        <p class="guide-text"><b>v2.0 Patch Notes:</b><br>• Added 3 Themes<br>• Fixed 'Object Object' Bug<br>• Slowed score popups for readability<br>• Improved collision sub-stepping</p>
-        <button class="btn" onclick="toggleGuide()">BACK</button>
+        <p style="font-size: 0.85em; opacity: 0.8;"><b>Cosmos:</b> Max-level merges create a <b>Purple Singularity</b>. It pushes all objects away for 30s.<br><br><b>Marble Run:</b> Level 1 & 2 marbles hitting the bottom corner "tubes" teleport back to the top!</p>
+        <button class="btn" onclick="toggleGuide()">CLOSE</button>
     </div>
 
     <div id="settings-panel" class="glass-panel">
@@ -88,7 +83,7 @@
 
     <div id="game-over-panel" class="glass-panel">
         <h2 style="color:#ef4444; margin:0;">GAME OVER</h2>
-        <div id="new-record-tag" style="display:none; color:#fbbf24; font-size:0.8em; font-weight:bold; margin-top:5px;">NEW LOCAL RECORD!</div>
+        <div id="new-record-tag" style="display:none; color:#fbbf24; font-size:0.8em; font-weight:bold; margin-top:5px;">NEW RECORD!</div>
         <h1 id="final-score-val" style="margin:10px 0">0</h1>
         <div class="leaderboard-box" id="lb-end"></div>
         <button class="btn" onclick="location.reload()">PLAY AGAIN</button>
@@ -112,18 +107,9 @@
     let blackHoles = [];
 
     const THEMES = {
-        classic: {
-            balls: ['#22d3ee', '#f43f5e', '#a3e635', '#94a3b8', '#8b5cf6', '#fbbf24', '#ef4444'],
-            bg: 'radial-gradient(circle at center, #1e293b 0%, #0f172a 100%)'
-        },
-        cosmos: {
-            balls: ['#67e8f9', '#fda4af', '#f0abfc', '#a5b4fc', '#fb7185', '#fbbf24', '#000000'],
-            bg: 'radial-gradient(circle at center, #020617 0%, #000000 100%)'
-        },
-        run: {
-            balls: ['#38bdf8', '#f472b6', '#4ade80', '#fb7185', '#818cf8', '#facc15', '#f87171'],
-            bg: 'radial-gradient(circle at center, #0f172a 0%, #020617 100%)'
-        }
+        classic: { balls: ['#22d3ee', '#f43f5e', '#a3e635', '#94a3b8', '#8b5cf6', '#fbbf24', '#ef4444'], bg: 'radial-gradient(circle at center, #1e293b 0%, #0f172a 100%)' },
+        cosmos: { balls: ['#67e8f9', '#fda4af', '#f0abfc', '#a5b4fc', '#fb7185', '#fbbf24', '#ffffff'], bg: 'radial-gradient(circle at center, #020617 0%, #000000 100%)' },
+        run: { balls: ['#38bdf8', '#f472b6', '#4ade80', '#fb7185', '#818cf8', '#facc15', '#f87171'], bg: 'radial-gradient(circle at center, #0f172a 0%, #020617 100%)' }
     };
 
     function setTheme(t) {
@@ -134,20 +120,23 @@
     }
 
     function renderLeaderboard() {
-        let lb = JSON.parse(localStorage.getItem('gm_leaderboard_v2') || '[]');
-        lb = lb.map(n => typeof n === 'number' ? n : 0).sort((a,b)=>b-a);
+        let lb = JSON.parse(localStorage.getItem('gm_leaderboard_v2.1') || '[]');
+        lb = lb.filter(n => typeof n === 'number').sort((a,b)=>b-a);
         const html = lb.length ? lb.map((entry, i) => `<div class="lb-entry"><span>#${i+1} PLAYER</span><span>${Math.floor(entry).toLocaleString()}</span></div>`).join('') : '<div style="text-align:center; opacity:0.5">No scores yet</div>';
         ['lb-start', 'lb-pause', 'lb-end'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).innerHTML = html; });
         document.getElementById('top-score-ui').innerText = (lb[0] || 0).toLocaleString();
     }
 
+    function saveScore(s) {
+        let lb = JSON.parse(localStorage.getItem('gm_leaderboard_v2.1') || '[]');
+        if (s > (lb[0] || 0)) document.getElementById('new-record-tag').style.display = 'block';
+        lb.push(s); lb.sort((a,b)=>b-a);
+        localStorage.setItem('gm_leaderboard_v2.1', JSON.stringify(lb.slice(0, 5)));
+    }
+
     function spawn(x, y, lvl, isMerge = false) {
         const r = [18, 28, 40, 55, 72, 95, 120][lvl];
-        const b = Bodies.circle(x, y, r, { 
-            restitution: 0.3, friction: 0.1, frictionAir: 0.02, 
-            render: { fillStyle: THEMES[selectedTheme].balls[lvl] }, 
-            plugin: { level: lvl } 
-        });
+        const b = Bodies.circle(x, y, r, { restitution: 0.3, friction: 0.1, frictionAir: 0.02, render: { fillStyle: THEMES[selectedTheme].balls[lvl] }, plugin: { level: lvl } });
         if (isMerge) Body.setVelocity(b, { x: 0, y: 0 });
         Composite.add(engine.world, b);
     }
@@ -159,16 +148,12 @@
                 const lvl = a.plugin.level;
                 const mx = (a.position.x + b.position.x) / 2, my = (a.position.y + b.position.y) / 2;
                 Composite.remove(engine.world, [a, b]);
-
-                if (lvl === 6) { // Max level merge
-                    if (selectedTheme === 'cosmos') {
-                        blackHoles.push({ x: mx, y: my, r: 100, life: 1.0 });
-                    }
-                    score += 1000;
-                    triggerFlash();
-                } else {
-                    score += [2,5,10,20,40,80][lvl] * (++comboCount);
-                    spawn(mx, my, lvl + 1, true);
+                if (lvl === 6) { 
+                    if (selectedTheme === 'cosmos') blackHoles.push({ x: mx, y: my, r: 120, life: 1.0 });
+                    score += 1000; triggerFlash(); 
+                } else { 
+                    score += [2,5,10,20,40,80][lvl] * (++comboCount); 
+                    spawn(mx, my, lvl + 1, true); 
                 }
                 document.getElementById('score-label').innerText = score.toLocaleString();
             }
@@ -179,67 +164,69 @@
         document.getElementById('overlay').style.display = 'none';
         document.getElementById('g-btn').style.display = 'block';
         document.getElementById('gravity-cooldown').style.display = 'block';
-        renderLeaderboard();
-        Render.run(render);
-        Runner.run(Runner.create(), engine);
+        renderLeaderboard(); Render.run(render); Runner.run(Runner.create(), engine);
     }
 
     Events.on(render, 'afterRender', () => {
         if (isPaused || isGameOver) return;
         const ctx = render.context;
 
-        // Black Hole Logic (Cosmos Theme)
-        blackHoles = blackHoles.filter(bh => {
-            bh.life -= 0.0005; // ~33 seconds
-            bh.r *= 0.9995;
-            
-            ctx.beginPath();
-            const g = ctx.createRadialGradient(bh.x, bh.y, 0, bh.x, bh.y, bh.r);
-            g.addColorStop(0, '#000'); g.addColorStop(1, 'transparent');
-            ctx.fillStyle = g; ctx.arc(bh.x, bh.y, bh.r, 0, Math.PI*2); ctx.fill();
-
-            Composite.allBodies(engine.world).forEach(b => {
-                if(b.isStatic) return;
-                const dist = Vector.magnitude(Vector.sub(b.position, bh));
-                if(dist < bh.r * 1.5) {
-                    const force = Vector.mult(Vector.normalise(Vector.sub(b.position, bh)), 0.005 * (1 - dist/(bh.r*1.5)));
-                    Body.applyForce(b, b.position, force);
-                }
+        if (selectedTheme === 'cosmos') {
+            blackHoles = blackHoles.filter(bh => {
+                bh.life -= 0.0006; bh.r *= 0.9997;
+                const g = ctx.createRadialGradient(bh.x, bh.y, 0, bh.x, bh.y, bh.r);
+                g.addColorStop(0, '#fff'); g.addColorStop(0.2, '#a855f7'); g.addColorStop(0.6, '#3b82f6'); g.addColorStop(1, 'transparent');
+                ctx.fillStyle = g; ctx.beginPath(); ctx.arc(bh.x, bh.y, bh.r, 0, Math.PI*2); ctx.fill();
+                Composite.allBodies(engine.world).forEach(b => {
+                    if(b.isStatic) return;
+                    const d = Vector.magnitude(Vector.sub(b.position, bh));
+                    if(d < bh.r * 2) Body.applyForce(b, b.position, Vector.mult(Vector.normalise(Vector.sub(b.position, bh)), 0.006 * (1 - d/(bh.r*2))));
+                });
+                return bh.life > 0;
             });
-            return bh.life > 0;
-        });
+        }
 
-        // Marble Run UI (Run Theme)
         if (selectedTheme === 'run') {
-            ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)'; ctx.lineWidth = 10;
-            ctx.beginPath(); ctx.moveTo(20, 150); ctx.lineTo(20, height-50); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(width-20, 150); ctx.lineTo(width-20, height-50); ctx.stroke();
-            
+            const tubeY = isFlipped ? 50 : height - 50;
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.4)';
+            ctx.beginPath(); ctx.arc(40, tubeY, 40, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(width-40, tubeY, 40, 0, Math.PI*2); ctx.fill();
             Composite.allBodies(engine.world).forEach(b => {
-                if(b.plugin.level <= 1 && (b.position.x < 30 || b.position.x > width-30) && b.position.y < height-100) {
-                    Body.setPosition(b, { x: width/2, y: height-50 });
+                if(b.plugin.level <= 1 && Math.abs(b.position.y - tubeY) < 50 && (b.position.x < 80 || b.position.x > width-80)) {
+                    Body.setPosition(b, { x: b.position.x, y: isFlipped ? height - 100 : 100 });
+                    Body.setVelocity(b, { x: 0, y: isFlipped ? -5 : 5 });
                 }
             });
         }
 
-        // Standard Gravity Bar & Preview
         if (gravityCharge < 100) {
             gravityCharge += 0.45;
             document.getElementById('gravity-bar').style.transform = `scaleY(${gravityCharge/100})`;
         }
-        
         const sy = isFlipped ? height - 90 : 90;
         ctx.globalAlpha = 0.5; ctx.fillStyle = THEMES[selectedTheme].balls[nextLevel];
-        ctx.beginPath(); ctx.arc(currentX, sy, [18, 28, 40][nextLevel], 0, Math.PI*2); ctx.fill();
-        ctx.globalAlpha = 1;
+        ctx.beginPath(); ctx.arc(currentX, sy, [18, 28, 40][nextLevel], 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
+
+        const limit = isFlipped ? height - 150 : 150;
+        Composite.allBodies(engine.world).forEach(b => {
+            if (b.isStatic || b.plugin.level === undefined) return;
+            if ((!isFlipped && b.position.y < limit) || (isFlipped && b.position.y > limit)) {
+                if (!b.warn) b.warn = Date.now();
+                if (Date.now() - b.warn > 3500) {
+                    isGameOver = true; saveScore(score);
+                    document.getElementById('game-over-panel').style.display = 'flex';
+                    document.getElementById('final-score-val').innerText = score.toLocaleString();
+                    renderLeaderboard();
+                }
+            } else b.warn = null;
+        });
     });
 
     window.addEventListener('pointermove', (e) => currentX = Math.max(40, Math.min(width-40, e.clientX)));
     window.addEventListener('pointerup', (e) => {
         if (e.target.closest('.menu-btn') || isPaused || isGameOver || Date.now() - lastDrop < 800) return;
         spawn(currentX, isFlipped ? height - 90 : 90, nextLevel);
-        nextLevel = Math.floor(Math.random() * 3);
-        lastDrop = Date.now();
+        nextLevel = Math.floor(Math.random() * 3); lastDrop = Date.now();
     });
 
     function toggleSettings() {
@@ -247,6 +234,7 @@
         isPaused = (p.style.display !== 'flex');
         p.style.display = isPaused ? 'flex' : 'none';
         engine.timing.timeScale = isPaused ? 0 : 1;
+        if(isPaused) renderLeaderboard();
     }
     
     function toggleGuide() {
