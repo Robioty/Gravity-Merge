@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Gravity Merge Elite</title>
+    <title>Gravity Merge Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         html, body { 
             margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; 
-            background: #0f172a !important; 
-            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%) !important; 
+            background: #0f172a; 
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%); 
             font-family: 'Segoe UI', sans-serif; touch-action: none; position: fixed; color: white; 
         }
 
@@ -39,7 +37,7 @@
         .toggle.on::after { left: 24px; }
 
         .leader-row { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-family: monospace; font-size: 1em; }
-        .crown { color: #fbbf24; margin-right: 5px; font-size: 1.1em; }
+        .crown { color: #fbbf24; margin-right: 5px; }
 
         #side-controls { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 12px; }
         #cooldown-bar-wrap { width: 8px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; position: relative; display: none; border: 1px solid rgba(255,255,255,0.05); }
@@ -83,12 +81,10 @@
 
     <div id="overlay" style="position:fixed; inset:0; background:rgba(15,23,42,0.98); z-index:200; display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 20px;">
         <h1 style="font-size: 4em; text-align:center; margin: 0 0 10px 0; line-height: 0.9;">GRAVITY<br><span style="color:#38bdf8">MERGE</span></h1>
-        
         <div style="width: 280px; background: rgba(255,255,255,0.03); border-radius: 20px; padding: 20px; margin-bottom: 25px; border: 1px solid rgba(56, 189, 248, 0.15); backdrop-filter: blur(10px);">
             <div style="font-size: 0.8em; opacity: 0.6; text-align: center; margin-bottom: 12px; letter-spacing: 3px; font-weight: bold;">HALL OF FAME</div>
             <div id="lb-list-home"></div>
         </div>
-
         <button class="btn" onclick="initGame()" style="width:240px; padding:22px; font-size: 1.4em; box-shadow: 0 10px 40px rgba(56, 189, 248, 0.4);">PLAY NOW</button>
     </div>
 
@@ -96,7 +92,7 @@
     
     <div id="side-controls">
         <div id="cooldown-bar-wrap"><div id="cooldown-fill"></div></div>
-        <button id="g-toggle" class="menu-btn" style="display:none; width:60px; height:60px; border-radius:50%; color:#38bdf8; border:3px solid #38bdf8; font-weight: 900; font-size: 1.4em;" onclick="flipGravity()">G</button>
+        <button id="g-toggle" class="menu-btn" style="display:none; width:60px; height:60px; border-radius:50%; color:#38bdf8; border:3px solid #38bdf8; font-weight: 900;" onclick="flipGravity()">G</button>
     </div>
 
 <script>
@@ -129,8 +125,11 @@
     let settings = { shake: true, audio: true };
     let gameStats = { score: 0, combo: 0, lastMergeTime: 0, maxLvlReached: 0 };
     let nextLevel = 0, currentX = width/2, isGameOver = false, isStarted = false, isGravityFlipped = false, cooldownActive = false;
+    let lastDropTime = 0;
+    let isWarning = false;
     let particles = [];
     const COOLDOWN_TIME = 5000;
+    const DROP_DELAY = 600;
 
     const BALL_TYPES = [
         { r: 15, col: '#22d3ee', score: 2 }, { r: 25, col: '#f43f5e', score: 5 },
@@ -151,10 +150,7 @@
 
     function spawn(x, y, lvl, isMerge = false) {
         const t = BALL_TYPES[lvl];
-        const b = Bodies.circle(x, y, t.r, {
-            restitution: 0.3, friction: 0.1, 
-            render: { fillStyle: t.col }, plugin: { level: lvl }
-        });
+        const b = Bodies.circle(x, y, t.r, { restitution: 0.3, friction: 0.1, render: { fillStyle: t.col }, plugin: { level: lvl } });
         if (isMerge) {
             AudioEngine.merge(lvl);
             for(let i=0; i<12; i++) particles.push({x, y, vx:(Math.random()-0.5)*12, vy:(Math.random()-0.5)*12, life:1, col:t.col});
@@ -201,10 +197,9 @@
                 gameStats.combo = (now - gameStats.lastMergeTime < 800) ? gameStats.combo + 1 : 1;
                 gameStats.lastMergeTime = now;
                 if(gameStats.combo > 1) AudioEngine.combo();
-                
                 const points = BALL_TYPES[a.plugin.level].score * gameStats.combo;
                 gameStats.score += points;
-                document.getElementById('score-label').innerText = gameStats.score;
+                document.getElementById('score-label').innerText = gameStats.score.toLocaleString();
                 
                 const el = document.createElement('div');
                 el.className = 'floating-text';
@@ -228,13 +223,13 @@
         document.getElementById(targetId).innerHTML = lb.map((e, i) => `
             <div class="leader-row">
                 <span>${i===0?'<span class="crown">👑</span>':''}#${i+1} ${e.name}</span>
-                <span style="color:${i===0?'#fbbf24':'white'}">${e.score.toLocaleString()}</span>
+                <span style="color:${i===0?'#fbbf24':'white'}">${e.score >= 10000 ? (e.score/1000).toFixed(1)+'K' : e.score.toLocaleString()}</span>
             </div>
         `).join('') || '<div style="opacity:0.3;text-align:center;padding:10px;">No records yet</div>';
-        if(targetId === 'lb-list-home') document.getElementById('high-score-ui').innerText = lb[0]?.score || 0;
+        if(targetId === 'lb-list-home') document.getElementById('high-score-ui').innerText = lb[0]?.score.toLocaleString() || 0;
     }
 
-    function endGame(msg) {
+    function endGame(msg = "GAME OVER") {
         isGameOver = true;
         document.getElementById('end-msg').innerText = msg;
         document.getElementById('game-over-panel').style.display = 'flex';
@@ -255,40 +250,83 @@
 
     Events.on(render, 'afterRender', () => {
         const ctx = render.context;
+        const now = Date.now();
+        const elapsed = now - lastDropTime;
+        const readyPercent = Math.min(1, elapsed / DROP_DELAY);
+
         particles.forEach((p, i) => {
             p.x += p.vx; p.y += p.vy; p.life -= 0.02; ctx.globalAlpha = p.life; ctx.fillStyle = p.col;
             ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill();
             if(p.life <= 0) particles.splice(i, 1);
         });
         ctx.globalAlpha = 1;
+
         if (isStarted && !isGameOver) {
             const sy = isGravityFlipped ? height - 90 : 90;
+            
+            // Laser
             ctx.setLineDash([5, 15]); ctx.strokeStyle = "rgba(255,255,255,0.1)";
             ctx.beginPath(); ctx.moveTo(currentX, sy); ctx.lineTo(currentX, isGravityFlipped ? 0 : height); ctx.stroke();
-            ctx.globalAlpha = 0.25; ctx.fillStyle = BALL_TYPES[nextLevel].col;
-            ctx.beginPath(); ctx.arc(currentX, sy, BALL_TYPES[nextLevel].r, 0, Math.PI*2); ctx.fill();
+            
+            // DROP TIMER RING
+            if (readyPercent < 1) {
+                ctx.setLineDash([]);
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(currentX, sy, BALL_TYPES[nextLevel].r * readyPercent, 0, Math.PI*2);
+                ctx.stroke();
+            } else {
+                ctx.globalAlpha = 0.25; ctx.fillStyle = BALL_TYPES[nextLevel].col;
+                ctx.beginPath(); ctx.arc(currentX, sy, BALL_TYPES[nextLevel].r, 0, Math.PI*2); ctx.fill();
+            }
             ctx.globalAlpha = 1.0;
+
+            // Death Line Warning
+            const limitY = isGravityFlipped ? height - 150 : 150;
+            ctx.setLineDash([2, 5]);
+            ctx.strokeStyle = isWarning ? "rgba(239, 68, 68, 0.8)" : "rgba(255, 255, 255, 0.2)";
+            ctx.beginPath(); ctx.moveTo(0, limitY); ctx.lineTo(width, limitY); ctx.stroke();
         }
+
+        let warningFound = false;
         Composite.allBodies(engine.world).forEach(b => {
             if (b.isStatic || b.plugin.level === undefined) return;
             const r = b.circleRadius;
-            // Gloss
+            
+            // Gloss & Shadow
             ctx.beginPath(); ctx.arc(b.position.x - r*0.35, b.position.y - r*0.35, r*0.2, 0, Math.PI*2);
             ctx.fillStyle = "rgba(255,255,255,0.4)"; ctx.fill();
-            // Shadow
             ctx.beginPath(); ctx.arc(b.position.x, b.position.y, r, 0, Math.PI*2);
             const grad = ctx.createRadialGradient(b.position.x, b.position.y, r*0.75, b.position.x, b.position.y, r);
             grad.addColorStop(0, 'rgba(0,0,0,0)'); grad.addColorStop(1, 'rgba(0,0,0,0.45)');
             ctx.fillStyle = grad; ctx.fill();
+            
+            // Death Logic
+            const limitY = isGravityFlipped ? height - 150 : 150;
+            const isAbove = isGravityFlipped ? b.position.y > limitY : b.position.y < limitY;
+            
+            if (isAbove) {
+                warningFound = true;
+                if (!b.plugin.warningTime) b.plugin.warningTime = Date.now();
+                if (Date.now() - b.plugin.warningTime > 3000) endGame();
+            } else {
+                b.plugin.warningTime = null;
+            }
         });
+        isWarning = warningFound;
     });
 
     function triggerFlash() { if(settings.shake) { const f = document.getElementById('flash'); f.style.opacity = '0.25'; setTimeout(() => f.style.opacity = '0', 100); } }
+    
     window.addEventListener('pointermove', (e) => { currentX = Math.max(35, Math.min(width - 35, e.clientX)); });
     window.addEventListener('pointerup', (e) => {
         if (!isStarted || isGameOver || e.target.closest('.menu-btn') || e.target.closest('.glass-panel')) return;
+        if (Date.now() - lastDropTime < DROP_DELAY) return;
+        
         spawn(currentX, isGravityFlipped ? height - 90 : 90, nextLevel);
         nextLevel = Math.floor(Math.random() * 3);
+        lastDropTime = Date.now();
     });
 
     renderLeaderboard('lb-list-home');
