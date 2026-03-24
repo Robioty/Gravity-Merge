@@ -2,18 +2,15 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gravity Merge: Final</title>
+    <title>Gravity Merge: Master Fixed</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background: #0f172a; font-family: 'Segoe UI', sans-serif; touch-action: none; transition: transform 0.05s; }
         #ui { position: absolute; top: 20px; left: 20px; color: white; pointer-events: none; z-index: 10; }
         #preview-container { position: absolute; top: 20px; right: 20px; background: rgba(30, 41, 59, 0.8); padding: 10px; border-radius: 15px; border: 1px solid #38bdf8; text-align: center; }
-        #overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; color: white; text-align: center; }
-        .btn { background: #38bdf8; color: white; border: none; padding: 15px 30px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1.2em; box-shadow: 0 4px 0 #0369a1; }
-        .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #0369a1; }
+        #overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; color: white; text-align: center; }
+        .btn { background: #38bdf8; color: white; border: none; padding: 15px 30px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1.2em; box-shadow: 0 4px 0 #0369a1; pointer-events: auto; }
         canvas { display: block; margin: 0 auto; }
-        .high-score-flash { color: #fbbf24; animation: blink 0.5s infinite; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -28,9 +25,9 @@
     </div>
 
     <div id="overlay">
-        <h1 id="status-text" style="font-size: 3em; margin-bottom: 10px;">GAME OVER</h1>
-        <p id="final-score" style="font-size: 1.5em; margin-bottom: 20px;"></p>
-        <button class="btn" onclick="location.reload()">PLAY AGAIN</button>
+        <h1 id="status-text" style="font-size: 3em; margin-bottom: 10px;">GRAVITY MERGE</h1>
+        <p id="final-score" style="font-size: 1.2em; margin-bottom: 20px;">Ready to play?</p>
+        <button id="start-btn" class="btn" onclick="initGame()">START GAME</button>
     </div>
 
 <script>
@@ -50,14 +47,24 @@
         { label: 'Wrecking', r: 140, col: '#1e293b', score: 1000 }
     ];
 
-    let score = 0, nextLevel = 0, currentX = width/2, isGameOver = false, canDrop = true;
+    let score = 0, nextLevel = 0, currentX = width/2, isGameOver = false, canDrop = true, isStarted = false;
     const dropLineY = 120;
     const bestScore = parseInt(localStorage.getItem('mergeBest')) || 0;
 
     document.getElementById('high-score').innerText = bestScore;
 
+    function initGame() {
+        document.getElementById('overlay').style.display = 'none';
+        isStarted = true;
+        Render.run(render);
+        Runner.run(Runner.create(), engine);
+        drawPreview();
+    }
+
     function drawPreview() {
-        const preCtx = document.getElementById('preview-canvas').getContext('2d');
+        const pCanvas = document.getElementById('preview-canvas');
+        if (!pCanvas) return;
+        const preCtx = pCanvas.getContext('2d');
         preCtx.clearRect(0, 0, 50, 50);
         const t = BALL_TYPES[nextLevel];
         preCtx.beginPath();
@@ -66,16 +73,14 @@
         preCtx.strokeStyle = "white"; preCtx.stroke();
     }
 
-    function spawn(x, y, lvl, isStatic = false) {
+    function spawn(x, y, lvl) {
         const t = BALL_TYPES[lvl];
         const b = Bodies.circle(x, y, t.r, {
             restitution: lvl === 1 ? 0.8 : 0.2,
-            friction: 0.1,
             render: { fillStyle: t.col, strokeStyle: '#fff', lineWidth: 2 },
             plugin: { level: lvl }
         });
         Composite.add(engine.world, b);
-        return b;
     }
 
     window.addEventListener('pointermove', (e) => {
@@ -84,7 +89,7 @@
     });
 
     window.addEventListener('pointerup', () => {
-        if (!canDrop || isGameOver) return;
+        if (!canDrop || isGameOver || !isStarted) return;
         spawn(currentX, 70, nextLevel);
         canDrop = false;
         setTimeout(() => { canDrop = true; }, 600);
@@ -95,34 +100,27 @@
     Events.on(engine, 'collisionStart', (e) => {
         e.pairs.forEach(p => {
             const a = p.bodyA, b = p.bodyB;
-            if (a.plugin?.level === b.plugin?.level && a.plugin?.level < BALL_TYPES.length - 1) {
+            if (a.plugin?.level === b.plugin?.level && a.plugin?.level !== undefined && a.plugin.level < BALL_TYPES.length - 1) {
                 const lvl = a.plugin.level + 1;
                 score += BALL_TYPES[a.plugin.level].score;
-                const scoreLabel = document.getElementById('score-label');
-                scoreLabel.innerText = score;
-
-                if (score > bestScore) {
-                    scoreLabel.classList.add('high-score-flash');
-                    document.getElementById('high-score').innerText = score;
-                }
+                document.getElementById('score-label').innerText = score;
 
                 if (lvl >= 4) {
                     const intensity = lvl * 2;
                     document.body.style.transform = `translate(${Math.random()*intensity}px, ${Math.random()*intensity}px)`;
-                    setTimeout(() => document.body.style.transform = 'translate(0,0)', 50);
+                    setTimeout(() => { document.body.style.transform = 'translate(0,0)'; }, 50);
                     if(window.navigator.vibrate) window.navigator.vibrate(lvl * 15);
                 }
 
                 Composite.remove(engine.world, [a, b]);
                 spawn((a.position.x + b.position.x)/2, (a.position.y + b.position.y)/2, lvl);
-
                 if (lvl === 7) endGame("YOU WON!");
             }
         });
     });
 
     setInterval(() => {
-        if (isGameOver) return;
+        if (isGameOver || !isStarted) return;
         Composite.allBodies(engine.world).forEach(b => {
             if (!b.isStatic && b.position.y < dropLineY && Math.abs(b.velocity.y) < 0.1) {
                 endGame("GAME OVER");
@@ -135,10 +133,13 @@
         document.getElementById('overlay').style.display = 'flex';
         document.getElementById('status-text').innerText = msg;
         document.getElementById('final-score').innerText = `Final Score: ${score}`;
+        document.getElementById('start-btn').innerText = "RESTART";
+        document.getElementById('start-btn').onclick = () => location.reload();
         if (score > bestScore) localStorage.setItem('mergeBest', score);
     }
 
     Events.on(render, 'afterRender', () => {
+        if (!isStarted) return;
         const ctx = render.context;
         ctx.globalAlpha = 0.2;
         ctx.fillStyle = BALL_TYPES[nextLevel].col;
@@ -146,7 +147,6 @@
         ctx.arc(currentX, 70, BALL_TYPES[nextLevel].r, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalAlpha = 1;
-        
         ctx.setLineDash([5, 5]); ctx.strokeStyle = "rgba(255,0,0,0.3)";
         ctx.beginPath(); ctx.moveTo(0, dropLineY); ctx.lineTo(width, dropLineY); ctx.stroke();
     });
@@ -155,3 +155,7 @@
         Bodies.rectangle(width/2, height+15, width, 30, { isStatic: true, render: { fillStyle: '#1e293b' } }),
         Bodies.rectangle(-15, height/2, 30, height, { isStatic: true }),
         Bodies.rectangle(width+15, height/2, 30, height, { isStatic: true })
+    ]);
+</script>
+</body>
+</html>
