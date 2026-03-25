@@ -1,20 +1,21 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Gravity Merge: Supernova Ultimate</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
-        :root { --accent: #38bdf8; --gold: #fbbf24; --danger: #ef4444; }
-        body { margin: 0; overflow: hidden; background: #070b14; font-family: 'Segoe UI', sans-serif; touch-action: none; color: white; }
+        :root { --accent: #38bdf8; --gold: #fbbf24; --danger: #ef4444; --pink: #f472b6; }
+        body { margin: 0; overflow: hidden; background: #070b14; font-family: 'Segoe UI', system-ui, sans-serif; touch-action: none; color: white; user-select: none; }
         
         /* Main UI */
         #ui { position: absolute; top: 15px; left: 15px; right: 15px; z-index: 100; display: flex; align-items: center; pointer-events: none; }
-        .menu-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 10px; border-radius: 12px; cursor: pointer; pointer-events: auto; backdrop-filter: blur(10px); transition: 0.2s; }
+        .menu-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 10px; border-radius: 12px; cursor: pointer; pointer-events: auto; backdrop-filter: blur(10px); transition: 0.2s; -webkit-tap-highlight-color: transparent; }
         .menu-btn:active { transform: scale(0.9); }
         #score-container { flex-grow: 1; text-align: center; }
-        #score-label { font-size: 2.5em; font-weight: 900; text-shadow: 0 0 20px rgba(56,189,248,0.5); }
+        #score-label { font-size: 2.5em; font-weight: 900; text-shadow: 0 0 20px rgba(56,189,248,0.5); margin: 0; }
+        #combo-badge { color: var(--pink); font-weight: 900; font-size: 1.2em; opacity: 0; transition: 0.3s; }
         
         /* Next Preview Box */
         #next-box { width: 60px; height: 60px; background: rgba(255,255,255,0.05); border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; pointer-events: auto; }
@@ -33,7 +34,7 @@
         #gravity-fill { width: 100%; height: 100%; background: var(--gold); transform-origin: bottom; transition: transform 0.1s linear; }
         
         #event-banner { position: fixed; top: 120px; width: 100%; text-align: center; color: #f472b6; font-weight: 900; font-size: 1.8em; display: none; z-index: 200; text-shadow: 0 0 15px #f472b6; pointer-events: none; }
-        .pop-text { position: absolute; font-weight: 900; pointer-events: none; z-index: 30; animation: popUp 0.8s ease-out forwards; }
+        .pop-text { position: absolute; font-weight: 900; pointer-events: none; z-index: 30; animation: popUp 0.8s ease-out forwards; white-space: nowrap; }
         @keyframes popUp { 0% { transform: scale(0.5); opacity: 0; } 20% { opacity: 1; transform: scale(1.1); } 100% { transform: translateY(-50px); opacity: 0; } }
     </style>
 </head>
@@ -46,6 +47,7 @@
         </div>
         <div id="score-container">
             <div id="score-label">0</div>
+            <div id="combo-badge">COMBO X1</div>
             <div style="font-size: 0.7em; opacity: 0.6; letter-spacing: 1px;">BEST: <span id="best-score">0</span></div>
         </div>
     </div>
@@ -86,14 +88,43 @@
         options: { width, height, wireframes: false, background: 'transparent' } 
     });
 
+    // Game State
     let score = 0, nextLevel = 0, isGameOver = false, isPaused = false, isFlipped = false;
-    let currentX = width/2, gravityCharge = 100, lastDrop = 0, lastMerge = 0, selectedTheme = 'classic';
-    let blackHoleActive = false, sunPulse = 0;
+    let currentX = width/2, gravityCharge = 100, lastDrop = 0, selectedTheme = 'classic';
+    let blackHoleActive = false;
+    
+    // Combo System
+    let comboMultiplier = 1;
+    let lastMergeTime = 0;
 
     const THEMES = {
         classic: ['#22d3ee', '#f43f5e', '#a3e635', '#94a3b8', '#8b5cf6', '#fbbf24', '#ef4444'],
         cosmos: ['#9ca3af', '#fb923c', '#38bdf8', '#ef4444', '#facc15', '#a78bfa', '#fde047'],
         glass: ['rgba(56,189,248,0.4)', 'rgba(244,114,182,0.4)', 'rgba(74,222,128,0.4)', 'rgba(148,163,184,0.4)', 'rgba(167,139,250,0.4)', 'rgba(250,204,21,0.4)', 'rgba(248,113,113,0.4)']
+    };
+
+    const Juicer = {
+        shake: (intensity) => {
+            const canvas = document.querySelector('canvas');
+            canvas.style.transition = '0s';
+            const start = Date.now();
+            const duration = 200;
+            const interval = setInterval(() => {
+                if (Date.now() - start > duration) {
+                    canvas.style.transform = `translate(0, 0)`;
+                    clearInterval(interval); return;
+                }
+                canvas.style.transform = `translate(${(Math.random()-0.5)*intensity}px, ${(Math.random()-0.5)*intensity}px)`;
+            }, 16);
+        },
+        createPop: (x, y, color, text = 'MERGE!') => {
+            const el = document.createElement('div');
+            el.className = 'pop-text';
+            el.style.left = x + 'px'; el.style.top = y + 'px';
+            el.style.color = color; el.innerText = text;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 800);
+        }
     };
 
     function setTheme(t) {
@@ -105,7 +136,7 @@
 
     function updateNextPreview() {
         const preview = document.getElementById('next-preview');
-        const sizes = [12, 18, 24]; // Visual preview sizes
+        const sizes = [12, 18, 24];
         const r = sizes[nextLevel];
         preview.style.width = r*2 + 'px';
         preview.style.height = r*2 + 'px';
@@ -119,8 +150,7 @@
         document.getElementById('gravity-cooldown').style.display = 'block';
         document.getElementById('best-score').innerText = localStorage.getItem('gm_best') || 0;
         
-        // TUNNEL WALLS - VISIBLE RAILS
-        const railStyle = { fillStyle: 'rgba(255,255,255,0.15)', strokeStyle: 'rgba(255,255,255,0.2)', lineWidth: 1 };
+        const railStyle = { fillStyle: 'rgba(255,255,255,0.1)', strokeStyle: 'rgba(255,255,255,0.1)', lineWidth: 1 };
         Composite.add(engine.world, [
             Bodies.rectangle(5, height/2, 10, height, { isStatic: true, render: railStyle }),
             Bodies.rectangle(width-5, height/2, 10, height, { isStatic: true, render: railStyle })
@@ -133,40 +163,79 @@
     }
 
     function spawn(x, y, lvl) {
-        const r = [20, 30, 42, 58, 75, 98, 125][lvl]; // Marble sizes
+        const r = [20, 30, 42, 58, 75, 98, 125][lvl];
         const b = Bodies.circle(x, y, r, { 
-            restitution: 0.3, 
-            friction: 0.1,
+            restitution: 0.4, friction: 0.05, slop: 0.05,
+            timestamp: Date.now(),
             plugin: { level: lvl }, 
             render: { fillStyle: THEMES[selectedTheme][lvl] } 
         });
         Composite.add(engine.world, b);
+        return b;
     }
 
     Events.on(engine, 'collisionStart', (e) => {
         e.pairs.forEach(p => {
             const a = p.bodyA, b = p.bodyB;
-            if (a.plugin?.level === b.plugin?.level && a.plugin?.level !== undefined) {
-                const lvl = a.plugin.level + 1;
-                
-                if (lvl === 7) { // Supernova Merge
-                    Composite.remove(engine.world, Composite.allBodies(engine.world).filter(obj => !obj.isStatic));
-                    score += 2000;
-                    return;
-                }
+            if (a.plugin?.level !== undefined && a.plugin.level === b.plugin?.level) {
+                // Prevent instant spawns from merging
+                if (Date.now() - a.timestamp < 150 || Date.now() - b.timestamp < 150) return;
 
-                if (lvl > 3 && Math.random() < 0.1 && !blackHoleActive) triggerBlackHole();
-                
-                score += (lvl * 15);
-                document.getElementById('score-label').innerText = score;
-                
+                const lvl = a.plugin.level + 1;
                 const midX = (a.position.x + b.position.x)/2;
                 const midY = (a.position.y + b.position.y)/2;
+                
                 Composite.remove(engine.world, [a, b]);
-                spawn(midX, midY, lvl);
+
+                // Update Combo Logic
+                const now = Date.now();
+                if (now - lastMergeTime < 2000) {
+                    comboMultiplier++;
+                } else {
+                    comboMultiplier = 1;
+                }
+                lastMergeTime = now;
+
+                // UI Update for Combo
+                const badge = document.getElementById('combo-badge');
+                badge.innerText = `COMBO X${comboMultiplier}`;
+                badge.style.opacity = comboMultiplier > 1 ? 1 : 0;
+
+                if (lvl >= 7) {
+                    triggerSupernova();
+                } else {
+                    spawn(midX, midY, lvl);
+                    score += (lvl * 15) * comboMultiplier;
+                    gravityCharge = Math.min(100, gravityCharge + 5); // Combo fills G-meter
+                    Juicer.shake(lvl * 2);
+                    Juicer.createPop(midX, midY, THEMES[selectedTheme][lvl], `+${(lvl*15)*comboMultiplier}`);
+                }
+                
+                if (lvl > 3 && Math.random() < 0.08 && !blackHoleActive) triggerBlackHole();
+                document.getElementById('score-label').innerText = score;
             }
         });
     });
+
+    function triggerSupernova() {
+        Juicer.shake(40);
+        const flash = document.createElement('div');
+        flash.style = "position:fixed;inset:0;background:white;z-index:1000;transition:opacity 0.8s;";
+        document.body.appendChild(flash);
+        setTimeout(() => { flash.style.opacity = '0'; setTimeout(()=>flash.remove(), 800); }, 50);
+
+        Composite.allBodies(engine.world).forEach(b => {
+            if (!b.isStatic) Composite.remove(engine.world, b);
+        });
+
+        score += 5000;
+        document.getElementById('event-banner').innerText = "SUPERNOVA! +5000";
+        document.getElementById('event-banner').style.display = 'block';
+        setTimeout(() => { 
+            document.getElementById('event-banner').style.display = 'none'; 
+            document.getElementById('event-banner').innerText = "BLACK HOLE DETECTED!";
+        }, 3000);
+    }
 
     function triggerBlackHole() {
         blackHoleActive = true;
@@ -174,7 +243,7 @@
         setTimeout(() => { 
             blackHoleActive = false; 
             document.getElementById('event-banner').style.display = 'none'; 
-        }, 7000);
+        }, 6000);
     }
 
     function flipGravity() { 
@@ -182,6 +251,8 @@
             isFlipped = !isFlipped; 
             engine.gravity.y *= -1; 
             gravityCharge = 0; 
+            Juicer.shake(10);
+            if (window.navigator.vibrate) window.navigator.vibrate(50);
         } 
     }
 
@@ -194,59 +265,58 @@
     Events.on(render, 'afterRender', () => {
         if (isPaused || isGameOver) return;
         const ctx = render.context;
-        sunPulse = (sunPulse + 0.05) % (Math.PI * 2);
+        const limitY = isFlipped ? height - 160 : 160;
+
+        // GHOST ORB PREVIEW
+        const ghostR = [20, 30, 42][nextLevel];
+        ctx.save();
+        ctx.globalAlpha = 0.3;
+        ctx.beginPath();
+        ctx.arc(currentX, isFlipped ? height - 90 : 90, ghostR, 0, Math.PI*2);
+        ctx.fillStyle = THEMES[selectedTheme][nextLevel];
+        ctx.fill();
+        ctx.restore();
         
         // VISUAL AIM LINE
-        const limitY = isFlipped ? height - 160 : 160;
         ctx.setLineDash([8, 12]); 
-        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-        ctx.lineWidth = 2;
-        ctx.beginPath(); 
-        ctx.moveTo(currentX, isFlipped ? height : 0); 
-        ctx.lineTo(currentX, limitY); 
-        ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.beginPath(); ctx.moveTo(currentX, isFlipped ? height : 0); ctx.lineTo(currentX, limitY); ctx.stroke();
         
-        // DEATH LINE (Warning)
-        ctx.strokeStyle = 'rgba(239,68,68,0.6)';
-        ctx.beginPath(); ctx.moveTo(0, limitY); ctx.lineTo(width, limitY); ctx.stroke();
+        // DEATH LINE
+        ctx.strokeStyle = 'rgba(239,68,68,0.4)';
         ctx.setLineDash([]);
+        ctx.beginPath(); ctx.moveTo(0, limitY); ctx.lineTo(width, limitY); ctx.stroke();
 
         // RECHARGE G-METER
         if (gravityCharge < 100) {
-            gravityCharge += 0.22;
+            gravityCharge += 0.15;
             document.getElementById('gravity-fill').style.transform = `scaleY(${gravityCharge/100})`;
         }
 
+        // Custom Theme Rendering & Logic
         Composite.allBodies(engine.world).forEach(b => {
             if (b.isStatic || b.plugin.level === undefined) return;
             
-            // Black Hole Logic
             if (blackHoleActive) {
                 const force = Vector.sub({x: width/2, y: height/2}, b.position);
-                Body.applyForce(b, b.position, Vector.mult(Vector.normalise(force), 0.0007 * b.mass));
+                Body.applyForce(b, b.position, Vector.mult(Vector.normalise(force), 0.0006 * b.mass));
             }
 
-            // Theme Rendering
             const lvl = b.plugin.level;
             if (selectedTheme === 'cosmos') {
                 ctx.save(); ctx.translate(b.position.x, b.position.y); ctx.rotate(b.angle);
-                if (lvl === 5) { // Saturn
+                if (lvl === 5) { // Saturn Ring
                     ctx.beginPath(); ctx.ellipse(0,0, b.circleRadius*1.8, b.circleRadius*0.5, 0.4, 0, Math.PI*2);
-                    ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 4; ctx.stroke();
+                    ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 3; ctx.stroke();
                 }
                 ctx.beginPath(); ctx.arc(0,0, b.circleRadius, 0, Math.PI*2);
-                ctx.shadowBlur = (lvl === 6) ? 25 : 10; ctx.shadowColor = THEMES.cosmos[lvl];
+                ctx.shadowBlur = 15; ctx.shadowColor = THEMES.cosmos[lvl];
                 ctx.fillStyle = THEMES.cosmos[lvl]; ctx.fill(); ctx.restore();
-            } else if (selectedTheme === 'glass') {
-                ctx.save();
-                const grad = ctx.createRadialGradient(b.position.x-15, b.position.y-15, 5, b.position.x, b.position.y, b.circleRadius);
-                grad.addColorStop(0, '#fff'); grad.addColorStop(1, THEMES.glass[lvl]);
-                ctx.fillStyle = grad; ctx.globalAlpha = 0.6;
-                ctx.beginPath(); ctx.arc(b.position.x, b.position.y, b.circleRadius, 0, Math.PI*2); ctx.fill(); ctx.restore();
             }
 
             // Game Over Timing
-            if (((!isFlipped && b.position.y < limitY) || (isFlipped && b.position.y > limitY)) && Math.abs(b.velocity.y) < 0.3) {
+            const isOOB = isFlipped ? (b.position.y > limitY) : (b.position.y < limitY);
+            if (isOOB && Math.abs(b.velocity.y) < 0.2 && (Date.now() - b.timestamp > 2000)) {
                 if (!b.warn) b.warn = Date.now();
                 if (Date.now() - b.warn > 3000) {
                     isGameOver = true;
@@ -256,6 +326,12 @@
                 }
             } else b.warn = null;
         });
+
+        // Combo timeout reset
+        if (Date.now() - lastMergeTime > 2000 && comboMultiplier > 1) {
+            comboMultiplier = 1;
+            document.getElementById('combo-badge').style.opacity = 0;
+        }
     });
 
     // Inputs
@@ -264,14 +340,14 @@
     });
 
     window.addEventListener('pointerup', (e) => {
-        if (isPaused || isGameOver || Date.now() - lastDrop < 650 || e.target.closest('.menu-btn, .overlay, #next-box')) return;
+        if (isPaused || isGameOver || Date.now() - lastDrop < 600 || e.target.closest('.menu-btn, .overlay, #next-box')) return;
         spawn(currentX, isFlipped ? height - 90 : 90, nextLevel);
+        if (window.navigator.vibrate) window.navigator.vibrate(10);
         nextLevel = Math.floor(Math.random() * 3);
         updateNextPreview();
         lastDrop = Date.now();
     });
 
-    // Floor and Ceiling
     Composite.add(engine.world, [
         Bodies.rectangle(width/2, height+30, width, 60, { isStatic: true, render: { visible: false } }),
         Bodies.rectangle(width/2, -30, width, 60, { isStatic: true, render: { visible: false } })
