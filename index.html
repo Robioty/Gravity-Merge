@@ -3,28 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Gravity Merge: Supernova Absolute</title>
+    <title>Gravity Merge: Supernova 2.5</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         :root { --accent: #38bdf8; --gold: #fbbf24; --danger: #ef4444; --pink: #f472b6; }
         body { margin: 0; overflow: hidden; background: #020617; font-family: 'Segoe UI', sans-serif; touch-action: none; color: white; user-select: none; }
         
+        /* UI Elements */
         #ui-layer { position: absolute; inset: 0; z-index: 1000; pointer-events: none; }
         #top-bar { position: absolute; top: 15px; left: 15px; right: 15px; display: flex; align-items: center; }
         .menu-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 12px; border-radius: 12px; cursor: pointer; pointer-events: auto; backdrop-filter: blur(10px); }
-        
         #score-container { flex-grow: 1; text-align: center; }
         #score-label { font-size: 2.8em; font-weight: 900; text-shadow: 0 0 20px var(--accent); margin: 0; }
         
-        #gravity-ui { position: fixed; right: 20px; bottom: 20px; display: flex; flex-direction: row; align-items: center; gap: 12px; opacity: 0.8; }
+        /* Gravity UI - Bottom Right Docked */
+        #gravity-ui { position: fixed; right: 20px; bottom: 20px; display: flex; align-items: center; gap: 12px; opacity: 0.7; transition: 0.3s; pointer-events: none; }
         #gravity-cooldown { width: 100px; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
-        #gravity-fill { height: 100%; width: 100%; background: var(--gold); transform: scaleX(1); transform-origin: left; transition: transform 0.1s linear; }
+        #gravity-fill { height: 100%; width: 100%; background: var(--gold); transform: scaleX(1); transform-origin: left; }
         #g-btn { width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--gold); color: var(--gold); background: rgba(0,0,0,0.3); font-weight: 900; cursor: pointer; pointer-events: auto; }
-        #g-btn.charged { animation: pulseG 1.5s infinite; box-shadow: 0 0 15px var(--gold); }
+        #g-btn.charged { animation: pulseG 1.5s infinite; box-shadow: 0 0 15px var(--gold); opacity: 1; }
 
-        #comet-hitbox { position: absolute; width: 100px; height: 100px; z-index: 900; pointer-events: auto; cursor: pointer; display: none; transform: translate(-50%, -50%); }
-        #comet-visual { position: absolute; width: 30px; height: 30px; background: white; border-radius: 50%; box-shadow: -30px 0 40px var(--accent), 0 0 20px white; }
-
+        /* Gameplay Elements */
+        #comet-hitbox { position: absolute; width: 120px; height: 120px; z-index: 900; pointer-events: auto; cursor: pointer; display: none; transform: translate(-50%, -50%); }
+        #comet-visual { position: absolute; width: 30px; height: 30px; background: white; border-radius: 50%; top: 45px; left: 45px; box-shadow: -30px 0 40px var(--accent), 0 0 20px white; }
         #danger-alert { position: fixed; top: 25%; left: 50%; transform: translate(-50%, -50%); color: var(--danger); font-size: 3em; font-weight: 900; display: none; z-index: 1500; animation: flash 0.5s infinite alternate; }
         #event-banner { position: fixed; top: 140px; width: 100%; text-align: center; color: var(--pink); font-weight: 900; font-size: 2em; display: none; z-index: 500; }
 
@@ -57,14 +58,12 @@
     <div id="home-screen" class="overlay">
         <h1 style="font-size: 3em; color: var(--accent); margin: 0;">SUPERNOVA</h1>
         <button class="btn" onclick="handleStart()">START MISSION</button>
-        <div style="margin-top:20px; pointer-events: auto;">
-            <input type="checkbox" id="skip-tutorial"> <label for="skip-tutorial">Skip Tutorial</label>
-        </div>
+        <div style="margin-top:20px;"><input type="checkbox" id="skip-tutorial"> <label for="skip-tutorial">Skip Tutorial</label></div>
     </div>
 
     <div id="tutorial-overlay" class="overlay" style="display:none">
         <h2 style="color:var(--gold)">GRAVITY & COMETS</h2>
-        <p>Gravity starts <b>FULL</b>. Tap passing <b>Comets</b> to instant-charge!</p>
+        <p>Gravity starts <b>FULL</b>. Tap <b>Comets</b> for instant recharge!</p>
         <button class="btn" onclick="startGame()">I'M READY</button>
     </div>
 
@@ -85,13 +84,13 @@
     const CHARGE_TIME = 120000;
 
     const PLANET_DATA = [
-        { primary: '#cbd5e1', accent: '#94a3b8', glow: 'rgba(203,213,225,0.3)' }, 
-        { primary: '#4ade80', accent: '#166534', glow: 'rgba(74,222,128,0.3)' }, 
-        { primary: '#f87171', accent: '#991b1b', glow: 'rgba(248,113,113,0.3)' }, 
-        { primary: '#fbbf24', accent: '#b45309', stripes: true, glow: 'rgba(251,191,36,0.4)' }, 
-        { primary: '#818cf8', accent: '#3730a3', stripes: true, glow: 'rgba(129,140,248,0.4)' }, 
-        { primary: '#38bdf8', accent: '#075985', rings: true, glow: 'rgba(56,189,248,0.5)' }, 
-        { primary: '#f472b6', accent: '#ffffff', core: true, glow: 'rgba(244,114,182,0.8)' } 
+        { primary: '#cbd5e1', glow: 'rgba(203,213,225,0.3)' }, 
+        { primary: '#4ade80', glow: 'rgba(74,222,128,0.3)' }, 
+        { primary: '#f87171', glow: 'rgba(248,113,113,0.3)' }, 
+        { primary: '#fbbf24', stripes: true, glow: 'rgba(251,191,36,0.4)' }, 
+        { primary: '#818cf8', stripes: true, glow: 'rgba(129,140,248,0.4)' }, 
+        { primary: '#38bdf8', rings: true, glow: 'rgba(56,189,248,0.5)' }, 
+        { primary: '#f472b6', core: true, glow: 'rgba(244,114,182,0.8)' } 
     ];
 
     function handleStart() {
@@ -150,12 +149,13 @@
                 const pull = Vector.sub({x: width/2, y: height/2}, bA.position);
                 Body.applyForce(bA, bA.position, Vector.mult(Vector.normalise(pull), 0.0006 * bA.mass));
             }
+            // Magnetic Snapping Logic
             for (let j = i + 1; j < bodies.length; j++) {
                 const bB = bodies[j];
                 if (bA.plugin.level === bB.plugin.level && !bA.plugin.merged && !bB.plugin.merged) {
                     const dist = Vector.magnitude(Vector.sub(bA.position, bB.position));
-                    if (dist < (bA.circleRadius + bB.circleRadius) * 1.5) {
-                        const force = Vector.mult(Vector.normalise(Vector.sub(bB.position, bA.position)), 0.003 * bA.mass);
+                    if (dist < (bA.circleRadius + bB.circleRadius) * 1.8) {
+                        const force = Vector.mult(Vector.normalise(Vector.sub(bB.position, bA.position)), 0.005 * bA.mass);
                         Body.applyForce(bA, bA.position, force);
                         Body.applyForce(bB, bB.position, Vector.neg(force));
                     }
@@ -189,12 +189,13 @@
         if (!gameStarted || isGameOver) return;
         const ctx = render.context;
         const limitY = isFlipped ? height - 160 : 160;
-        let danger = false;
+        let dangerFound = false;
 
+        // Death Line Drawing
         ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)'; ctx.setLineDash([10, 10]);
         ctx.beginPath(); ctx.moveTo(0, limitY); ctx.lineTo(width, limitY); ctx.stroke(); ctx.setLineDash([]);
 
-        // Ghost Preview
+        // Ghost Preview Rendering
         ctx.save(); ctx.globalAlpha = 0.2;
         drawPlanet(ctx, currentX, isFlipped ? height - 90 : 90, [22, 34, 48][nextLevel], nextLevel);
         ctx.restore();
@@ -203,9 +204,10 @@
             if (b.isStatic || b.plugin.level === undefined) return;
             drawPlanet(ctx, b.position.x, b.position.y, b.circleRadius, b.plugin.level, b.angle);
 
+            // 3-Second Mercy Logic
             const isOver = isFlipped ? (b.position.y > limitY) : (b.position.y < limitY);
             if (isOver && (Date.now() - b.timestamp > 2000)) {
-                danger = true;
+                dangerFound = true;
                 if (!b.warn) b.warn = Date.now();
                 if (Date.now() - b.warn > 3000) {
                     isGameOver = true;
@@ -216,7 +218,9 @@
             } else b.warn = null;
         });
 
-        document.getElementById('danger-alert').style.display = danger ? 'block' : 'none';
+        document.getElementById('danger-alert').style.display = dangerFound ? 'block' : 'none';
+        
+        // Gravity Bar Logic
         if (gravityCharge < CHARGE_TIME) gravityCharge += 16.6; 
         document.getElementById('gravity-fill').style.transform = `scaleX(${Math.min(1, gravityCharge/CHARGE_TIME)})`;
         const gBtn = document.getElementById('g-btn');
@@ -226,18 +230,27 @@
     function drawPlanet(ctx, x, y, r, lvl, angle = 0) {
         const data = PLANET_DATA[lvl];
         ctx.save(); ctx.translate(x, y);
+        // Glow Effect
         const glow = ctx.createRadialGradient(0, 0, r, 0, 0, r * 1.3);
         glow.addColorStop(0, data.glow); glow.addColorStop(1, 'transparent');
         ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0, 0, r * 1.3, 0, Math.PI*2); ctx.fill();
+        // Base Planet (Clean Gradient)
         ctx.rotate(angle);
         const grad = ctx.createRadialGradient(-r/3, -r/3, 0, 0, 0, r);
         grad.addColorStop(0, '#ffffff88'); grad.addColorStop(0.3, data.primary); grad.addColorStop(1, '#000000');
         ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.fill();
-        if (data.rings) {
-            ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = r/5;
-            ctx.beginPath(); ctx.ellipse(0, 0, r*1.8, r*0.5, 0.5, 0, Math.PI*2); ctx.stroke();
+        // Features
+        if (data.stripes) {
+            ctx.clip(); ctx.globalAlpha = 0.3; ctx.fillStyle = 'white';
+            ctx.fillRect(-r, -r/4, r*2, r/5); ctx.fillRect(-r, r/3, r*2, r/10);
         }
         ctx.restore();
+        if (data.rings) {
+            ctx.save(); ctx.translate(x,y); ctx.rotate(angle+0.5);
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = r/5;
+            ctx.beginPath(); ctx.ellipse(0, 0, r*1.8, r*0.5, 0, 0, Math.PI*2); ctx.stroke();
+            ctx.restore();
+        }
     }
 
     window.addEventListener('pointermove', (e) => { currentX = Math.max(40, Math.min(width-40, e.clientX)); });
