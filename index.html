@@ -3,44 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Supernova: Commander's Edition</title>
+    <title>Supernova: Absolute 2.7</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         :root { --accent: #38bdf8; --gold: #fbbf24; --danger: #ef4444; --pink: #f472b6; --glass: rgba(255, 255, 255, 0.05); }
         body { margin: 0; overflow: hidden; background: #020617; font-family: 'Segoe UI', system-ui, sans-serif; touch-action: none; color: white; user-select: none; }
         
-        /* Persistent UI */
         #ui-layer { position: absolute; inset: 0; z-index: 1000; pointer-events: none; }
         #top-bar { position: absolute; top: 15px; left: 15px; right: 15px; display: flex; align-items: flex-start; }
-        .icon-btn { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px; border-radius: 50%; cursor: pointer; pointer-events: auto; backdrop-filter: blur(10px); font-size: 1.2em; }
-        #score-container { flex-grow: 1; text-align: center; pointer-events: none; }
-        #score-label { font-size: 3em; font-weight: 900; text-shadow: 0 0 20px var(--accent); margin: 0; }
+        .icon-btn { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px; border-radius: 50%; cursor: pointer; pointer-events: auto; backdrop-filter: blur(10px); }
+        #score-container { flex-grow: 1; text-align: center; }
+        #score-label { font-size: 2.8em; font-weight: 900; text-shadow: 0 0 20px var(--accent); margin: 0; }
         
-        /* Transparent Floating Gravity UI */
-        #gravity-ui { position: fixed; right: 20px; bottom: 30px; display: flex; align-items: center; gap: 15px; opacity: 0.3; transition: opacity 0.3s; }
-        #gravity-ui:hover, #gravity-ui:active { opacity: 1; }
-        #gravity-cooldown { width: 80px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
-        #gravity-fill { height: 100%; width: 100%; background: var(--gold); transform: scaleX(1); transform-origin: left; }
-        #g-btn { width: 55px; height: 55px; border-radius: 50%; border: 1px solid var(--gold); color: var(--gold); background: transparent; font-weight: 900; cursor: pointer; pointer-events: auto; }
-        #g-btn.charged { box-shadow: 0 0 15px var(--gold); animation: pulseG 1.5s infinite; }
+        /* Minimalist Gravity UI */
+        #gravity-ui { position: fixed; right: 25px; bottom: 35px; opacity: 0.3; transition: 0.3s; pointer-events: auto; }
+        #gravity-ui:hover { opacity: 1; }
+        #g-ring { width: 65px; height: 65px; border-radius: 50%; border: 2px solid rgba(251, 191, 36, 0.3); display: flex; align-items: center; justify-content: center; font-weight: 900; color: var(--gold); background: rgba(0,0,0,0.2); backdrop-filter: blur(5px); }
+        #g-progress { position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--gold); clip-path: inset(100% 0 0 0); transition: clip-path 0.1s linear; }
 
-        /* Gameplay Notifications */
-        #comet-hitbox { position: absolute; width: 120px; height: 120px; z-index: 900; pointer-events: auto; display: none; transform: translate(-50%, -50%); }
-        #comet-visual { position: absolute; width: 25px; height: 25px; background: white; border-radius: 50%; top: 47px; left: 47px; box-shadow: -30px 0 40px var(--accent), 0 0 15px white; }
         #danger-alert { position: fixed; top: 25%; left: 50%; transform: translate(-50%, -50%); color: var(--danger); font-size: 3em; font-weight: 900; display: none; z-index: 1500; animation: flash 0.5s infinite alternate; }
         #event-banner { position: fixed; top: 140px; width: 100%; text-align: center; color: var(--pink); font-weight: 900; font-size: 1.8em; display: none; z-index: 500; text-shadow: 0 0 10px var(--pink); }
+        #comet-hitbox { position: absolute; width: 120px; height: 120px; z-index: 900; pointer-events: auto; display: none; transform: translate(-50%, -50%); }
+        #comet-visual { position: absolute; width: 25px; height: 25px; background: white; border-radius: 50%; top: 47px; left: 47px; box-shadow: -30px 0 40px var(--accent), 0 0 15px white; }
 
-        /* Overlays & Menus */
-        .overlay { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.95); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; overflow-y: auto; pointer-events: auto; }
-        .menu-card { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); padding: 25px; border-radius: 24px; width: 85%; max-width: 400px; backdrop-filter: blur(20px); }
-        .btn { background: var(--accent); color: white; border: none; padding: 16px 32px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; font-size: 1em; }
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; font-size: 0.9em; }
-        .stat-box { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 10px; text-align: center; }
-        .leaderboard-list { text-align: left; width: 100%; margin: 15px 0; list-style: none; padding: 0; }
-        .leaderboard-list li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-
+        .overlay { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.95); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; }
+        .menu-card { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); padding: 25px; border-radius: 24px; width: 85%; max-width: 380px; backdrop-filter: blur(20px); text-align: center; }
+        .btn { background: var(--accent); color: white; border: none; padding: 16px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        .stat-box { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 10px; font-size: 0.8em; }
+        
         @keyframes flash { from { opacity: 0.2; } to { opacity: 1; } }
-        @keyframes pulseG { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
     </style>
 </head>
 <body>
@@ -51,127 +43,88 @@
     <div id="ui-layer">
         <div id="top-bar">
             <button class="icon-btn" onclick="togglePause()">⚙️</button>
-            <div id="score-container">
-                <div id="score-label">0</div>
-            </div>
+            <div id="score-container"><div id="score-label">0</div></div>
         </div>
-        <div id="gravity-ui">
-            <div id="gravity-cooldown"><div id="gravity-fill"></div></div>
-            <button id="g-btn" class="charged" onclick="flipGravity()">G</button>
+        <div id="gravity-ui" onclick="flipGravity()">
+            <div id="g-ring">G<div id="g-progress"></div></div>
         </div>
     </div>
 
     <div id="home-screen" class="overlay">
-        <h1 style="font-size: 3.5em; color: var(--accent); margin: 0; letter-spacing: -2px;">SUPERNOVA</h1>
+        <h1 style="font-size: 3.5em; color: var(--accent); margin: 0;">SUPERNOVA</h1>
         <div class="menu-card" style="margin-top: 20px;">
             <div id="home-stats" class="stats-grid"></div>
-            <h4 style="margin: 10px 0 5px 0; color: var(--gold);">LEADERBOARD</h4>
-            <ul id="home-leaderboard" class="leaderboard-list"></ul>
+            <p style="color: var(--gold); margin: 5px 0;">TOP MISSIONS</p>
+            <div id="leaderboard" style="font-size: 0.9em; margin-bottom: 15px; opacity: 0.8;"></div>
             <button class="btn" onclick="handleStart()">START MISSION</button>
-            <div style="margin-top:15px; font-size: 0.8em; opacity: 0.6;">
-                <input type="checkbox" id="skip-tutorial"> Skip Briefing
-            </div>
+            <div style="margin-top:10px; font-size: 0.7em; opacity: 0.5;"><input type="checkbox" id="skip-tut"> Skip Briefing</div>
         </div>
     </div>
 
     <div id="tutorial-overlay" class="overlay" style="display:none">
-        <div id="tut-step" class="menu-card" style="text-align: center;">
-            <h2 id="tut-title" style="color:var(--accent); margin-top:0;">ORBITAL MECHANICS</h2>
-            <p id="tut-desc">Drop planets to merge them. Identical worlds pull together automatically.</p>
-            <button class="btn" onclick="nextTut()">UNDERSTOOD</button>
+        <div class="menu-card">
+            <h2 id="tut-title">MISSION BRIEF</h2>
+            <p id="tut-desc"></p>
+            <button class="btn" onclick="nextTut()">CONTINUE</button>
         </div>
     </div>
 
     <div id="pause-menu" class="overlay" style="display:none">
         <div class="menu-card">
-            <h2 style="margin-top:0">PAUSED</h2>
+            <h2>PAUSED</h2>
             <div id="pause-stats" class="stats-grid"></div>
             <button class="btn" onclick="togglePause()">RESUME</button>
-            <button class="btn" style="background: rgba(255,255,255,0.1);" onclick="location.reload()">ABANDON MISSION</button>
+            <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="location.reload()">RESTART</button>
         </div>
-    </div>
-
-    <div id="game-over-screen" class="overlay" style="display:none">
-        <h2 style="color:var(--danger)">MISSION FAILED</h2>
-        <h1 id="final-score" style="font-size: 4em; margin: 0;">0</h1>
-        <button class="btn" onclick="location.reload()">RE-TRY</button>
     </div>
 
 <script>
     const { Engine, Render, Runner, Bodies, Composite, Events, Body, Vector } = Matter;
-    const engine = Engine.create({ enableSleeping: false });
+    const engine = Engine.create();
     const width = window.innerWidth, height = window.innerHeight;
     const render = Render.create({ element: document.body, engine, options: { width, height, wireframes: false, background: 'transparent' } });
 
     let score = 0, nextLevel = 0, isGameOver = false, isFlipped = false, gameStarted = false, isPaused = false;
-    let currentX = width/2, gravityCharge = 120000, blackHoleActive = false;
+    let currentX = width/2, gravityCharge = 120000, lastDropTime = 0, blackHoleActive = false;
     let totalMerges = 0, highestPlanet = 0, tutStep = 0;
     const CHARGE_TIME = 120000;
 
     const PLANET_DATA = [
-        { name: "Moon", primary: '#cbd5e1', glow: 'rgba(203,213,225,0.3)' }, 
-        { name: "Verda", primary: '#4ade80', glow: 'rgba(74,222,128,0.3)' }, 
-        { name: "Ares", primary: '#f87171', glow: 'rgba(248,113,113,0.3)' }, 
-        { name: "Solara", primary: '#fbbf24', stripes: true, glow: 'rgba(251,191,36,0.4)' }, 
-        { name: "Nebula", primary: '#818cf8', stripes: true, glow: 'rgba(129,140,248,0.4)' }, 
-        { name: "Saturn", primary: '#38bdf8', rings: true, glow: 'rgba(56,189,248,0.5)' }, 
-        { name: "Supernova", primary: '#f472b6', core: true, glow: 'rgba(244,114,182,0.8)' } 
+        { name: "Moon", r: 22, color: '#cbd5e1', glow: 'rgba(203,213,225,0.3)' }, 
+        { name: "Verda", r: 34, color: '#4ade80', glow: 'rgba(74,222,128,0.3)' }, 
+        { name: "Ares", r: 48, color: '#f87171', glow: 'rgba(248,113,113,0.3)' }, 
+        { name: "Solara", r: 62, color: '#fbbf24', stripes: true, glow: 'rgba(251,191,36,0.4)' }, 
+        { name: "Nebula", r: 82, color: '#818cf8', stripes: true, glow: 'rgba(129,140,248,0.4)' }, 
+        { name: "Saturn", r: 108, color: '#38bdf8', rings: true, glow: 'rgba(56,189,248,0.5)' }, 
+        { name: "Supernova", r: 138, color: '#f472b6', core: true, glow: 'rgba(244,114,182,0.8)' } 
     ];
 
     const TUTORIAL_CONTENT = [
-        { title: "ORBITAL MECHANICS", desc: "Identical planets pull together automatically. Merge them to reach the Supernova." },
-        { title: "ATMOSPHERE LIMIT", desc: "If a planet center stays above the red line for 3 seconds, the mission fails!" },
-        { title: "GRAVITY ENGINE", desc: "Starts at 100%. Use 'G' to flip space. Catch Comets to instant-refill." },
-        { title: "BLACK HOLES", desc: "High-level merges might trigger a void that pulls all matter to the center!" }
+        { t: "ORBITAL MECHANICS", d: "Planets pull toward identical ones automatically. Merge to grow." },
+        { t: "THE DEATH LINE", d: "If a planet center stays above the red line for 3 seconds, mission fails." },
+        { t: "GRAVITY ENGINE", d: "Use 'G' to flip space. Refill by catching Comets." }
     ];
 
-    // Stats & Leaderboard Logic
     function updateStatsUI() {
-        const stats = JSON.parse(localStorage.getItem('gm_stats') || '{"merges":0,"high":0}');
-        const scores = JSON.parse(localStorage.getItem('gm_leaderboard') || '[]');
+        const stats = JSON.parse(localStorage.getItem('sn_stats') || '{"merges":0,"high":0}');
+        const lb = JSON.parse(localStorage.getItem('sn_lb') || '[]');
         const html = `<div class="stat-box">MERGES<br><b>${stats.merges}</b></div><div class="stat-box">PEAK<br><b>${PLANET_DATA[stats.high].name}</b></div>`;
-        document.getElementById('home-stats').innerHTML = html;
-        document.getElementById('pause-stats').innerHTML = html;
-        
-        const lbHtml = scores.map((s, i) => `<li><span>#${i+1}</span> <b>${s}</b></li>`).join('') || "No missions yet.";
-        document.getElementById('home-leaderboard').innerHTML = lbHtml;
-    }
-
-    function saveMission() {
-        let stats = JSON.parse(localStorage.getItem('gm_stats') || '{"merges":0,"high":0}');
-        stats.merges += totalMerges;
-        stats.high = Math.max(stats.high, highestPlanet);
-        localStorage.setItem('gm_stats', JSON.stringify(stats));
-
-        let scores = JSON.parse(localStorage.getItem('gm_leaderboard') || '[]');
-        scores.push(score);
-        scores.sort((a,b) => b-a);
-        localStorage.setItem('gm_leaderboard', JSON.stringify(scores.slice(0, 5)));
-    }
-
-    function togglePause() {
-        if (!gameStarted || isGameOver) return;
-        isPaused = !isPaused;
-        engine.enabled = !isPaused;
-        document.getElementById('pause-menu').style.display = isPaused ? 'flex' : 'none';
-        updateStatsUI();
+        document.getElementById('home-stats').innerHTML = document.getElementById('pause-stats').innerHTML = html;
+        document.getElementById('leaderboard').innerHTML = lb.map((s,i)=>`#${i+1} — ${s}`).join('<br>') || "New Pilot Registered";
     }
 
     function handleStart() {
         document.getElementById('home-screen').style.display = 'none';
-        if (document.getElementById('skip-tutorial').checked) startGame();
-        else {
+        if (document.getElementById('skip-tut').checked) startGame(); else {
             document.getElementById('tutorial-overlay').style.display = 'flex';
             nextTut();
         }
     }
 
     function nextTut() {
-        if (tutStep >= TUTORIAL_CONTENT.length) startGame();
-        else {
-            const c = TUTORIAL_CONTENT[tutStep];
-            document.getElementById('tut-title').innerText = c.title;
-            document.getElementById('tut-desc').innerText = c.desc;
+        if (tutStep >= TUTORIAL_CONTENT.length) startGame(); else {
+            document.getElementById('tut-title').innerText = TUTORIAL_CONTENT[tutStep].t;
+            document.getElementById('tut-desc').innerText = TUTORIAL_CONTENT[tutStep].d;
             tutStep++;
         }
     }
@@ -180,13 +133,12 @@
         document.getElementById('tutorial-overlay').style.display = 'none';
         gameStarted = true;
         Composite.add(engine.world, [
-            Bodies.rectangle(5, height/2, 10, height, { isStatic: true }),
-            Bodies.rectangle(width-5, height/2, 10, height, { isStatic: true }),
+            Bodies.rectangle(0, height/2, 10, height, { isStatic: true }),
+            Bodies.rectangle(width, height/2, 10, height, { isStatic: true }),
             Bodies.rectangle(width/2, height+30, width, 60, { isStatic: true }),
             Bodies.rectangle(width/2, -30, width, 60, { isStatic: true })
         ]);
-        nextLevel = Math.floor(Math.random() * 3);
-        Render.run(render); Runner.run(Runner.create(), engine);
+        Render.run(render); Runner.run(engine);
         spawnComet();
     }
 
@@ -201,7 +153,7 @@
             pos += 7; hit.style.left = pos + 'px';
             if (pos > width + 100 || isGameOver) {
                 hit.style.display = 'none'; clearInterval(move);
-                if(!isGameOver) setTimeout(spawnComet, 20000);
+                if(!isGameOver) setTimeout(spawnComet, 15000);
             }
         }, 16);
     }
@@ -209,19 +161,23 @@
     function catchComet() { gravityCharge = CHARGE_TIME; document.getElementById('comet-hitbox').style.display = 'none'; }
 
     function spawn(x, y, lvl) {
-        const r = [22, 34, 48, 62, 82, 108, 138][lvl];
-        const b = Bodies.circle(x, y, r, { restitution: 0.3, friction: 0.05, timestamp: Date.now(), plugin: { level: lvl, merged: false }, render: { visible: false } });
+        const b = Bodies.circle(x, y, PLANET_DATA[lvl].r, { restitution: 0.3, friction: 0.05, timestamp: Date.now(), plugin: { lvl, merged: false, warn: 0 } });
         Composite.add(engine.world, b);
     }
 
-    function triggerBlackHole() {
-        blackHoleActive = true; document.getElementById('event-banner').style.display = 'block';
-        setTimeout(() => { blackHoleActive = false; document.getElementById('event-banner').style.display = 'none'; }, 5000);
+    function flipGravity() {
+        if (gravityCharge >= CHARGE_TIME) {
+            isFlipped = !isFlipped;
+            engine.gravity.y *= -1;
+            gravityCharge = 0;
+            // FIX: Flush warning timers on flip
+            Composite.allBodies(engine.world).forEach(b => { if(b.plugin) b.plugin.warn = 0; });
+        }
     }
 
     Events.on(engine, 'beforeUpdate', () => {
         if (isPaused) return;
-        const bodies = Composite.allBodies(engine.world).filter(b => b.plugin.level !== undefined);
+        const bodies = Composite.allBodies(engine.world).filter(b => b.plugin?.lvl !== undefined);
         bodies.forEach((bA, i) => {
             if (blackHoleActive) {
                 const pull = Vector.sub({x: width/2, y: height/2}, bA.position);
@@ -229,9 +185,9 @@
             }
             for (let j = i + 1; j < bodies.length; j++) {
                 const bB = bodies[j];
-                if (bA.plugin.level === bB.plugin.level && !bA.plugin.merged && !bB.plugin.merged) {
+                if (bA.plugin.lvl === bB.plugin.lvl && !bA.plugin.merged && !bB.plugin.merged) {
                     const dist = Vector.magnitude(Vector.sub(bA.position, bB.position));
-                    if (dist < (bA.circleRadius + bB.circleRadius) * 1.8) {
+                    if (dist < (PLANET_DATA[bA.plugin.lvl].r + PLANET_DATA[bB.plugin.lvl].r) * 1.8) {
                         const force = Vector.mult(Vector.normalise(Vector.sub(bB.position, bA.position)), 0.006 * bA.mass);
                         Body.applyForce(bA, bA.position, force);
                         Body.applyForce(bB, bB.position, Vector.neg(force));
@@ -244,92 +200,100 @@
     Events.on(engine, 'collisionActive', (e) => {
         e.pairs.forEach(p => {
             const { bodyA: a, bodyB: b } = p;
-            if (a.plugin?.level !== undefined && a.plugin.level === b.plugin?.level && !a.plugin.merged && !b.plugin.merged) {
-                if (Date.now() - a.timestamp < 100) return;
+            if (a.plugin?.lvl !== undefined && a.plugin.lvl === b.plugin?.lvl && !a.plugin.merged && !b.plugin.merged) {
                 a.plugin.merged = b.plugin.merged = true;
-                const lvl = a.plugin.level + 1;
-                totalMerges++;
-                highestPlanet = Math.max(highestPlanet, lvl);
-                const mid = { x: (a.position.x + b.position.x)/2, y: (a.position.y + b.position.y)/2 };
+                const nl = a.plugin.lvl + 1;
+                totalMerges++; highestPlanet = Math.max(highestPlanet, nl);
+                const mid = Vector.div(Vector.add(a.position, b.position), 2);
                 Composite.remove(engine.world, [a, b]);
-                if (lvl < 7) {
-                    spawn(mid.x, mid.y, lvl);
-                    if (lvl > 3 && Math.random() < 0.08) triggerBlackHole();
-                }
-                score += (lvl * 35);
+                if (nl < 7) spawn(mid.x, mid.y, nl);
+                score += (nl * 40);
                 document.getElementById('score-label').innerText = score;
             }
         });
     });
 
-    function flipGravity() { if (gravityCharge >= CHARGE_TIME) { isFlipped = !isFlipped; engine.gravity.y *= -1; gravityCharge = 0; } }
-
     Events.on(render, 'afterRender', () => {
-        if (!gameStarted || isGameOver || isPaused) return;
+        if (!gameStarted || isPaused) return;
         const ctx = render.context;
         const limitY = isFlipped ? height - 160 : 160;
         let dangerFound = false;
 
+        // Death Line
         ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)'; ctx.setLineDash([10, 10]);
         ctx.beginPath(); ctx.moveTo(0, limitY); ctx.lineTo(width, limitY); ctx.stroke(); ctx.setLineDash([]);
 
-        ctx.save(); ctx.globalAlpha = 0.2;
-        drawPlanet(ctx, currentX, isFlipped ? height - 90 : 90, [22, 34, 48][nextLevel], nextLevel);
+        // Anti-Spam Ghost Preview
+        const timeSinceDrop = Date.now() - lastDropTime;
+        ctx.save(); ctx.globalAlpha = Math.min(0.2, (timeSinceDrop - 100) / 400);
+        drawPlanet(ctx, currentX, isFlipped ? height - 90 : 90, nextLevel);
         ctx.restore();
 
         Composite.allBodies(engine.world).forEach(b => {
-            if (b.isStatic || b.plugin.level === undefined) return;
-            drawPlanet(ctx, b.position.x, b.position.y, b.circleRadius, b.plugin.level, b.angle);
+            if (b.isStatic || b.plugin?.lvl === undefined) return;
+            drawPlanet(ctx, b.position.x, b.position.y, b.plugin.lvl, b.angle);
 
-            const isOver = isFlipped ? (b.position.y > limitY) : (b.position.y < limitY);
-            if (isOver && (Date.now() - b.timestamp > 2000)) {
+            const isCrossing = isFlipped ? (b.position.y > limitY) : (b.position.y < limitY);
+            if (isCrossing && (Date.now() - b.timestamp > 2000)) {
                 dangerFound = true;
-                if (!b.warn) b.warn = Date.now();
-                if (Date.now() - b.warn > 3000) {
-                    isGameOver = true;
-                    saveMission();
-                    document.getElementById('game-over-screen').style.display = 'flex';
-                    document.getElementById('final-score').innerText = score;
-                }
-            } else b.warn = null;
+                if (!b.plugin.warn) b.plugin.warn = Date.now();
+                if (Date.now() - b.plugin.warn > 3000) gameOver();
+            } else b.plugin.warn = 0;
         });
 
         document.getElementById('danger-alert').style.display = dangerFound ? 'block' : 'none';
         if (gravityCharge < CHARGE_TIME) gravityCharge += 16.6; 
-        document.getElementById('gravity-fill').style.transform = `scaleX(${Math.min(1, gravityCharge/CHARGE_TIME)})`;
-        const gBtn = document.getElementById('g-btn');
-        if (gravityCharge >= CHARGE_TIME) gBtn.classList.add('charged'); else gBtn.classList.remove('charged');
+        document.getElementById('g-progress').style.clipPath = `inset(${100 - (gravityCharge/CHARGE_TIME*100)}% 0 0 0)`;
     });
 
-    function drawPlanet(ctx, x, y, r, lvl, angle = 0) {
-        const data = PLANET_DATA[lvl];
+    function drawPlanet(ctx, x, y, lvl, angle = 0) {
+        const d = PLANET_DATA[lvl];
         ctx.save(); ctx.translate(x, y);
-        const glow = ctx.createRadialGradient(0, 0, r, 0, 0, r * 1.3);
-        glow.addColorStop(0, data.glow); glow.addColorStop(1, 'transparent');
-        ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0, 0, r * 1.3, 0, Math.PI*2); ctx.fill();
+        const g = ctx.createRadialGradient(0, 0, d.r, 0, 0, d.r * 1.3);
+        g.addColorStop(0, d.glow); g.addColorStop(1, 'transparent');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, d.r * 1.3, 0, Math.PI*2); ctx.fill();
         ctx.rotate(angle);
-        const grad = ctx.createRadialGradient(-r/3, -r/3, 0, 0, 0, r);
-        grad.addColorStop(0, '#ffffff88'); grad.addColorStop(0.3, data.primary); grad.addColorStop(1, '#000000');
-        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.fill();
-        if (data.stripes) {
-            ctx.clip(); ctx.globalAlpha = 0.3; ctx.fillStyle = 'white';
-            ctx.fillRect(-r, -r/4, r*2, r/5); ctx.fillRect(-r, r/3, r*2, r/10);
+        const grad = ctx.createRadialGradient(-d.r/3, -d.r/3, 0, 0, 0, d.r);
+        grad.addColorStop(0, '#ffffff88'); grad.addColorStop(0.3, d.color); grad.addColorStop(1, '#000000');
+        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, d.r, 0, Math.PI*2); ctx.fill();
+        if (d.stripes) {
+            ctx.clip(); ctx.globalAlpha = 0.2; ctx.fillStyle = 'white';
+            ctx.fillRect(-d.r, -d.r/3, d.r*2, d.r/5); ctx.fillRect(-d.r, d.r/4, d.r*2, d.r/8);
         }
         ctx.restore();
-        if (data.rings) {
+        if (d.rings) {
             ctx.save(); ctx.translate(x,y); ctx.rotate(angle+0.5);
-            ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = r/5;
-            ctx.beginPath(); ctx.ellipse(0, 0, r*1.8, r*0.5, 0, 0, Math.PI*2); ctx.stroke();
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = d.r/6;
+            ctx.beginPath(); ctx.ellipse(0, 0, d.r*1.8, d.r*0.5, 0, 0, Math.PI*2); ctx.stroke();
             ctx.restore();
         }
     }
 
+    function togglePause() { 
+        isPaused = !isPaused; engine.enabled = !isPaused;
+        document.getElementById('pause-menu').style.display = isPaused ? 'flex' : 'none';
+        updateStatsUI();
+    }
+
+    function gameOver() {
+        if (isGameOver) return; isGameOver = true;
+        let stats = JSON.parse(localStorage.getItem('sn_stats') || '{"merges":0,"high":0}');
+        stats.merges += totalMerges; stats.high = Math.max(stats.high, highestPlanet);
+        localStorage.setItem('sn_stats', JSON.stringify(stats));
+        let lb = JSON.parse(localStorage.getItem('sn_lb') || '[]');
+        lb.push(score); lb.sort((a,b)=>b-a);
+        localStorage.setItem('sn_lb', JSON.stringify(lb.slice(0,5)));
+        location.reload();
+    }
+
     updateStatsUI();
-    window.addEventListener('pointermove', (e) => { if (!isPaused) currentX = Math.max(40, Math.min(width-40, e.clientX)); });
-    window.addEventListener('pointerup', (e) => {
-        if (!gameStarted || isGameOver || isPaused || e.target.closest('.icon-btn, #gravity-ui, #comet-hitbox, .overlay')) return;
+    window.addEventListener('pointermove', e => currentX = e.clientX);
+    window.addEventListener('pointerup', e => {
+        if (!gameStarted || isPaused || Date.now() - lastDropTime < 500) return;
+        if (e.target.closest('.icon-btn, #gravity-ui, #comet-hitbox')) return;
         spawn(currentX, isFlipped ? height - 90 : 90, nextLevel);
         nextLevel = Math.floor(Math.random() * 3);
+        lastDropTime = Date.now();
     });
 </script>
 </body>
