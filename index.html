@@ -4,7 +4,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Supernova: Infinity v4.3</title>
+    <title>Supernova: Infinity v4.5</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         :root { --accent: #38bdf8; --gold: #fbbf24; --danger: #ef4444; --pink: #f472b6; --glass: rgba(255, 255, 255, 0.08); }
@@ -109,7 +109,7 @@
 
     let score = 0, nextLevel = 0, gameStarted = false, isPaused = false, isFlipped = false;
     let currentX = width/2, gravityCharge = 120000, lastDropTime = 0, blackHoleActive = false;
-    let particles = [], comboCount = 0, lastMergeTime = 0, tutStep = 0, comet = null;
+    let particles = [], floatingTexts = [], comboCount = 0, lastMergeTime = 0, tutStep = 0, comet = null;
     const CHARGE_TIME = 120000;
 
     const PLANET_DATA = [
@@ -145,6 +145,10 @@
         for(let i=0; i<15; i++) {
             particles.push({ x, y, vx: (Math.random()-0.5)*12, vy: (Math.random()-0.5)*12, life: 1.0, color });
         }
+    }
+
+    function spawnFloatingText(x, y, text, color) {
+        floatingTexts.push({ x, y, text, color, life: 1.0, vy: -2 });
     }
 
     function triggerShake() {
@@ -283,11 +287,16 @@
                 }
 
                 createExplosion(mid.x, mid.y, PLANET_DATA[a.plugin.lvl].color);
+                
+                // ADD FLOATING SCORE
+                const addedScore = (nl * 100 * comboCount);
+                spawnFloatingText(mid.x, mid.y, `+${addedScore}`, nl > 4 ? '#fbbf24' : '#fff');
+                
                 Composite.remove(engine.world, [a, b]);
                 if (nl < 10) spawn(mid.x, mid.y, nl);
                 if (nl > 3) triggerShake();
                 
-                score += (nl * 100 * comboCount);
+                score += addedScore;
                 document.getElementById('score-label').innerText = score;
 
                 if (nl > 5 && Math.random() < 0.12) {
@@ -305,18 +314,32 @@
         const limitY = isFlipped ? height - 160 : 160;
         let dangerFound = false;
 
-        ctx.setLineDash([8, 12]); ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        // VISIBLE DEATH LINE
+        ctx.setLineDash([10, 10]); ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, limitY); ctx.lineTo(width, limitY); ctx.stroke();
+
+        // Drop Guide
+        ctx.setLineDash([8, 12]); ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(currentX, 0); ctx.lineTo(currentX, height); ctx.stroke(); ctx.setLineDash([]);
 
+        // COMET (20% LARGER)
         if (comet) {
             comet.x += comet.vx; comet.y += comet.vy;
-            ctx.fillStyle = '#fff'; ctx.shadowBlur = 15; ctx.shadowColor = 'cyan';
-            ctx.beginPath(); ctx.arc(comet.x, comet.y, 5, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.shadowBlur = 20; ctx.shadowColor = 'cyan';
+            ctx.beginPath(); ctx.arc(comet.x, comet.y, 7, 0, Math.PI*2); ctx.fill();
             ctx.shadowBlur = 0;
             if (comet.x > width + 100) comet = null;
         } else if (Math.random() < 0.003) {
             comet = { x: -50, y: 200 + Math.random()*300, vx: 7, vy: (Math.random()-0.5)*2 };
         }
+
+        // FLOATING TEXT ANIMATION
+        floatingTexts = floatingTexts.filter(t => t.life > 0);
+        floatingTexts.forEach(t => {
+            t.y += t.vy; t.life -= 0.02;
+            ctx.globalAlpha = t.life; ctx.fillStyle = t.color; ctx.font = `bold ${20 + (1 - t.life)*10}px Segoe UI`;
+            ctx.textAlign = 'center'; ctx.fillText(t.text, t.x, t.y);
+        });
 
         particles = particles.filter(p => p.life > 0);
         particles.forEach(p => {
@@ -345,10 +368,19 @@
     function drawPlanet(ctx, x, y, lvl, angle) {
         const d = PLANET_DATA[lvl];
         ctx.save(); ctx.translate(x, y);
+        
+        const glowOpacity = Math.max(0.1, 0.6 - (lvl * 0.05));
         const glow = ctx.createRadialGradient(0, 0, d.r, 0, 0, d.r * 1.6);
-        glow.addColorStop(0, d.glow); glow.addColorStop(1, 'transparent');
+        glow.addColorStop(0, d.glow.replace('0.6', glowOpacity).replace('0.4', glowOpacity)); glow.addColorStop(1, 'transparent');
         ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0, 0, d.r * 1.6, 0, Math.PI*2); ctx.fill();
+        
         ctx.rotate(angle);
+        
+        if (lvl < 4) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(0,0,d.r,0,Math.PI*2); ctx.stroke();
+        }
+
         if (d.singularity) {
             ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(0,0,d.r,0,Math.PI*2); ctx.fill();
             ctx.strokeStyle = 'white'; ctx.lineWidth = 2; ctx.stroke();
@@ -377,7 +409,8 @@
     window.addEventListener('pointerup', e => {
         if (!gameStarted || isPaused || Date.now() - lastDropTime < 600) return;
         if (e.target.closest('.icon-btn, .btn, #gravity-ui')) return;
-        if (comet && Vector.magnitude(Vector.sub({x: comet.x, y: comet.y}, {x: e.clientX, y: e.clientY})) < 60) {
+        
+        if (comet && Vector.magnitude(Vector.sub({x: comet.x, y: comet.y}, {x: e.clientX, y: e.clientY})) < 80) {
             gravityCharge = CHARGE_TIME; comet = null; return;
         }
         spawn(currentX, isFlipped ? height - 100 : 100, nextLevel);
