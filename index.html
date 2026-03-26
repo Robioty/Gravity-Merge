@@ -2,30 +2,32 @@
 <html lang="en">
 <head>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Supernova: Celestial v2.9</title>
+    <title>Supernova: Infinity v3.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         :root { --accent: #38bdf8; --gold: #fbbf24; --danger: #ef4444; --pink: #f472b6; --glass: rgba(255, 255, 255, 0.05); }
-        body { margin: 0; overflow: hidden; background: #010409; font-family: 'Segoe UI', system-ui, sans-serif; touch-action: none; color: white; user-select: none; }
+        body { margin: 0; overflow: hidden; background: #010206; font-family: 'Segoe UI', system-ui, sans-serif; touch-action: none; color: white; user-select: none; }
         
+        #nebula { position: fixed; inset: 0; background: radial-gradient(circle at 50% 50%, #111827 0%, #010206 100%); z-index: -2; }
+        #stars-parallax { position: fixed; inset: -100px; background-image: radial-gradient(white 1px, transparent 1px); background-size: 100px 100px; opacity: 0.2; z-index: -1; pointer-events: none; }
+
         #game-canvas { transition: transform 0.1s ease-out; }
         #ui-layer { position: absolute; inset: 0; z-index: 1000; pointer-events: none; }
         #top-bar { position: absolute; top: 15px; left: 15px; right: 15px; display: flex; align-items: flex-start; }
         .icon-btn { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px; border-radius: 50%; cursor: pointer; pointer-events: auto; backdrop-filter: blur(10px); }
         #score-label { flex-grow: 1; text-align: center; font-size: 2.8em; font-weight: 900; text-shadow: 0 0 20px var(--accent); margin: 0; }
         
-        #gravity-ui { position: fixed; right: 25px; bottom: 35px; opacity: 0.3; transition: 0.3s; pointer-events: auto; }
+        #gravity-ui { position: fixed; right: 25px; bottom: 35px; opacity: 0.4; transition: 0.3s; pointer-events: auto; }
         #gravity-ui:hover { opacity: 1; }
         #g-ring { width: 65px; height: 65px; border-radius: 50%; border: 2px solid rgba(251, 191, 36, 0.2); display: flex; align-items: center; justify-content: center; font-weight: 900; color: var(--gold); background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); }
         #g-progress { position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--gold); clip-path: inset(100% 0 0 0); transition: clip-path 0.1s linear; }
 
+        #combo-popup { position: fixed; top: 120px; left: 50%; transform: translateX(-50%); font-size: 2em; color: var(--gold); font-weight: 900; opacity: 0; transition: 0.3s; text-shadow: 0 0 10px var(--gold); pointer-events: none; }
         #danger-alert { position: fixed; top: 25%; left: 50%; transform: translate(-50%, -50%); color: var(--danger); font-size: 3em; font-weight: 900; display: none; z-index: 1500; animation: flash 0.5s infinite alternate; }
         #event-banner { position: fixed; top: 140px; width: 100%; text-align: center; color: var(--pink); font-weight: 900; font-size: 1.8em; display: none; z-index: 500; text-shadow: 0 0 10px var(--pink); }
+        
         #comet-hitbox { position: absolute; width: 120px; height: 120px; z-index: 900; pointer-events: auto; display: none; transform: translate(-50%, -50%); }
         #comet-visual { position: absolute; width: 25px; height: 25px; background: white; border-radius: 50%; top: 47px; left: 47px; box-shadow: -30px 0 40px var(--accent), 0 0 15px white; }
 
@@ -39,6 +41,10 @@
     </style>
 </head>
 <body>
+    <div id="nebula"></div>
+    <div id="stars-parallax"></div>
+    <div id="combo-popup">COMBO x2</div>
+
     <div id="game-canvas">
         <div id="comet-hitbox" onclick="catchComet()"><div id="comet-visual"></div></div>
         <div id="danger-alert">⚠️ DANGER ⚠️</div>
@@ -48,7 +54,7 @@
     <div id="ui-layer">
         <div id="top-bar">
             <button class="icon-btn" onclick="togglePause()">⚙️</button>
-            <div id="score-container"><div id="score-label">0</div></div>
+            <div id="score-label">0</div>
         </div>
         <div id="gravity-ui" onclick="flipGravity()">
             <div id="g-ring">G<div id="g-progress"></div></div>
@@ -84,8 +90,7 @@
     </div>
 
 <script>
-    // CACHE BUSTING LOGIC: Unique ID for every push
-    const BUILD_ID = "v2.9-" + Date.now().toString().slice(-4);
+    const BUILD_ID = "v3.1-" + Date.now().toString().slice(-4);
     document.getElementById('cache-ver').innerText = BUILD_ID;
 
     const { Engine, Render, Runner, Bodies, Composite, Events, Body, Vector } = Matter;
@@ -96,9 +101,9 @@
     let score = 0, nextLevel = 0, isGameOver = false, isFlipped = false, gameStarted = false, isPaused = false;
     let currentX = width/2, gravityCharge = 120000, lastDropTime = 0, blackHoleActive = false;
     let totalMerges = 0, highestPlanet = 0, tutStep = 0;
+    let particles = [], comboCount = 0, lastMergeTime = 0;
     const CHARGE_TIME = 120000;
 
-    // Radius reduced by 10%
     const PLANET_DATA = [
         { name: "Star", r: 20, color: '#ffffff', glow: 'rgba(255,255,255,0.6)', star: true }, 
         { name: "Verda", r: 31, color: '#4ade80', glow: 'rgba(74,222,128,0.3)' }, 
@@ -123,15 +128,20 @@
         document.getElementById('leaderboard').innerHTML = lb.map((s,i)=>`[${i+1}] ${s.toString().padStart(6, '0')}`).join('<br>') || "AWAITING DATA";
     }
 
+    function createExplosion(x, y, color) {
+        for(let i=0; i<15; i++) {
+            particles.push({ x, y, vx: (Math.random()-0.5)*12, vy: (Math.random()-0.5)*12, life: 1.0, color });
+        }
+    }
+
     function triggerShake() {
         const canvas = document.getElementById('game-canvas');
-        canvas.style.transform = `translate(${(Math.random()-0.5)*10}px, ${(Math.random()-0.5)*10}px)`;
+        canvas.style.transform = `translate(${(Math.random()-0.5)*12}px, ${(Math.random()-0.5)*12}px)`;
         setTimeout(() => canvas.style.transform = 'translate(0,0)', 100);
-        if(navigator.vibrate) navigator.vibrate(20);
+        if(navigator.vibrate) navigator.vibrate(30);
     }
 
     function handleStart() {
-        // Force state refresh on start
         document.getElementById('home-screen').style.display = 'none';
         document.getElementById('tutorial-overlay').style.display = 'flex';
         nextTut();
@@ -167,7 +177,7 @@
         let pos = -100;
         const move = setInterval(() => {
             if (isPaused) return;
-            pos += 7; hit.style.left = pos + 'px';
+            pos += 8; hit.style.left = pos + 'px';
             if (pos > width + 100 || isGameOver) {
                 hit.style.display = 'none'; clearInterval(move);
                 if(!isGameOver) setTimeout(spawnComet, 15000);
@@ -175,7 +185,11 @@
         }, 16);
     }
 
-    function catchComet() { gravityCharge = CHARGE_TIME; document.getElementById('comet-hitbox').style.display = 'none'; }
+    function catchComet() { 
+        gravityCharge = CHARGE_TIME; 
+        document.getElementById('comet-hitbox').style.display = 'none'; 
+        createExplosion(width/2, height/2, 'gold');
+    }
 
     function spawn(x, y, lvl) {
         const b = Bodies.circle(x, y, PLANET_DATA[lvl].r, { restitution: 0.3, friction: 0.05, timestamp: Date.now(), plugin: { lvl, merged: false, warn: 0 } });
@@ -187,7 +201,6 @@
             isFlipped = !isFlipped;
             engine.gravity.y *= -1;
             gravityCharge = 0;
-            // PHANTOM DEATH FIX: Flush all warning states
             Composite.allBodies(engine.world).forEach(b => { if(b.plugin) b.plugin.warn = 0; });
         }
     }
@@ -195,12 +208,15 @@
     Events.on(engine, 'beforeUpdate', () => {
         if (isPaused) return;
         const bodies = Composite.allBodies(engine.world).filter(b => b.plugin?.lvl !== undefined);
+        const suns = bodies.filter(b => b.plugin.lvl === 6);
+        const level0s = bodies.filter(b => b.plugin.lvl === 0);
+
         bodies.forEach((bA, i) => {
             if (blackHoleActive) {
                 const pull = Vector.sub({x: width/2, y: height/2}, bA.position);
                 Body.applyForce(bA, bA.position, Vector.mult(Vector.normalise(pull), 0.0006 * bA.mass));
             }
-            // SNAPPY MAGNETIC LOGIC
+            // Magnetic Logic
             for (let j = i + 1; j < bodies.length; j++) {
                 const bB = bodies[j];
                 if (bA.plugin.lvl === bB.plugin.lvl && !bA.plugin.merged && !bB.plugin.merged) {
@@ -213,6 +229,23 @@
                 }
             }
         });
+
+        // Sun Consumption Mechanic
+        suns.forEach(sun => {
+            level0s.forEach(star => {
+                const dist = Vector.magnitude(Vector.sub(sun.position, star.position));
+                if (dist < 280) {
+                    const pull = Vector.mult(Vector.normalise(Vector.sub(sun.position, star.position)), 0.0008 * star.mass);
+                    Body.applyForce(star, star.position, pull);
+                    if (dist < 130) {
+                        createExplosion(star.position.x, star.position.y, 'white');
+                        Composite.remove(engine.world, star);
+                        score += 150;
+                        document.getElementById('score-label').innerText = score;
+                    }
+                }
+            });
+        });
     });
 
     Events.on(engine, 'collisionActive', (e) => {
@@ -221,14 +254,29 @@
             if (a.plugin?.lvl !== undefined && a.plugin.lvl === b.plugin?.lvl && !a.plugin.merged && !b.plugin.merged) {
                 a.plugin.merged = b.plugin.merged = true;
                 const nl = a.plugin.lvl + 1;
+                
+                // Combo Logic
+                const now = Date.now();
+                if (now - lastMergeTime < 1200) comboCount++; else comboCount = 1;
+                lastMergeTime = now;
+                if (comboCount > 1) {
+                    const el = document.getElementById('combo-popup');
+                    el.innerText = `COMBO x${comboCount}`;
+                    el.style.opacity = 1;
+                    setTimeout(() => el.style.opacity = 0, 800);
+                }
+
                 totalMerges++; highestPlanet = Math.max(highestPlanet, nl);
                 const mid = Vector.div(Vector.add(a.position, b.position), 2);
+                createExplosion(mid.x, mid.y, PLANET_DATA[a.plugin.lvl].color);
                 Composite.remove(engine.world, [a, b]);
+                
                 if (nl < 7) spawn(mid.x, mid.y, nl);
                 if (nl > 3) triggerShake();
-                score += (nl * 45);
+                
+                score += (nl * 50 * comboCount);
                 document.getElementById('score-label').innerText = score;
-                // BLACK HOLE CHANCE
+
                 if (nl > 3 && Math.random() < 0.08) {
                     blackHoleActive = true; document.getElementById('event-banner').style.display = 'block';
                     setTimeout(() => { blackHoleActive = false; document.getElementById('event-banner').style.display = 'none'; }, 5000);
@@ -243,15 +291,23 @@
         const limitY = isFlipped ? height - 160 : 160;
         let dangerFound = false;
 
+        // Background FX
+        document.getElementById('stars-parallax').style.transform = `translate(${currentX/15}px, ${isFlipped ? 20 : -20}px)`;
+        particles = particles.filter(p => p.life > 0);
+        particles.forEach(p => {
+            p.x += p.vx; p.y += p.vy; p.life -= 0.02;
+            ctx.fillStyle = p.color; ctx.globalAlpha = p.life;
+            ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+
         // Death Line
         ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)'; ctx.setLineDash([10, 10]);
         ctx.beginPath(); ctx.moveTo(0, limitY); ctx.lineTo(width, limitY); ctx.stroke(); ctx.setLineDash([]);
 
         // Anti-Spam Preview
-        const timeSinceDrop = Date.now() - lastDropTime;
-        const reloadProgress = Math.min(1, timeSinceDrop / 500);
-        ctx.save();
-        ctx.globalAlpha = 0.2 * reloadProgress;
+        const reloadProgress = Math.min(1, (Date.now() - lastDropTime) / 500);
+        ctx.save(); ctx.globalAlpha = 0.2 * reloadProgress;
         const ghostR = PLANET_DATA[nextLevel].r * (0.8 + (0.2 * reloadProgress));
         drawPlanet(ctx, currentX, isFlipped ? height - 90 : 90, nextLevel, 0, ghostR);
         ctx.restore();
@@ -259,7 +315,6 @@
         Composite.allBodies(engine.world).forEach(b => {
             if (b.isStatic || b.plugin?.lvl === undefined) return;
             drawPlanet(ctx, b.position.x, b.position.y, b.plugin.lvl, b.angle);
-            // MERCY LINE LOGIC
             const isCrossing = isFlipped ? (b.position.y > limitY) : (b.position.y < limitY);
             if (isCrossing && (Date.now() - b.timestamp > 2000)) {
                 dangerFound = true;
@@ -277,21 +332,21 @@
         const d = PLANET_DATA[lvl];
         const r = overrideR || d.r;
         ctx.save(); ctx.translate(x, y);
-        const g = ctx.createRadialGradient(0, 0, r, 0, 0, r * 1.5);
+        const g = ctx.createRadialGradient(0, 0, r, 0, 0, r * 1.6);
         g.addColorStop(0, d.glow); g.addColorStop(1, 'transparent');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r * 1.5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r * 1.6, 0, Math.PI*2); ctx.fill();
         ctx.rotate(angle);
         if (d.star) {
             ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.fill();
-            const sGrad = ctx.createRadialGradient(0,0,0,0,0,r);
-            sGrad.addColorStop(0, 'white'); sGrad.addColorStop(1, '#f0f9ff');
-            ctx.fillStyle = sGrad; ctx.fill();
+            const sG = ctx.createRadialGradient(0,0,0,0,0,r);
+            sG.addColorStop(0, '#fff'); sG.addColorStop(1, '#e0f2fe');
+            ctx.fillStyle = sG; ctx.fill();
         } else if (d.sun) {
-            const sGrad = ctx.createRadialGradient(-r/4, -r/4, 0, 0, 0, r);
-            sGrad.addColorStop(0, '#fff5cc'); sGrad.addColorStop(0.2, '#ffcc33'); sGrad.addColorStop(0.5, '#ff8800'); sGrad.addColorStop(1, '#cc3300');
-            ctx.fillStyle = sGrad; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.fill();
-            ctx.globalAlpha = 0.3; ctx.strokeStyle = '#ffaa00'; ctx.lineWidth = 4;
-            ctx.beginPath(); ctx.arc(0,0, r + Math.sin(Date.now()/200)*3, 0, Math.PI*2); ctx.stroke();
+            const sG = ctx.createRadialGradient(-r/4, -r/4, 0, 0, 0, r);
+            sG.addColorStop(0, '#fff5cc'); sG.addColorStop(0.3, '#fbbf24'); sG.addColorStop(1, '#ea580c');
+            ctx.fillStyle = sG; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.fill();
+            ctx.globalAlpha = 0.4; ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.arc(0,0, r + Math.sin(Date.now()/150)*4, 0, Math.PI*2); ctx.stroke();
         } else {
             const grad = ctx.createRadialGradient(-r/3, -r/3, 0, 0, 0, r);
             grad.addColorStop(0, '#ffffff88'); grad.addColorStop(0.3, d.color); grad.addColorStop(1, '#000000');
@@ -335,7 +390,6 @@
         spawn(currentX, isFlipped ? height - 90 : 90, nextLevel);
         nextLevel = Math.floor(Math.random() * 3);
         lastDropTime = Date.now();
-        triggerShake();
     });
 </script>
 </body>
