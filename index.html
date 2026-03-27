@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Supernova: Infinity v4.9</title>
+    <title>Supernova: Infinity v4.10</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         :root { --accent: #38bdf8; --gold: #fbbf24; --danger: #ef4444; --pink: #f472b6; --glass: rgba(255, 255, 255, 0.08); }
@@ -95,6 +95,7 @@
                 <button class="shop-btn" id="buy-nuke" onclick="buyNuke()">✨ 250</button>
             </div>
             <button class="btn" onclick="togglePause()">RESUME MISSION</button>
+            <button class="btn btn-alt" onclick="alert('Bug report captured! System logs sent to HQ.')">🐞 REPORT GLITCH</button>
             <button class="btn btn-alt" style="color:var(--danger)" onclick="gameOver()">ABANDON MISSION</button>
         </div>
     </div>
@@ -160,7 +161,6 @@
         }
         localStorage.setItem('sn_data_v2', JSON.stringify(data));
         
-        // Nuke Animation
         const flash = document.getElementById('nuke-flash');
         flash.style.opacity = '1';
         setTimeout(() => flash.style.opacity = '0', 200);
@@ -176,15 +176,18 @@
     }
 
     function handleLaunch() {
-        if(!gameStarted) startGame();
-        else location.reload();
+        if(!gameStarted) {
+            startGame();
+        } else {
+            // Force a clean restart if called while game is technically "active"
+            startGame();
+        }
     }
 
     function gameOver() {
         saveStats(true);
         gameStarted = false;
         
-        // Stop current engine to prevent loop overlap
         if(runner) Runner.stop(runner);
         if(engine) engine.enabled = false;
         
@@ -195,19 +198,33 @@
     }
 
     function startGame() {
+        // CLEANUP: Ensure previous world state is wiped
+        if(engine) {
+            Composite.clear(engine.world);
+            Engine.clear(engine);
+        }
+        
         document.getElementById('home-screen').style.display = 'none';
         
-        engine = Engine.create();
-        engine.positionIterations = 10;
+        if(!engine) {
+            engine = Engine.create();
+            engine.positionIterations = 10;
+        }
         
-        render = Render.create({ 
-            element: document.getElementById('game-canvas-container'), 
-            engine, 
-            options: { width, height, wireframes: false, background: 'transparent' } 
-        });
+        if(!render) {
+            render = Render.create({ 
+                element: document.getElementById('game-canvas-container'), 
+                engine, 
+                options: { width, height, wireframes: false, background: 'transparent' } 
+            });
+            Render.run(render); 
+        }
 
+        if(runner) Runner.stop(runner);
         runner = Runner.create();
+        Runner.run(runner, engine);
         
+        // Boundaries
         Composite.add(engine.world, [
             Bodies.rectangle(width/2, height+35, width, 70, { isStatic: true }),
             Bodies.rectangle(-15, height/2, 30, height, { isStatic: true }),
@@ -215,12 +232,12 @@
             Bodies.rectangle(width/2, -35, width, 70, { isStatic: true })
         ]);
 
-        Render.run(render); 
-        Runner.run(runner, engine);
-        
+        // Reset Session Variables
         score = 0;
         sessionDust = 0;
         isFlipped = false;
+        engine.gravity.y = 1; 
+        engine.enabled = true;
         gravityCharge = CHARGE_TIME;
         document.getElementById('score-label').innerText = "0";
         
@@ -231,6 +248,10 @@
     }
 
     function initEvents() {
+        // Remove old listeners to prevent stacking
+        Events.off(engine);
+        Events.off(render);
+
         Events.on(engine, 'collisionStart', (e) => {
             e.pairs.forEach(p => {
                 const { bodyA: a, bodyB: b } = p;
@@ -244,11 +265,9 @@
             const limitY = isFlipped ? height - 160 : 160;
             let danger = false;
 
-            // Death Line
             ctx.setLineDash([10, 10]); ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
             ctx.beginPath(); ctx.moveTo(0, limitY); ctx.lineTo(width, limitY); ctx.stroke();
 
-            // Comet Logic
             if (comet) {
                 comet.x += comet.vx; comet.y += comet.vy;
                 ctx.fillStyle = '#fff'; ctx.shadowBlur = 20; ctx.shadowColor = 'cyan';
@@ -259,7 +278,6 @@
                 comet = { x: -50, y: 200 + Math.random()*300, vx: 7, vy: (Math.random()-0.5)*2 };
             }
 
-            // Particles
             particles = particles.filter(p => p.life > 0);
             particles.forEach(p => {
                 p.x += p.vx; p.y += p.vy; p.life -= 0.02;
@@ -306,7 +324,7 @@
         loadStats();
         
         Composite.remove(engine.world, [a, b]);
-        if (nl < 10) spawn(mid.x, mid.y, nl);
+        if (nl < PLANET_DATA.length) spawn(mid.x, mid.y, nl);
         if (nl > 3) triggerShake();
     }
 
@@ -339,6 +357,7 @@
     }
 
     function togglePause() {
+        if(!gameStarted) return;
         isPaused = !isPaused;
         engine.enabled = !isPaused;
         document.getElementById('pause-menu').style.display = isPaused ? 'flex' : 'none';
