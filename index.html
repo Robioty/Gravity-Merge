@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Supernova: Infinity v4.10</title>
+    <title>Supernova: Infinity v4.11</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         :root { --accent: #38bdf8; --gold: #fbbf24; --danger: #ef4444; --pink: #f472b6; --glass: rgba(255, 255, 255, 0.08); }
@@ -89,13 +89,14 @@
                 <div class="stat-box">SESSION SCORE<br><b id="curr-score-val">0</b></div>
                 <div class="stat-box">STARDUST<br><b id="curr-dust-val">0</b></div>
             </div>
-            <div style="text-align:left; font-size:0.75em; color:var(--gold); margin-bottom:8px; font-weight:bold; text-transform:uppercase; letter-spacing:1px;">Black Market</div>
+            <div style="text-align:left; font-size:0.75em; color:var(--gold); margin-bottom:8px; font-weight:bold; text-transform:uppercase; letter-spacing:1px;">The Black Hole Market</div>
             <div class="shop-row">
-                <span style="font-size:0.85em"><b>NUKE</b><br><span style="opacity:0.6; font-size:0.9em;">Clear T1 Stars</span></span>
+                <span style="font-size:0.85em"><b>SUPERNOVA NUKE</b><br><span style="opacity:0.6; font-size:0.9em;">Wipe T1 Stars</span></span>
                 <button class="shop-btn" id="buy-nuke" onclick="buyNuke()">✨ 250</button>
             </div>
             <button class="btn" onclick="togglePause()">RESUME MISSION</button>
-            <button class="btn btn-alt" onclick="alert('Bug report captured! System logs sent to HQ.')">🐞 REPORT GLITCH</button>
+            <button class="btn btn-alt" onclick="restartMission()">🔄 RESTART MISSION</button>
+            <button class="btn btn-alt" onclick="alert('Space Bug reported! Don\'t worry, we\'ve sent it into a wormhole.')">🪐 REPORT SPACE BUG</button>
             <button class="btn btn-alt" style="color:var(--danger)" onclick="gameOver()">ABANDON MISSION</button>
         </div>
     </div>
@@ -133,7 +134,7 @@
         let rank = "Recruit";
         if(data.best > 10000) rank = "Elite Pilot";
         if(data.best > 50000) rank = "Cosmic Commander";
-        if(data.best > 150000) rank = "Supernova Legend";
+        if(data.best > 150000) rank = "Galaxy Guardian";
         document.getElementById('rank-val').innerText = rank;
         return data;
     }
@@ -176,21 +177,21 @@
     }
 
     function handleLaunch() {
-        if(!gameStarted) {
-            startGame();
-        } else {
-            // Force a clean restart if called while game is technically "active"
-            startGame();
-        }
+        startGame();
+    }
+
+    function restartMission() {
+        saveStats(false);
+        isPaused = false;
+        document.getElementById('pause-menu').style.display = 'none';
+        startGame();
     }
 
     function gameOver() {
         saveStats(true);
         gameStarted = false;
-        
         if(runner) Runner.stop(runner);
         if(engine) engine.enabled = false;
-        
         document.getElementById('menu-title').innerText = "MISSION END";
         document.getElementById('home-screen').style.display = 'flex';
         document.getElementById('pause-menu').style.display = 'none';
@@ -198,19 +199,15 @@
     }
 
     function startGame() {
-        // CLEANUP: Ensure previous world state is wiped
         if(engine) {
             Composite.clear(engine.world);
             Engine.clear(engine);
         }
-        
         document.getElementById('home-screen').style.display = 'none';
-        
         if(!engine) {
             engine = Engine.create();
             engine.positionIterations = 10;
         }
-        
         if(!render) {
             render = Render.create({ 
                 element: document.getElementById('game-canvas-container'), 
@@ -219,12 +216,10 @@
             });
             Render.run(render); 
         }
-
         if(runner) Runner.stop(runner);
         runner = Runner.create();
         Runner.run(runner, engine);
         
-        // Boundaries
         Composite.add(engine.world, [
             Bodies.rectangle(width/2, height+35, width, 70, { isStatic: true }),
             Bodies.rectangle(-15, height/2, 30, height, { isStatic: true }),
@@ -232,15 +227,10 @@
             Bodies.rectangle(width/2, -35, width, 70, { isStatic: true })
         ]);
 
-        // Reset Session Variables
-        score = 0;
-        sessionDust = 0;
-        isFlipped = false;
-        engine.gravity.y = 1; 
-        engine.enabled = true;
+        score = 0; sessionDust = 0; isFlipped = false;
+        engine.gravity.y = 1; engine.enabled = true;
         gravityCharge = CHARGE_TIME;
         document.getElementById('score-label').innerText = "0";
-        
         gameStarted = true;
         nextLevel = Math.floor(Math.random() * 3);
         updatePreview();
@@ -248,10 +238,7 @@
     }
 
     function initEvents() {
-        // Remove old listeners to prevent stacking
-        Events.off(engine);
-        Events.off(render);
-
+        Events.off(engine); Events.off(render);
         Events.on(engine, 'collisionStart', (e) => {
             e.pairs.forEach(p => {
                 const { bodyA: a, bodyB: b } = p;
@@ -265,6 +252,12 @@
             const limitY = isFlipped ? height - 160 : 160;
             let danger = false;
 
+            // Targeting Beam
+            ctx.setLineDash([5, 5]); ctx.strokeStyle = 'rgba(56, 189, 248, 0.2)';
+            ctx.beginPath(); ctx.moveTo(currentX, isFlipped ? height : 0);
+            ctx.lineTo(currentX, isFlipped ? height - 100 : 100); ctx.stroke();
+
+            // Danger Line
             ctx.setLineDash([10, 10]); ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
             ctx.beginPath(); ctx.moveTo(0, limitY); ctx.lineTo(width, limitY); ctx.stroke();
 
