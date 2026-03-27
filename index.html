@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Supernova: Infinity v4.20 - Expanded</title>
+    <title>Supernova: Infinity v4.22</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         :root { --accent: #38bdf8; --gold: #fbbf24; --danger: #ef4444; --pink: #f472b6; --glass: rgba(255, 255, 255, 0.08); }
@@ -103,7 +103,7 @@
 
             <div class="stats-grid">
                 <div class="stat-box">SESSION SCORE<br><b id="curr-score-val">0</b></div>
-                <div class="stat-box">STARDUST<br><b id="curr-dust-val">0</b></div>
+                <div class="stat-box">TOTAL STARDUST<br><b id="curr-dust-val">0</b></div>
             </div>
             
             <div style="text-align:left; font-size:0.7em; color:var(--gold); margin-bottom:8px; font-weight:bold; text-transform:uppercase;">Market</div>
@@ -272,7 +272,6 @@
             const limitY = isFlipped ? height - 160 : 160;
             let danger = false;
 
-            // Background color shifting logic
             const hue = (score / 500) % 360;
             document.getElementById('nebula').style.background = `radial-gradient(circle at 50% 50%, hsla(${hue}, 40%, 10%, 1) 0%, #010206 100%)`;
 
@@ -288,7 +287,6 @@
             ctx.setLineDash([10, 10]); ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
             ctx.beginPath(); ctx.moveTo(0, limitY); ctx.lineTo(width, limitY); ctx.stroke();
 
-            // Magnet Effect logic (Feature 2)
             if (comboCount >= 5) {
                 const center = { x: width/2, y: height/2 };
                 Composite.allBodies(engine.world).forEach(b => {
@@ -351,20 +349,16 @@
             setTimeout(() => pop.style.opacity = 0, 800);
         }
         
-        // Non-linear shake (Feature 4)
         triggerShake(nl * 2.5 * (comboCount * 0.5));
-
         updateDiscovery(nl);
         createExplosion(mid.x, mid.y, PLANET_DATA[a.plugin.lvl].color);
         
         score += (nl * 100 * comboCount);
         sessionDust += Math.floor(nl * 1.5 * (comboCount > 3 ? 2 : 1));
         
-        // UI updates
         document.getElementById('score-label').innerText = score.toLocaleString();
         document.getElementById('score-label').style.transform = 'scale(1.2)';
         
-        // Progress Ring (Feature 5)
         const progress = (nl / PLANET_DATA.length) * 360;
         document.getElementById('score-ring').style.strokeDasharray = `${progress}, 1000`;
         
@@ -386,7 +380,7 @@
             restitution: 0.3, 
             friction: 0.1, 
             timestamp: Date.now(), 
-            torque: (Math.random() - 0.5) * 0.1, // Added rotation (Feature 1)
+            torque: (Math.random() - 0.5) * 0.1,
             plugin: { lvl, merged: false, warn: 0 } 
         });
         Composite.add(engine.world, b);
@@ -422,30 +416,29 @@
             const slot = document.createElement('div');
             slot.className = 'planet-slot';
             const canvas = document.createElement('canvas');
-            canvas.width = 140; canvas.height = 140; 
+            canvas.width = 70; canvas.height = 70; 
             const ctx = canvas.getContext('2d');
             
-            const isDiscovered = index <= data.discovered;
-            if (isDiscovered) {
+            if (index <= data.discovered) {
                 ctx.save();
-                ctx.translate(70, 70);
-                const scale = 55 / p.r;
-                ctx.scale(scale, scale);
-                drawPlanet(ctx, 0, 0, index, 0.5); // Fixed offset issue
+                ctx.translate(35, 35);
+                const scaleFactor = 28 / p.r;
+                ctx.scale(scaleFactor, scaleFactor);
+                drawPlanet(ctx, 0, 0, index, 0.4);
                 ctx.restore();
-                slot.innerHTML = canvas.outerHTML + `<span>${p.name.toUpperCase()}</span>`;
+                slot.appendChild(canvas);
+                const span = document.createElement('span');
+                span.innerText = p.name.toUpperCase();
+                slot.appendChild(span);
             } else {
-                ctx.save();
-                ctx.translate(70, 70);
-                const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, 45);
-                grad.addColorStop(0, 'rgba(255,255,255,0.2)');
-                grad.addColorStop(1, 'transparent');
-                ctx.fillStyle = grad;
-                ctx.beginPath(); ctx.arc(0, 0, 45, 0, Math.PI*2); ctx.fill();
-                ctx.restore();
-                ctx.fillStyle = "rgba(255,255,255,0.5)"; ctx.font = "bold 40px Arial"; ctx.textAlign = "center";
-                ctx.fillText("?", 70, 85);
-                slot.innerHTML = canvas.outerHTML + `<span>UNKNOWN</span>`;
+                ctx.fillStyle = "rgba(255,255,255,0.05)";
+                ctx.beginPath(); ctx.arc(35, 35, 25, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = "rgba(255,255,255,0.3)"; ctx.font = "bold 24px Arial"; ctx.textAlign = "center";
+                ctx.fillText("?", 35, 43);
+                slot.appendChild(canvas);
+                const span = document.createElement('span');
+                span.innerText = "UNKNOWN";
+                slot.appendChild(span);
             }
             container.appendChild(slot);
         });
@@ -458,9 +451,9 @@
         document.getElementById('pause-menu').style.display = isPaused ? 'flex' : 'none';
         if(isPaused) {
             renderDiscoveryLog();
-            document.getElementById('curr-score-val').innerText = score.toLocaleString();
-            document.getElementById('curr-dust-val').innerText = sessionDust.toLocaleString();
             const data = loadStats();
+            document.getElementById('curr-score-val').innerText = score.toLocaleString();
+            document.getElementById('curr-dust-val').innerText = (data.dust + sessionDust).toLocaleString();
             const total = data.dust + sessionDust;
             document.getElementById('buy-nuke').disabled = total < 250;
             document.getElementById('buy-collapse').disabled = total < 500;
