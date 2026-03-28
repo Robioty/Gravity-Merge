@@ -2,50 +2,38 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Supernova: Infinity v5.1</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Supernova v5.3</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
 
 <style>
 :root { --accent:#38bdf8; --gold:#fbbf24; --danger:#ef4444; --glass:rgba(255,255,255,0.08);}
-body{margin:0;overflow:hidden;background:#010206;color:white;font-family:'Segoe UI';touch-action:none;}
+body{margin:0;overflow:hidden;background:#010206;color:white;font-family:sans-serif;}
 
-#nebula{position:fixed;inset:0;background:radial-gradient(circle,#111827,#010206);z-index:-2;}
-#score-label{position:fixed;top:20px;left:50%;transform:translateX(-50%);font-size:2.5em;font-weight:900;}
-
+#score{position:fixed;top:20px;left:50%;transform:translateX(-50%);font-size:2.5em;font-weight:900;}
 #ghost{position:absolute;border:2px dashed rgba(255,255,255,0.3);border-radius:50%;pointer-events:none;}
 
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2000;}
-.btn{background:var(--accent);padding:14px;border:none;border-radius:12px;color:white;font-weight:900;margin:5px;}
+.btn{padding:14px;margin:5px;background:var(--accent);border:none;border-radius:12px;color:white;font-weight:900;}
 
-.shop-row{display:flex;justify-content:space-between;width:250px;margin:5px;}
+.shop-row{display:flex;justify-content:space-between;width:260px;margin:6px;}
 </style>
 </head>
 
 <body>
 
-<div id="nebula"></div>
-<div id="score-label">0</div>
+<div id="score">0</div>
 <div id="ghost"></div>
 
 <div id="home" class="overlay">
 <h1>SUPERNOVA</h1>
-<button class="btn" onclick="startGame()">LAUNCH</button>
+<button class="btn" onclick="startGame()">PLAY</button>
 
 <h3>UPGRADES</h3>
-<div class="shop-row">
-<span>Score Boost</span>
-<button class="btn" onclick="buyUpgrade('score')">✨</button>
-</div>
-<div class="shop-row">
-<span>Gravity Recharge</span>
-<button class="btn" onclick="buyUpgrade('gravity')">✨</button>
-</div>
-<div class="shop-row">
-<span>Combo Window</span>
-<button class="btn" onclick="buyUpgrade('combo')">✨</button>
-</div>
+<div class="shop-row"><span>Score Boost</span><button class="btn" onclick="buyUpgrade('score')">✨</button></div>
+<div class="shop-row"><span>Gravity Recharge</span><button class="btn" onclick="buyUpgrade('gravity')">✨</button></div>
+<div class="shop-row"><span>Combo Window</span><button class="btn" onclick="buyUpgrade('combo')">✨</button></div>
 </div>
 
 <div id="revive" class="overlay" style="display:none">
@@ -58,28 +46,24 @@ body{margin:0;overflow:hidden;background:#010206;color:white;font-family:'Segoe 
 const {Engine,Render,Runner,Bodies,Composite,Events,Body} = Matter;
 
 let engine,render,runner;
-let activeBodies=[];
-let particles=[];
+let activeBodies=[],particles=[];
 
-let score=0,sessionDust=0;
-let dropCount=0;
-let reviveUsed=false;
+let score=0,sessionDust=0,dropCount=0;
+let reviveUsed=false,lastDropTime=0;
 
-let ghost=document.getElementById("ghost");
 let currentX=innerWidth/2;
+let ghost=document.getElementById("ghost");
 
 const MAX_PARTICLES=300;
 const MERGE_PULL=0.0005;
 
-let upgrades = JSON.parse(localStorage.getItem("sn_upgrades")||'{"score":0,"gravity":0,"combo":0}');
-let stats = JSON.parse(localStorage.getItem("sn_stats")||'{"dust":0}');
+let upgrades=JSON.parse(localStorage.getItem("sn_upgrades")||'{"score":0,"gravity":0,"combo":0}');
+let stats=JSON.parse(localStorage.getItem("sn_stats")||'{"dust":0}');
 
-const PLANETS=[
-{r:16},{r:24},{r:34},{r:45},{r:59},{r:78},{r:99},{r:120}
-];
+const PLANETS=[{r:16},{r:24},{r:34},{r:45},{r:59},{r:78},{r:99},{r:120}];
 
 let audioCtx;
-window.addEventListener("pointerdown",()=>{if(!audioCtx) audioCtx=new AudioContext();},{once:true});
+window.addEventListener("pointerdown",()=>{if(!audioCtx)audioCtx=new AudioContext();},{once:true});
 
 function play(freq){
  if(!audioCtx)return;
@@ -90,6 +74,11 @@ function play(freq){
 }
 
 function startGame(){
+ if(engine){
+  Composite.clear(engine.world);
+  Engine.clear(engine);
+ }
+
  document.getElementById("home").style.display="none";
  document.getElementById("revive").style.display="none";
 
@@ -103,6 +92,32 @@ function startGame(){
 
  score=0;sessionDust=0;dropCount=0;reviveUsed=false;
  activeBodies=[];
+
+ Events.on(engine,"collisionStart",e=>{
+  e.pairs.forEach(p=>{
+   if(p.bodyA!==p.bodyB &&
+      p.bodyA.plugin?.lvl===p.bodyB.plugin?.lvl &&
+      !p.bodyA.plugin.merged &&
+      !p.bodyB.plugin.merged){
+       merge(p.bodyA,p.bodyB);
+   }
+  });
+ });
+
+ Events.on(engine,"beforeUpdate",()=>{
+  activeBodies.forEach(a=>{
+   activeBodies.forEach(b=>{
+    if(a!==b && a.plugin.lvl===b.plugin.lvl){
+     let dx=b.position.x-a.position.x;
+     let dy=b.position.y-a.position.y;
+     let d=Math.sqrt(dx*dx+dy*dy);
+     if(d<120){
+      Body.applyForce(a,a.position,{x:dx*MERGE_PULL,y:dy*MERGE_PULL});
+     }
+    }
+   });
+  });
+ });
 }
 
 function spawn(x,lvl){
@@ -131,10 +146,11 @@ function merge(a,b){
  score+=lvl*100*multiplier;
  sessionDust+=lvl;
 
- document.getElementById("score-label").innerText=Math.floor(score);
+ document.getElementById("score").innerText=Math.floor(score);
 
  play(800);
  screenShake();
+ createExplosion(x,100);
 }
 
 function screenShake(){
@@ -142,34 +158,16 @@ function screenShake(){
  setTimeout(()=>document.body.style.transform="",80);
 }
 
-Events.on(engine,"collisionStart",e=>{
- e.pairs.forEach(p=>{
-  if(p.bodyA!==p.bodyB &&
-     p.bodyA.plugin?.lvl===p.bodyB.plugin?.lvl &&
-     !p.bodyA.plugin.merged &&
-     !p.bodyB.plugin.merged){
-      merge(p.bodyA,p.bodyB);
+function createExplosion(x,y){
+ for(let i=0;i<10;i++){
+  if(particles.length<MAX_PARTICLES){
+   particles.push({x,y,vx:(Math.random()-0.5)*10,vy:(Math.random()-0.5)*10,life:1});
   }
- });
-});
-
-Events.on(engine,"beforeUpdate",()=>{
- activeBodies.forEach(a=>{
-  activeBodies.forEach(b=>{
-   if(a!==b && a.plugin.lvl===b.plugin.lvl){
-    let dx=b.position.x-a.position.x;
-    let dy=b.position.y-a.position.y;
-    let d=Math.sqrt(dx*dx+dy*dy);
-    if(d<120){
-     Body.applyForce(a,a.position,{x:dx*MERGE_PULL,y:dy*MERGE_PULL});
-    }
-   }
-  });
- });
-});
+ }
+}
 
 function revive(){
- if(reviveUsed) return;
+ if(reviveUsed)return;
  if(sessionDust<100)return alert("Not enough dust");
 
  sessionDust-=100;
@@ -193,7 +191,6 @@ function gameOver(){
 function endGame(){
  stats.dust+=sessionDust;
  localStorage.setItem("sn_stats",JSON.stringify(stats));
-
  document.getElementById("revive").style.display="none";
  document.getElementById("home").style.display="flex";
 }
@@ -210,17 +207,15 @@ function buyUpgrade(type){
 window.addEventListener("pointermove",e=>{
  currentX=e.clientX;
 
- // ghost preview
- let lvl=0;
- let r=PLANETS[lvl].r;
-
+ let r=PLANETS[0].r;
  ghost.style.width=ghost.style.height=(r*2)+"px";
  ghost.style.left=(currentX-r)+"px";
  ghost.style.top="80px";
 });
 
 window.addEventListener("pointerup",e=>{
- if(Date.now()-lastDrop<500)return;
+ if(!engine)return;
+ if(Date.now()-lastDropTime<500)return;
 
  dropCount++;
 
@@ -230,9 +225,9 @@ window.addEventListener("pointerup",e=>{
  spawn(currentX,lvl);
  play(300);
 
- lastDrop=Date.now();
+ lastDropTime=Date.now();
 });
-
 </script>
+
 </body>
 </html>
