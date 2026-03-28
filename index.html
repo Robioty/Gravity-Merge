@@ -3,246 +3,1463 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Supernova: Infinity v4.7</title>
+    <title>Supernova: Infinity v5.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
-        :root { --accent: #38bdf8; --gold: #fbbf24; --danger: #ef4444; --glass: rgba(255, 255, 255, 0.08); }
-        body { margin: 0; overflow: hidden; background: #010206; font-family: 'Segoe UI', sans-serif; color: white; user-select: none; touch-action: none; }
-        #nebula { position: fixed; inset: 0; background: radial-gradient(circle at 50% 50%, #111827 0%, #010206 100%); z-index: -2; transition: 2s; }
-        #ui-layer { position: absolute; inset: 0; z-index: 1000; pointer-events: none; }
-        #top-bar { position: absolute; top: 15px; left: 15px; right: 15px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        .header-main { display: flex; width: 100%; align-items: center; justify-content: space-between; }
-        .icon-btn { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px; border-radius: 50%; cursor: pointer; pointer-events: auto; backdrop-filter: blur(10px); }
-        #score-label { font-size: 2.8em; font-weight: 900; text-shadow: 0 0 20px var(--accent); }
-        #stardust-hud { position: fixed; top: 85px; left: 20px; background: var(--glass); padding: 8px 15px; border-radius: 20px; color: var(--gold); font-weight: 900; border: 1px solid rgba(251, 191, 36, 0.3); backdrop-filter: blur(10px); }
-        #right-hud { position: fixed; right: 20px; top: 85px; display: flex; flex-direction: column; gap: 10px; }
-        #preview-box { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; backdrop-filter: blur(10px); }
-        .prev-label { font-size: 0.6em; font-weight: 900; color: var(--accent); opacity: 0.7; }
-        #evo-bar { display: flex; gap: 6px; background: var(--glass); padding: 6px 12px; border-radius: 20px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); }
-        .evo-dot { width: 10px; height: 10px; border-radius: 50%; opacity: 0.2; transition: 0.3s; }
+        :root {
+            --accent: #38bdf8;
+            --gold: #fbbf24;
+            --danger: #ef4444;
+            --glass: rgba(255, 255, 255, 0.08);
+            --success: #4ade80;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #010206;
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+            user-select: none;
+            touch-action: none;
+        }
+
+        #nebula {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, #111827 0%, #010206 100%);
+            z-index: -2;
+            transition: background 2s ease;
+        }
+
+        /* ════════════════════════════════════════
+           LAYOUT CONSTANTS (must match JS values)
+           TOP_BAR  = 80px
+           BOT_BAR  = 90px
+           ════════════════════════════════════════ */
+
+        /* ── Top bar ── */
+        #top-bar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 80px;
+            background: rgba(1,4,9,0.92);
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            backdrop-filter: blur(16px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 14px;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .icon-btn {
+            background: var(--glass);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white; padding: 11px;
+            border-radius: 50%; cursor: pointer;
+            pointer-events: auto;
+            backdrop-filter: blur(10px);
+            font-size: 1.05em;
+            transition: transform 0.1s;
+            flex-shrink: 0;
+        }
+        .icon-btn:active { transform: scale(0.92); }
+
+        /* score sits in the centre of the top bar */
+        #score-label {
+            font-size: 2.4em; font-weight: 900;
+            text-shadow: 0 0 20px var(--accent);
+            flex: 1; text-align: center;
+        }
+        #score-label.pop { animation: scorePop 0.2s ease; }
+        @keyframes scorePop {
+            0%   { transform: scale(1); }
+            50%  { transform: scale(1.18); }
+            100% { transform: scale(1); }
+        }
+
+        /* stardust right-side of top bar */
+        #stardust-hud {
+            background: var(--glass); padding: 6px 12px;
+            border-radius: 16px; color: var(--gold); font-weight: 900;
+            border: 1px solid rgba(251,191,36,0.3);
+            backdrop-filter: blur(10px);
+            font-size: 0.85em;
+            flex-shrink: 0;
+        }
+
+        /* evo bar sits below the top bar, centred */
+        #evo-bar {
+            position: fixed;
+            top: 80px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 5px;
+            background: rgba(1,4,9,0.75); padding: 5px 10px;
+            border-radius: 0 0 14px 14px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-top: none;
+            z-index: 999;
+        }
+        .evo-dot {
+            width: 9px; height: 9px; border-radius: 50%;
+            opacity: 0.2; transition: 0.3s;
+        }
         .evo-dot.active { opacity: 1; box-shadow: 0 0 8px currentColor; }
-        #gravity-ui { position: fixed; right: 22px; bottom: 35px; pointer-events: auto; }
-        #g-ring { width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(251, 191, 36, 0.2); display: flex; align-items: center; justify-content: center; font-weight: 900; color: var(--gold); background: rgba(0,0,0,0.6); }
-        #g-progress { position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--gold); clip-path: inset(100% 0 0 0); transition: clip-path 0.1s linear; }
-        #combo-popup { position: fixed; top: 25%; left: 50%; transform: translateX(-50%); font-size: 2.5em; color: var(--gold); font-weight: 900; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 1100; }
-        #danger-alert { position: fixed; left: 50%; transform: translateX(-50%); color: var(--danger); font-size: 2em; font-weight: 900; display: none; animation: flash 0.5s infinite alternate; }
-        .overlay { position: fixed; inset: 0; background: rgba(1, 4, 9, 0.98); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 25px; }
-        .menu-card { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); padding: 25px; border-radius: 28px; width: 90%; max-width: 380px; backdrop-filter: blur(25px); text-align: center; }
-        .btn { background: var(--accent); color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 900; cursor: pointer; width: 100%; margin-top: 10px; pointer-events: auto; }
-        .shop-row { display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 14px; margin-bottom: 8px; pointer-events: auto; }
-        .shop-btn { background: var(--gold); border: none; padding: 8px 12px; border-radius: 8px; font-weight: 900; cursor: pointer; }
-        .discovery-track { display: flex; overflow-x: auto; gap: 15px; padding: 10px 0; margin-bottom: 15px; pointer-events: auto; scrollbar-width: none; }
-        .planet-slot { flex: 0 0 65px; display: flex; flex-direction: column; align-items: center; font-size: 0.6em; }
-        .planet-slot canvas { background: rgba(255,255,255,0.03); border-radius: 10px; margin-bottom: 4px; width: 55px; height: 55px; }
+
+        /* ── Bottom bar ── */
+        #bottom-bar {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 90px;
+            background: rgba(1,4,9,0.92);
+            border-top: 1px solid rgba(255,255,255,0.07);
+            backdrop-filter: blur(16px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 18px;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        /* combo meter inside bottom bar */
+        #combo-meter {
+            display: flex; flex-direction: column;
+            align-items: flex-start; gap: 4px;
+            pointer-events: none;
+            min-width: 80px;
+        }
+        #combo-label {
+            font-size: 0.6em; font-weight: 900;
+            color: var(--gold); opacity: 0; transition: opacity 0.3s;
+        }
+        #combo-bar-wrap {
+            width: 72px; height: 5px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px; overflow: hidden;
+        }
+        #combo-bar {
+            height: 100%; background: var(--gold);
+            width: 0%; transition: width 0.2s, background 0.3s;
+            border-radius: 3px;
+        }
+
+        /* preview strip - centre of bottom bar */
+        #preview-box {
+            background: var(--glass);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; padding: 7px 16px;
+            display: flex; flex-direction: row; align-items: center;
+            gap: 12px; backdrop-filter: blur(10px);
+            pointer-events: none;
+        }
+        .prev-col {
+            display: flex; flex-direction: column;
+            align-items: center; gap: 3px;
+        }
+        .prev-label {
+            font-size: 0.5em; font-weight: 900;
+            color: var(--accent); opacity: 0.7;
+        }
+        .prev-divider {
+            width: 1px; height: 44px;
+            background: rgba(255,255,255,0.12);
+        }
+
+        /* gravity button - right of bottom bar */
+        #gravity-ui {
+            pointer-events: auto; cursor: pointer;
+            flex-shrink: 0;
+        }
+        #g-ring {
+            width: 56px; height: 56px; border-radius: 50%;
+            border: 2px solid rgba(251,191,36,0.2);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; color: var(--gold);
+            background: rgba(0,0,0,0.6);
+            position: relative;
+        }
+        #g-progress {
+            position: absolute; inset: -2px;
+            border-radius: 50%;
+            border: 2px solid var(--gold);
+            clip-path: inset(100% 0 0 0);
+            transition: clip-path 0.1s linear;
+        }
+        #g-tooltip {
+            position: fixed; right: 80px; bottom: 110px;
+            background: rgba(0,0,0,0.85); color: var(--gold);
+            font-size: 0.7em; font-weight: 700;
+            padding: 6px 12px; border-radius: 12px;
+            pointer-events: none; opacity: 0;
+            transition: opacity 0.4s; white-space: nowrap;
+            border: 1px solid rgba(251,191,36,0.3);
+            z-index: 1100;
+        }
+        #g-tooltip.show { opacity: 1; }
+
+        /* ── Danger alert ── */
+        #danger-alert {
+            position: fixed; left: 50%; transform: translateX(-50%);
+            color: var(--danger); font-size: 1.8em; font-weight: 900;
+            display: none; animation: flash 0.5s infinite alternate;
+            text-shadow: 0 0 15px var(--danger);
+            z-index: 1001; pointer-events: none;
+        }
         @keyframes flash { from { opacity: 0.2; } to { opacity: 1; } }
+
+        /* ── Combo popup ── */
+        #combo-popup {
+            position: fixed; top: 40%; left: 50%;
+            transform: translateX(-50%);
+            font-size: 2.2em; color: var(--gold);
+            font-weight: 900; opacity: 0;
+            pointer-events: none; transition: opacity 0.3s;
+            z-index: 1100; text-shadow: 0 0 20px var(--gold);
+        }
+
+        /* ── Toast ── */
+        #toast {
+            position: fixed; bottom: 100px; left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.9); color: white;
+            padding: 10px 22px; border-radius: 20px;
+            font-weight: 900; z-index: 3000;
+            opacity: 0; transition: opacity 0.4s;
+            pointer-events: none;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* ── Overlays ── */
+        .overlay {
+            position: fixed; inset: 0;
+            background: rgba(1,4,9,0.98);
+            z-index: 2000;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 25px;
+        }
+
+        .menu-card {
+            background: var(--glass);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 25px; border-radius: 28px;
+            width: 90%; max-width: 380px;
+            backdrop-filter: blur(25px);
+            text-align: center;
+        }
+
+        .btn {
+            background: var(--accent); color: white;
+            border: none; padding: 16px;
+            border-radius: 14px; font-weight: 900;
+            cursor: pointer; width: 100%; margin-top: 10px;
+            pointer-events: auto; font-size: 1em;
+            transition: opacity 0.15s, transform 0.1s;
+        }
+        .btn:active { opacity: 0.85; transform: scale(0.98); }
+
+        .shop-row {
+            display: flex; align-items: center;
+            justify-content: space-between;
+            background: rgba(255,255,255,0.05);
+            padding: 12px; border-radius: 14px;
+            margin-bottom: 8px; pointer-events: auto;
+        }
+
+        .shop-btn {
+            background: var(--gold); border: none;
+            padding: 8px 12px; border-radius: 8px;
+            font-weight: 900; cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .shop-btn:active { opacity: 0.8; }
+
+        .discovery-track {
+            display: flex; overflow-x: auto;
+            gap: 15px; padding: 10px 0;
+            margin-bottom: 15px; pointer-events: auto;
+            scrollbar-width: none;
+        }
+
+        .planet-slot {
+            flex: 0 0 65px;
+            display: flex; flex-direction: column;
+            align-items: center; font-size: 0.6em;
+        }
+
+        .planet-slot canvas {
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px; margin-bottom: 4px;
+            width: 55px; height: 55px;
+        }
+
+        /* ── How To Play ── */
+        #how-to-play {
+            position: fixed; inset: 0;
+            background: rgba(1,4,9,0.98);
+            z-index: 2500;
+            display: none;
+            flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 25px;
+        }
+
+        .htp-card {
+            background: var(--glass);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 25px; border-radius: 28px;
+            width: 90%; max-width: 380px;
+            backdrop-filter: blur(25px);
+        }
+
+        .htp-card h3 { color: var(--accent); margin-top: 0; }
+        .htp-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; font-size: 0.9em; }
+        .htp-icon { font-size: 1.5em; flex-shrink: 0; }
+
+        /* ── Settings ── */
+        #settings-menu {
+            position: fixed; inset: 0;
+            background: rgba(1,4,9,0.98);
+            z-index: 2500;
+            display: none;
+            flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 25px;
+        }
+
+        .toggle-row {
+            display: flex; align-items: center;
+            justify-content: space-between;
+            background: rgba(255,255,255,0.05);
+            padding: 14px; border-radius: 14px;
+            margin-bottom: 8px; pointer-events: auto;
+        }
+
+        .toggle {
+            width: 48px; height: 26px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 13px; position: relative;
+            cursor: pointer; transition: background 0.3s;
+            border: none;
+        }
+        .toggle.on { background: var(--accent); }
+        .toggle::after {
+            content: ''; position: absolute;
+            width: 20px; height: 20px; border-radius: 50%;
+            background: white; top: 3px; left: 3px;
+            transition: transform 0.3s;
+        }
+        .toggle.on::after { transform: translateX(22px); }
+
+        /* ── New best banner ── */
+        #new-best {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2em; font-weight: 900;
+            color: var(--gold);
+            text-shadow: 0 0 30px var(--gold);
+            pointer-events: none;
+            opacity: 0;
+            z-index: 1200;
+            text-align: center;
+        }
+
+        /* ── Comet tap button (sits over canvas at comet position) ── */
+        #comet-btn {
+            position: fixed;
+            width: 70px; height: 70px;
+            border-radius: 50%;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            pointer-events: none; /* enabled only when comet is active */
+            z-index: 1500;
+            display: none;
+        }
+
+        /* ── Daily bonus ── */
+        #daily-banner {
+            background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(56,189,248,0.1));
+            border: 1px solid rgba(251,191,36,0.4);
+            border-radius: 14px; padding: 12px;
+            margin-bottom: 12px; font-size: 0.85em;
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <div id="nebula"></div>
+
+<div id="nebula"></div>
+<div id="combo-popup">CHAIN x2</div>
+<div id="new-best">🏆 NEW BEST!</div>
+<div id="toast"></div>
+
+<!-- ── TOP BAR ── -->
+<div id="top-bar">
+    <button class="icon-btn" onclick="togglePause()">⚙️</button>
+    <div id="score-label">0</div>
     <div id="stardust-hud">✨ <span id="dust-val">0</span></div>
-    <div id="combo-popup">CHAIN x2</div>
-    <div id="ui-layer">
-        <div id="top-bar">
-            <div class="header-main">
-                <button class="icon-btn" onclick="togglePause()">⚙️</button>
-                <div id="score-label">0</div>
-                <div style="width:40px"></div> 
-            </div>
-            <div id="evo-bar"></div>
-        </div>
-        <div id="right-hud">
-            <div id="preview-box">
-                <span class="prev-label">HOLD</span><div id="next-vis"></div>
-                <hr style="width:100%; border:0; border-top:1px solid rgba(255,255,255,0.1); margin:5px 0;">
-                <span class="prev-label">NEXT</span><div id="after-next-vis"></div>
-            </div>
-        </div>
-        <div id="gravity-ui" onclick="flipGravity()"><div id="g-ring">G<div id="g-progress"></div></div></div>
-        <div id="danger-alert">⚠️ DANGER ⚠️</div>
-    </div>
+</div>
+<!-- evo dots hang below the top bar -->
+<div id="evo-bar"></div>
 
-    <div id="home-screen" class="overlay">
-        <h1 style="font-size: 3em; color: var(--accent); margin-bottom: 20px;">SUPERNOVA</h1>
-        <div class="menu-card">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
-                <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:12px;">BEST<br><b id="best-score-val" style="color:var(--accent)">0</b></div>
-                <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:12px;">RANK<br><b id="rank-val" style="color:var(--accent)">Recruit</b></div>
-            </div>
-            <button class="btn" onclick="startGame()">LAUNCH MISSION</button>
+<!-- ── BOTTOM BAR ── -->
+<div id="bottom-bar">
+    <!-- left: combo meter -->
+    <div id="combo-meter">
+        <div id="combo-label">COMBO x1</div>
+        <div id="combo-bar-wrap"><div id="combo-bar"></div></div>
+    </div>
+    <!-- centre: next planet preview -->
+    <div id="preview-box">
+        <div class="prev-col">
+            <span class="prev-label">NEXT</span>
+            <canvas id="next-vis" width="52" height="52"></canvas>
+        </div>
+        <div class="prev-divider"></div>
+        <div class="prev-col">
+            <span class="prev-label">AFTER</span>
+            <canvas id="after-next-vis" width="38" height="38"></canvas>
         </div>
     </div>
+    <!-- right: gravity flip -->
+    <div id="gravity-ui" onclick="flipGravity()">
+        <div id="g-ring">G<div id="g-progress"></div></div>
+    </div>
+</div>
 
-    <div id="pause-menu" class="overlay" style="display:none">
-        <div class="menu-card">
-            <h3 style="margin-top:0">LOG & ARMORY</h3>
-            <div class="discovery-track" id="discovery-log"></div>
-            <div class="shop-row"><span><b>NUKE</b> (Lvl 0-1)</span><button class="shop-btn" onclick="buyPowerUp(250, 1)">✨ 250</button></div>
-            <div class="shop-row"><span><b>COLLAPSE</b> (Lvl 2-3)</span><button class="shop-btn" onclick="buyPowerUp(600, 3)">✨ 600</button></div>
-            <button class="btn" onclick="togglePause()">RESUME</button>
-            <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="restartMission()">🔄 RESTART</button>
-            <button class="btn" style="background:var(--danger)" onclick="gameOver()">ABANDON</button>
+<div id="g-tooltip">Tap to flip gravity!</div>
+<div id="danger-alert">⚠️ DANGER ⚠️</div>
+
+<!-- Invisible tap target that follows the comet -->
+<button id="comet-btn" onclick="catchComet()"></button>
+
+<!-- HOME -->
+<div id="home-screen" class="overlay">
+    <h1 style="font-size:3em; color:var(--accent); margin-bottom:20px; text-shadow:0 0 30px var(--accent);">SUPERNOVA</h1>
+    <div class="menu-card">
+        <div id="daily-banner">🎁 Daily Bonus! <b>+100 ✨ Stardust</b> claimed!</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
+            <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:12px;">
+                BEST<br><b id="best-score-val" style="color:var(--accent)">0</b>
+            </div>
+            <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:12px;">
+                RANK<br><b id="rank-val" style="color:var(--accent)">Recruit</b>
+            </div>
         </div>
+        <button class="btn" onclick="startGame()">🚀 LAUNCH MISSION</button>
+        <button class="btn" style="background:rgba(255,255,255,0.1); margin-top:8px;" onclick="showHowToPlay()">❓ HOW TO PLAY</button>
+        <button class="btn" style="background:rgba(255,255,255,0.1); margin-top:8px;" onclick="showSettings()">⚙️ SETTINGS</button>
     </div>
+</div>
+
+<!-- PAUSE -->
+<div id="pause-menu" class="overlay" style="display:none">
+    <div class="menu-card">
+        <h3 style="margin-top:0">LOG & ARMORY</h3>
+        <div class="discovery-track" id="discovery-log"></div>
+        <div class="shop-row">
+            <span><b>NUKE</b> (Lvl 0-1)</span>
+            <button class="shop-btn" onclick="buyPowerUp(250, 1)">✨ 250</button>
+        </div>
+        <div class="shop-row">
+            <span><b>COLLAPSE</b> (Lvl 2-3)</span>
+            <button class="shop-btn" onclick="buyPowerUp(600, 3)">✨ 600</button>
+        </div>
+        <button class="btn" onclick="togglePause()">▶ RESUME</button>
+        <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="restartMission()">🔄 RESTART</button>
+        <button class="btn" style="background:var(--danger)" onclick="gameOver()">✖ ABANDON</button>
+    </div>
+</div>
+
+<!-- HOW TO PLAY -->
+<div id="how-to-play">
+    <div class="htp-card">
+        <h3>HOW TO PLAY</h3>
+        <div class="htp-row"><span class="htp-icon">👆</span><span>Drag to aim, release to drop a planet.</span></div>
+        <div class="htp-row"><span class="htp-icon">💥</span><span>Two planets of the same type collide and merge into a bigger one.</span></div>
+        <div class="htp-row"><span class="htp-icon">⛓️</span><span>Chain merges quickly to earn <b style="color:var(--gold)">COMBO</b> bonus points!</span></div>
+        <div class="htp-row"><span class="htp-icon">⚠️</span><span>Don't let planets pile past the <b style="color:var(--danger)">danger line</b> for too long — it's game over!</span></div>
+        <div class="htp-row"><span class="htp-icon">🌀</span><span>Tap <b style="color:var(--gold)">G</b> to flip gravity — recharges slowly over time.</span></div>
+        <div class="htp-row"><span class="htp-icon">☄️</span><span>A <b style="color:var(--accent)">comet</b> flies across the screen every so often — tap it to instantly recharge gravity!</span></div>
+        <div class="htp-row"><span class="htp-icon">✨</span><span>Earn Stardust from merges. Spend it on NUKE and COLLAPSE power-ups.</span></div>
+        <button class="btn" onclick="hideHowToPlay()">GOT IT!</button>
+    </div>
+</div>
+
+<!-- SETTINGS -->
+<div id="settings-menu">
+    <div class="menu-card">
+        <h3 style="margin-top:0">SETTINGS</h3>
+        <div class="toggle-row">
+            <span>Sound Effects</span>
+            <button class="toggle on" id="sfx-toggle" onclick="toggleSetting('sfx')"></button>
+        </div>
+        <div class="toggle-row">
+            <span>Screen Shake</span>
+            <button class="toggle on" id="shake-toggle" onclick="toggleSetting('shake')"></button>
+        </div>
+        <div class="toggle-row">
+            <span>Particles</span>
+            <button class="toggle on" id="particles-toggle" onclick="toggleSetting('particles')"></button>
+        </div>
+        <p style="font-size:0.75em; opacity:0.5; margin:12px 0 4px;">
+            Supernova: Infinity v5.1<br>Built with ❤️ and Matter.js
+        </p>
+        <button class="btn" onclick="hideSettings()">CLOSE</button>
+    </div>
+</div>
 
 <script>
-    const { Engine, Render, Runner, Bodies, Composite, Events, Vector } = Matter;
-    let engine, render, runner, audioCtx;
-    const width = window.innerWidth, height = window.innerHeight, CHARGE_TIME = 120000;
-    let score = 0, sessionDust = 0, gameStarted = false, isPaused = false, isFlipped = false;
-    let nextLevel = 0, afterNextLevel = 0, currentX = width/2, gravityCharge = 120000, lastDropTime = 0;
-    let particles = [], comboCount = 0, lastMergeTime = 0;
-    
-    const PLANET_DATA = [
-        { name: "Star", r: 16, color: '#ffffff', glow: 'rgba(255,255,255,0.4)', star: true },
-        { name: "Verda", r: 24, color: '#4ade80', glow: 'rgba(74,222,128,0.2)' },
-        { name: "Ares", r: 34, color: '#f87171', glow: 'rgba(248,113,113,0.2)' },
-        { name: "Solara", r: 45, color: '#fbbf24', stripes: true, glow: 'rgba(251,191,36,0.3)' },
-        { name: "Nebula", r: 59, color: '#818cf8', stripes: true, glow: 'rgba(129,140,248,0.3)' },
-        { name: "Saturn", r: 78, color: '#38bdf8', rings: true, glow: 'rgba(56,189,248,0.4)' },
-        { name: "Sun", r: 99, color: '#ffcc33', sun: true, glow: 'rgba(255,165,0,0.6)' },
-        { name: "Pulsar", r: 120, color: '#e879f9', stripes: true, glow: 'rgba(232,121,249,0.5)' },
-        { name: "Void", r: 145, color: '#000000', glow: 'rgba(255,255,255,0.3)', singularity: true },
-        { name: "Nexus", r: 180, color: '#f472b6', sun: true, glow: 'rgba(244,114,182,0.8)' }
-    ];
+"use strict";
 
-    function playSound(type) {
-        if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const { Engine, Render, Runner, Bodies, Composite, Events, Vector } = Matter;
+
+// ── Engine globals ──────────────────────────────────────────────────────────
+let engine, render, runner, audioCtx;
+const width = window.innerWidth, height = window.innerHeight;
+const TOP_BAR = 80;   // px — must match CSS #top-bar height
+const BOT_BAR = 90;   // px — must match CSS #bottom-bar height
+const PLAY_H  = height - TOP_BAR - BOT_BAR; // usable play area height
+const PLAY_TOP = TOP_BAR;
+const PLAY_BOT = height - BOT_BAR;
+const CHARGE_TIME = 360000;
+
+// ── Comet state ───────────────────────────────────────────────────────────────
+let comet = null;          // null when inactive
+let cometTimer = null;     // setTimeout for next spawn
+let cometTail  = [];       // tail trail points
+const COMET_INTERVAL_MIN = 25000;
+const COMET_INTERVAL_MAX = 45000;
+const COMET_SPEED        = 4.5;   // px per frame
+
+// ── Game state ───────────────────────────────────────────────────────────────
+let score = 0, sessionDust = 0;
+let gameStarted = false, isPaused = false, isFlipped = false;
+let nextLevel = 0, afterNextLevel = 0;
+let currentX = width / 2;
+let gravityCharge = CHARGE_TIME;
+let lastDropTime = 0;
+let particles = [];
+let comboCount = 0, lastMergeTime = 0;
+let comboDecayTimer = null;
+let previousBest = 0;
+let gravityTooltipShown = false;
+let gamesPlayed = 0; // tracks sessions; new-best only shown from 2nd game onward
+
+// ── Settings (cached, not read from localStorage every frame) ────────────────
+let settings = { sfx: true, shake: true, particles: true };
+
+// ── Safe storage (handles WebView/localStorage failures) ─────────────────────
+const _memStore = {};
+
+function safeGet(key) {
+    try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : null;
+    } catch(e) {
+        return _memStore[key] || null;
+    }
+}
+
+function safeSet(key, value) {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch(e) {
+        _memStore[key] = value;
+    }
+}
+
+// ── Stats helpers (NOT called in render loop) ─────────────────────────────────
+let _statsCache = null;
+
+function loadStats() {
+    _statsCache = safeGet('sn_v6') || { best: 0, dust: 0, discovered: 2 };
+    document.getElementById('best-score-val').innerText = _statsCache.best.toLocaleString();
+    document.getElementById('dust-val').innerText = (_statsCache.dust + sessionDust).toLocaleString();
+    const rank = _statsCache.best > 100000 ? "Admiral"
+               : _statsCache.best > 50000  ? "Commander"
+               : _statsCache.best > 20000  ? "Captain"
+               : _statsCache.best > 5000   ? "Pilot"
+               : "Recruit";
+    document.getElementById('rank-val').innerText = rank;
+    return _statsCache;
+}
+
+function saveStats(finalise = false) {
+    let d = loadStats();
+    d.best = Math.max(d.best, score);
+    if (finalise) { d.dust += sessionDust; sessionDust = 0; }
+    safeSet('sn_v6', d);
+    loadStats();
+}
+
+function refreshDustHUD() {
+    const base = _statsCache ? _statsCache.dust : 0;
+    document.getElementById('dust-val').innerText = (base + sessionDust).toLocaleString();
+}
+
+// ── Daily login bonus ─────────────────────────────────────────────────────────
+function checkDailyBonus() {
+    const today = new Date().toDateString();
+    const last  = safeGet('sn_daily');
+    if (last === today) return;
+    safeSet('sn_daily', today);
+    let d = safeGet('sn_v6') || { best: 0, dust: 0, discovered: 2 };
+    d.dust += 100;
+    safeSet('sn_v6', d);
+    document.getElementById('daily-banner').style.display = 'block';
+}
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+function loadSettings() {
+    const s = safeGet('sn_settings');
+    if (s) settings = { ...settings, ...s };
+    ['sfx','shake','particles'].forEach(k => {
+        const el = document.getElementById(k + '-toggle');
+        if (el) el.className = 'toggle' + (settings[k] ? ' on' : '');
+    });
+}
+
+function toggleSetting(key) {
+    settings[key] = !settings[key];
+    safeSet('sn_settings', settings);
+    const el = document.getElementById(key + '-toggle');
+    if (el) el.className = 'toggle' + (settings[key] ? ' on' : '');
+}
+
+function showSettings() { document.getElementById('settings-menu').style.display = 'flex'; }
+function hideSettings()  { document.getElementById('settings-menu').style.display = 'none'; }
+function showHowToPlay() { document.getElementById('how-to-play').style.display = 'flex'; }
+function hideHowToPlay() { document.getElementById('how-to-play').style.display = 'none'; }
+
+// ── Toast (replaces alert) ────────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg, color = 'var(--danger)') {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.style.color = color;
+    t.style.borderColor = color;
+    t.style.opacity = '1';
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2200);
+}
+
+// ── Planet data ───────────────────────────────────────────────────────────────
+const PLANET_DATA = [
+    { name: "Star",   r: 16,  color: '#ffffff', glow: 'rgba(255,255,255,0.4)', star: true },
+    { name: "Verda",  r: 24,  color: '#4ade80', glow: 'rgba(74,222,128,0.2)' },
+    { name: "Ares",   r: 34,  color: '#f87171', glow: 'rgba(248,113,113,0.2)' },
+    { name: "Solara", r: 45,  color: '#fbbf24', stripes: true,  glow: 'rgba(251,191,36,0.3)' },
+    { name: "Nebula", r: 59,  color: '#818cf8', stripes: true,  glow: 'rgba(129,140,248,0.3)' },
+    { name: "Saturn", r: 78,  color: '#38bdf8', rings: true,    glow: 'rgba(56,189,248,0.4)' },
+    { name: "Sun",    r: 99,  color: '#ffcc33', sun: true,      glow: 'rgba(255,165,0,0.6)' },
+    { name: "Pulsar", r: 120, color: '#e879f9', stripes: true,  glow: 'rgba(232,121,249,0.5)' },
+    { name: "Void",   r: 145, color: '#000000', glow: 'rgba(255,255,255,0.3)', singularity: true },
+    { name: "Nexus",  r: 180, color: '#f472b6', sun: true,      glow: 'rgba(244,114,182,0.8)' }
+];
+
+// ── Audio ─────────────────────────────────────────────────────────────────────
+function playSound(type) {
+    if (!settings.sfx) return;
+    try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination); const now = audioCtx.currentTime;
-        if(type==='drop'){ osc.frequency.setValueAtTime(440,now); osc.frequency.exponentialRampToValueAtTime(110,now+0.1); gain.gain.setValueAtTime(0.1,now); osc.start(); osc.stop(now+0.1); }
-        if(type==='merge'){ osc.type='square'; osc.frequency.setValueAtTime(220,now); osc.frequency.exponentialRampToValueAtTime(880,now+0.2); gain.gain.setValueAtTime(0.05,now); osc.start(); osc.stop(now+0.2); }
-    }
-
-    function loadStats() {
-        const d = JSON.parse(localStorage.getItem('sn_v6') || '{"best":0,"dust":0,"discovered":2}');
-        document.getElementById('best-score-val').innerText = d.best.toLocaleString();
-        document.getElementById('dust-val').innerText = (d.dust + sessionDust).toLocaleString();
-        document.getElementById('rank-val').innerText = d.best > 50000 ? "Commander" : "Pilot";
-        return d;
-    }
-
-    function saveStats(fin=false) { 
-        let d=loadStats(); d.best=Math.max(d.best,score); 
-        if(fin){ d.dust+=sessionDust; sessionDust=0; } 
-        localStorage.setItem('sn_v6',JSON.stringify(d)); loadStats(); 
-    }
-
-    function buyPowerUp(cost, maxLvl) {
-        let stats = loadStats();
-        let totalDust = stats.dust + sessionDust;
-        if (totalDust < cost) return alert("Not enough Stardust!");
-        if (sessionDust >= cost) sessionDust -= cost; 
-        else { stats.dust -= (cost - sessionDust); sessionDust = 0; }
-        localStorage.setItem('sn_v6', JSON.stringify(stats));
-        Composite.allBodies(engine.world).forEach(b => {
-            if (b.plugin?.lvl <= maxLvl) {
-                createExplosion(b.position.x, b.position.y, PLANET_DATA[b.plugin.lvl].color);
-                Composite.remove(engine.world, b);
-            }
-        });
-        togglePause(); loadStats();
-    }
-
-    function startGame() {
-        if(engine) { Composite.clear(engine.world); Engine.clear(engine); }
-        document.getElementById('home-screen').style.display='none';
-        if(!engine) engine = Engine.create({ positionIterations: 10 });
-        if(!render) { render = Render.create({ element: document.body, engine, options: { width, height, wireframes: false, background: 'transparent' } }); Render.run(render); }
-        if(runner) Runner.stop(runner); runner = Runner.create(); Runner.run(runner, engine);
-        Composite.add(engine.world, [ Bodies.rectangle(width/2, height+30, width, 60, { isStatic: true }), Bodies.rectangle(-15, height/2, 30, height, { isStatic: true }), Bodies.rectangle(width+15, height/2, 30, height, { isStatic: true }), Bodies.rectangle(width/2, -30, width, 60, { isStatic: true }) ]);
-        score=0; sessionDust=0; isFlipped=false; engine.gravity.y=1; gameStarted=true;
-        nextLevel=Math.floor(Math.random()*3); afterNextLevel=Math.floor(Math.random()*3);
-        document.getElementById('evo-bar').innerHTML = PLANET_DATA.map(p => `<div class="evo-dot" style="background:${p.color}"></div>`).join('');
-        updatePreview(); loadStats(); initEvents();
-    }
-
-    function initEvents() {
-        Events.off(engine); Events.on(engine, 'collisionStart', (e) => { e.pairs.forEach(p => { if(p.bodyA.plugin?.lvl === p.bodyB.plugin?.lvl) performMerge(p.bodyA, p.bodyB); }); });
-        Events.on(render, 'afterRender', () => {
-            if (!gameStarted || isPaused) return;
-            const ctx = render.context, limitY = isFlipped ? height - 160 : 160; let danger = false;
-            ctx.save(); ctx.setLineDash([5, 8]); ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)'; ctx.beginPath();
-            ctx.moveTo(currentX, isFlipped ? height : 0); ctx.lineTo(currentX, isFlipped ? height - 120 : 120); ctx.stroke();
-            ctx.setLineDash([10, 10]); ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)'; ctx.beginPath(); ctx.moveTo(0, limitY); ctx.lineTo(width, limitY); ctx.stroke(); ctx.restore();
-            particles = particles.filter(p => p.life > 0);
-            particles.forEach(p => { p.x+=p.vx; p.y+=p.vy; p.life-=0.02; ctx.save(); ctx.globalAlpha=p.life; ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,3,0,Math.PI*2); ctx.fill(); ctx.restore(); });
-            Composite.allBodies(engine.world).forEach(b => { 
-                if (b.isStatic || b.plugin?.lvl === undefined) return;
-                drawPlanet(ctx, b.position.x, b.position.y, b.plugin.lvl, b.angle);
-                const crossing = isFlipped ? (b.position.y > limitY) : (b.position.y < limitY);
-                if (crossing && (Date.now() - b.timestamp > 2000)) { danger = true; if (!b.plugin.warn) b.plugin.warn = Date.now(); if (Date.now() - b.plugin.warn > 3500) gameOver(); } else b.plugin.warn = 0;
-            });
-            document.getElementById('danger-alert').style.display = danger ? 'block' : 'none';
-            document.getElementById('danger-alert').style.top = isFlipped ? '80%' : '20%';
-            if (gravityCharge < CHARGE_TIME) gravityCharge += 200; document.getElementById('g-progress').style.clipPath = `inset(${100 - (gravityCharge/CHARGE_TIME*100)}% 0 0 0)`;
-        });
-    }
-
-    function performMerge(a, b) {
-        if (a.plugin.merged || b.plugin.merged) return; a.plugin.merged = b.plugin.merged = true;
-        const nl = a.plugin.lvl + 1, mid = { x: (a.position.x+b.position.x)/2, y: (a.position.y+b.position.y)/2 };
-        
-        comboCount = (Date.now() - lastMergeTime < 1500) ? comboCount + 1 : 1;
-        lastMergeTime = Date.now();
-        if(comboCount > 1) {
-            const pop = document.getElementById('combo-popup');
-            pop.innerText = "CHAIN x" + comboCount; pop.style.opacity = 1;
-            setTimeout(() => pop.style.opacity = 0, 800);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+        if (type === 'drop') {
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.exponentialRampToValueAtTime(110, now + 0.1);
+            gain.gain.setValueAtTime(0.1, now);
+            osc.start(); osc.stop(now + 0.1);
         }
+        if (type === 'merge') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(220, now);
+            osc.frequency.exponentialRampToValueAtTime(880, now + 0.2);
+            gain.gain.setValueAtTime(0.05, now);
+            osc.start(); osc.stop(now + 0.2);
+        }
+        if (type === 'flip') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(80, now);
+            osc.frequency.exponentialRampToValueAtTime(400, now + 0.4);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+            osc.start(); osc.stop(now + 0.4);
+        }
+        if (type === 'comet') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(300, now);
+            osc.frequency.exponentialRampToValueAtTime(1200, now + 0.15);
+            osc.frequency.exponentialRampToValueAtTime(600, now + 0.4);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+            osc.start(); osc.stop(now + 0.4);
+        }
+        if (type === 'bigmerge') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(120, now);
+            osc.frequency.exponentialRampToValueAtTime(600, now + 0.35);
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+            osc.start(); osc.stop(now + 0.35);
+        }
+    } catch(e) { /* Audio can fail silently */ }
+}
 
-        playSound('merge'); createExplosion(mid.x, mid.y, PLANET_DATA[Math.min(nl, 9)].color);
-        score += (nl * 100 * comboCount); sessionDust += nl; 
-        document.getElementById('score-label').innerText = score.toLocaleString();
-        document.getElementById('dust-val').innerText = (loadStats().dust + sessionDust).toLocaleString();
-        const dots = document.querySelectorAll('.evo-dot'); if(dots[nl]) dots[nl].classList.add('active');
-        Composite.remove(engine.world, [a, b]); if (nl < PLANET_DATA.length) spawn(mid.x, mid.y, nl);
-        let d=loadStats(); if(nl > d.discovered) { d.discovered=nl; localStorage.setItem('sn_v6', JSON.stringify(d)); }
+// ── Screen shake ──────────────────────────────────────────────────────────────
+function screenShake(intensity = 8, duration = 200) {
+    if (!settings.shake || !render) return;
+    const canvas = render.canvas;
+    const start = Date.now();
+    const tick = () => {
+        const elapsed = Date.now() - start;
+        if (elapsed > duration) { canvas.style.transform = ''; return; }
+        const t = 1 - elapsed / duration;
+        const dx = (Math.random() - 0.5) * intensity * t;
+        const dy = (Math.random() - 0.5) * intensity * t;
+        canvas.style.transform = `translate(${dx}px,${dy}px)`;
+        requestAnimationFrame(tick);
+    };
+    tick();
+}
+
+// ── Nebula ambient reactions ───────────────────────────────────────────────────
+function setNebulaMood(mood) {
+    const el = document.getElementById('nebula');
+    if (mood === 'danger') {
+        el.style.background = 'radial-gradient(circle at 50% 50%, #1a0505 0%, #010206 100%)';
+    } else if (mood === 'flipped') {
+        el.style.background = `radial-gradient(circle at 50% ${isFlipped ? '20%' : '80%'}, #0a0d1a 0%, #010206 100%)`;
+    } else {
+        el.style.background = 'radial-gradient(circle at 50% 50%, #111827 0%, #010206 100%)';
+    }
+}
+
+// ── Comet system ──────────────────────────────────────────────────────────────
+function scheduleComet() {
+    if (cometTimer) clearTimeout(cometTimer);
+    const delay = COMET_INTERVAL_MIN + Math.random() * (COMET_INTERVAL_MAX - COMET_INTERVAL_MIN);
+    cometTimer = setTimeout(() => {
+        if (gameStarted && !isPaused) spawnComet();
+        else scheduleComet(); // retry if paused
+    }, delay);
+}
+
+function spawnComet() {
+    const fromLeft = Math.random() > 0.5;
+    // Y is canvas-local (0→PLAY_H), keep comet in middle 60% of play area
+    const y = PLAY_H * 0.2 + Math.random() * PLAY_H * 0.45;
+    const angle = (Math.random() * 25 - 12) * (Math.PI / 180);
+    const speed = COMET_SPEED + Math.random() * 2;
+    comet = {
+        x:  fromLeft ? -40 : width + 40,
+        y,
+        vx: fromLeft ?  speed * Math.cos(angle) : -speed * Math.cos(angle),
+        vy: speed * Math.sin(angle),
+        radius: 14,
+        alive: true
+    };
+    cometTail = [];
+
+    const btn = document.getElementById('comet-btn');
+    btn.style.display = 'block';
+    btn.style.pointerEvents = 'auto';
+    updateCometBtn();
+
+    const crossTime = (width + 80) / speed * (1000 / 60) + 500;
+    setTimeout(() => { if (comet && comet.alive) dismissComet(); }, crossTime);
+}
+
+function updateCometBtn() {
+    if (!comet) return;
+    const btn = document.getElementById('comet-btn');
+    btn.style.left = (comet.x - 35) + 'px';
+    // comet.y is canvas-local; add TOP_BAR to get screen position
+    btn.style.top  = (comet.y + TOP_BAR - 35) + 'px';
+}
+
+function catchComet() {
+    if (!comet || !comet.alive) return;
+    const cx = comet.x, cy = comet.y;
+    for (let i = 0; i < 40; i++) {
+        const angle = (Math.PI * 2 / 40) * i;
+        const speed = 4 + Math.random() * 8;
+        particles.push({
+            x: cx, y: cy,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: 1.0,
+            color: i % 3 === 0 ? '#fbbf24' : i % 3 === 1 ? '#38bdf8' : '#ffffff'
+        });
+    }
+    playSound('comet');
+    screenShake(10, 250);
+    gravityCharge = CHARGE_TIME;
+    showToast('☄️ COMET CAUGHT! Gravity recharged!', 'var(--accent)');
+    _dismissComet();   // internal — no reschedule, we do it here
+    scheduleComet();
+}
+
+// Internal dismiss — clears state but does NOT reschedule (callers decide)
+function _dismissComet() {
+    comet = null;
+    cometTail = [];
+    const btn = document.getElementById('comet-btn');
+    btn.style.display = 'none';
+    btn.style.pointerEvents = 'none';
+}
+
+// Public dismiss — clears state AND reschedules next comet
+function dismissComet() {
+    _dismissComet();
+    scheduleComet();
+}
+
+function drawComet(ctx) {
+    if (!comet || !comet.alive) return;
+
+    // Advance position
+    comet.x += comet.vx;
+    comet.y += comet.vy;
+
+    // Record tail
+    cometTail.push({ x: comet.x, y: comet.y });
+    if (cometTail.length > 32) cometTail.shift();
+
+    // Off-screen check
+    if (comet.x < -60 || comet.x > width + 60 || comet.y < -60 || comet.y > height + 60) {
+        dismissComet(); return;
     }
 
-    function spawn(x, y, lvl) { const b = Bodies.circle(x, y, PLANET_DATA[lvl].r, { restitution: 0.3, friction: 0.1, timestamp: Date.now(), plugin: { lvl, merged: false, warn: 0 } }); Composite.add(engine.world, b); }
-    function createExplosion(x, y, color) { for(let i=0; i<15; i++) particles.push({ x, y, vx: (Math.random()-0.5)*12, vy: (Math.random()-0.5)*12, life: 1.0, color }); }
-    
-    function drawPlanet(ctx, x, y, lvl, angle) {
-        const d = PLANET_DATA[lvl]; ctx.save(); ctx.translate(x, y);
-        const glow = ctx.createRadialGradient(0,0, d.r, 0,0, d.r*1.5); glow.addColorStop(0, d.glow); glow.addColorStop(1, 'transparent'); ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0,0, d.r*1.5, 0, Math.PI*2); ctx.fill();
-        ctx.rotate(angle);
-        if (d.singularity) { ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(0,0, d.r, 0, Math.PI*2); ctx.fill(); ctx.strokeStyle='white'; ctx.lineWidth=2; ctx.stroke(); }
-        else {
-            const grad = ctx.createRadialGradient(-d.r/3, -d.r/3, 0, 0, 0, d.r);
-            grad.addColorStop(0, d.sun || d.star ? '#fff' : '#ffffffaa'); grad.addColorStop(0.3, d.color); grad.addColorStop(1, '#000');
-            ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0,0, d.r, 0, Math.PI*2); ctx.fill();
-        }
-        if (d.stripes) { ctx.globalAlpha=0.2; ctx.fillStyle='white'; ctx.fillRect(-d.r, -d.r/4, d.r*2, d.r/8); ctx.fillRect(-d.r, d.r/3, d.r*2, d.r/10); }
-        if (d.rings) { ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=3; ctx.beginPath(); ctx.ellipse(0,0, d.r*1.6, d.r*0.4, 0, 0, Math.PI*2); ctx.stroke(); }
+    updateCometBtn();
+
+    // Draw tail
+    for (let i = 0; i < cometTail.length - 1; i++) {
+        const t = i / cometTail.length;
+        ctx.save();
+        ctx.globalAlpha = t * 0.6;
+        ctx.strokeStyle = `hsl(${190 + t * 40}, 100%, ${60 + t * 30}%)`;
+        ctx.lineWidth   = t * 8;
+        ctx.lineCap     = 'round';
+        ctx.beginPath();
+        ctx.moveTo(cometTail[i].x, cometTail[i].y);
+        ctx.lineTo(cometTail[i + 1].x, cometTail[i + 1].y);
+        ctx.stroke();
         ctx.restore();
     }
 
-    function renderDiscoveryLog() {
-        const container = document.getElementById('discovery-log'); container.innerHTML = '';
-        const data = loadStats();
-        PLANET_DATA.forEach((p, i) => {
-            const slot = document.createElement('div'); slot.className = 'planet-slot';
-            const canvas = document.createElement('canvas'); canvas.width=55; canvas.height=55;
-            const ctx = canvas.getContext('2d');
-            if(i <= data.discovered) { ctx.save(); ctx.translate(27.5, 27.5); ctx.scale(20/p.r, 20/p.r); drawPlanet(ctx, 0,0, i, 0.5); ctx.restore(); }
-            else { ctx.fillStyle='rgba(255,255,255,0.1)'; ctx.beginPath(); ctx.arc(27.5,27.5,15,0,Math.PI*2); ctx.fill(); }
-            slot.appendChild(canvas); slot.innerHTML += `<span>${i <= data.discovered ? p.name : '???'}</span>`;
-            container.appendChild(slot);
-        });
+    // Draw head glow
+    const grd = ctx.createRadialGradient(comet.x, comet.y, 2, comet.x, comet.y, comet.radius * 2.5);
+    grd.addColorStop(0, 'rgba(255,255,255,1)');
+    grd.addColorStop(0.3, 'rgba(56,189,248,0.8)');
+    grd.addColorStop(1, 'rgba(56,189,248,0)');
+    ctx.save();
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(comet.x, comet.y, comet.radius * 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Solid core
+    ctx.save();
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = '#38bdf8';
+    ctx.shadowBlur = 15;
+    ctx.beginPath();
+    ctx.arc(comet.x, comet.y, comet.radius * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Pulsing "TAP!" label so player knows to interact
+    const pulse = 0.6 + 0.4 * Math.sin(Date.now() / 180);
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 11px Segoe UI';
+    ctx.textAlign = 'center';
+    ctx.fillText('TAP!', comet.x, comet.y - comet.radius * 2.8);
+    ctx.restore();
+}
+
+// ── Planet drawing ─────────────────────────────────────────────────────────────
+function drawPlanet(ctx, x, y, lvl, angle) {
+    const d = PLANET_DATA[lvl];
+    ctx.save();
+    ctx.translate(x, y);
+
+    // Glow halo
+    const glow = ctx.createRadialGradient(0, 0, d.r, 0, 0, d.r * 1.5);
+    glow.addColorStop(0, d.glow); glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(0, 0, d.r * 1.5, 0, Math.PI * 2); ctx.fill();
+
+    ctx.rotate(angle);
+
+    if (d.singularity) {
+        ctx.fillStyle = 'black';
+        ctx.beginPath(); ctx.arc(0, 0, d.r, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'white'; ctx.lineWidth = 2; ctx.stroke();
+        // Event horizon shimmer
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.arc(0, 0, d.r * 0.7, 0, Math.PI * 2); ctx.stroke();
+    } else {
+        const grad = ctx.createRadialGradient(-d.r / 3, -d.r / 3, 0, 0, 0, d.r);
+        grad.addColorStop(0, (d.sun || d.star) ? '#fff' : '#ffffffaa');
+        grad.addColorStop(0.3, d.color);
+        grad.addColorStop(1, '#000');
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(0, 0, d.r, 0, Math.PI * 2); ctx.fill();
     }
 
-    function updatePreview() { const v=document.getElementById('next-vis'), av=document.getElementById('after-next-vis'), p=PLANET_DATA[nextLevel], ap=PLANET_DATA[afterNextLevel]; v.style.background=p.color; v.style.width=v.style.height=(p.r*0.8)+'px'; av.style.background=ap.color; av.style.width=av.style.height=(ap.r*0.5)+'px'; }
-    function togglePause() { if(!gameStarted) return; isPaused = !isPaused; engine.enabled = !isPaused; document.getElementById('pause-menu').style.display = isPaused ? 'flex' : 'none'; if(isPaused) renderDiscoveryLog(); }
-    function flipGravity() { if (gravityCharge >= CHARGE_TIME) { isFlipped = !isFlipped; engine.gravity.y *= -1; gravityCharge = 0; playSound('flip'); }}
-    function restartMission() { saveStats(false); isPaused=false; document.getElementById('pause-menu').style.display='none'; startGame(); }
-    function gameOver() { saveStats(true); gameStarted=false; engine.enabled=false; document.getElementById('home-screen').style.display='flex'; loadStats(); }
+    if (d.star) {
+        // Twinkle effect using angle as phase
+        const rays = 5;
+        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < rays; i++) {
+            const a = (Math.PI * 2 / rays) * i;
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(a) * d.r * 0.5, Math.sin(a) * d.r * 0.5);
+            ctx.lineTo(Math.cos(a) * d.r * 1.2, Math.sin(a) * d.r * 1.2);
+            ctx.stroke();
+        }
+    }
 
-    window.addEventListener('pointermove', e => currentX = e.clientX);
-    window.addEventListener('pointerup', e => {
-        if (!gameStarted || isPaused || Date.now()-lastDropTime < 600 || e.target.closest('.icon-btn, .btn, .shop-btn, #gravity-ui')) return;
-        spawn(currentX, isFlipped ? height - 100 : 100, nextLevel); playSound('drop');
-        nextLevel = afterNextLevel; afterNextLevel = Math.floor(Math.random()*3); updatePreview(); lastDropTime = Date.now();
+    if (d.stripes) {
+        ctx.globalAlpha = 0.2; ctx.fillStyle = 'white';
+        ctx.fillRect(-d.r, -d.r / 4, d.r * 2, d.r / 8);
+        ctx.fillRect(-d.r, d.r / 3, d.r * 2, d.r / 10);
+        ctx.globalAlpha = 1;
+    }
+
+    if (d.rings) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, d.r * 1.6, d.r * 0.4, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    ctx.restore();
+}
+
+// ── Preview canvases ──────────────────────────────────────────────────────────
+function updatePreview() {
+    [['next-vis', nextLevel, 52], ['after-next-vis', afterNextLevel, 38]].forEach(([id, lvl, size]) => {
+        const canvas = document.getElementById(id);
+        if (!canvas) return;
+        canvas.width = canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, size, size);
+        const p = PLANET_DATA[lvl];
+        const scale = (size / 2 - 5) / p.r;
+        ctx.save();
+        ctx.translate(size / 2, size / 2);
+        ctx.scale(scale, scale);
+        drawPlanet(ctx, 0, 0, lvl, 0);
+        ctx.restore();
     });
+}
+
+// ── Discovery log ─────────────────────────────────────────────────────────────
+function renderDiscoveryLog() {
+    const container = document.getElementById('discovery-log');
+    container.innerHTML = '';
+    const data = loadStats();
+    PLANET_DATA.forEach((p, i) => {
+        const slot = document.createElement('div');
+        slot.className = 'planet-slot';
+        const canvas = document.createElement('canvas');
+        canvas.width = 55; canvas.height = 55;
+        const ctx = canvas.getContext('2d');
+        if (i <= data.discovered) {
+            ctx.save();
+            ctx.translate(27.5, 27.5);
+            const scale = 18 / p.r;
+            ctx.scale(scale, scale);
+            drawPlanet(ctx, 0, 0, i, 0.5);
+            ctx.restore();
+        } else {
+            ctx.fillStyle = 'rgba(255,255,255,0.1)';
+            ctx.beginPath(); ctx.arc(27.5, 27.5, 15, 0, Math.PI * 2); ctx.fill();
+        }
+        slot.appendChild(canvas);
+        const label = document.createElement('span');
+        label.innerText = i <= data.discovered ? p.name : '???';
+        slot.appendChild(label);
+        container.appendChild(slot);
+    });
+}
+
+// ── New best animation ────────────────────────────────────────────────────────
+// Only shown from the 2nd game onwards, and only when score beats the
+// best that was saved BEFORE this session started (previousBest).
+function flashNewBest() {
+    const el = document.getElementById('new-best');
+    el.style.opacity = '1';
+    el.style.transition = 'opacity 0.3s';
+    setTimeout(() => {
+        el.style.transition = 'opacity 1s';
+        el.style.opacity = '0';
+    }, 1800);
+}
+
+// ── Combo meter ───────────────────────────────────────────────────────────────
+function updateComboMeter() {
+    const label = document.getElementById('combo-label');
+    const bar   = document.getElementById('combo-bar');
+    if (comboCount <= 1) {
+        label.style.opacity = '0';
+        bar.style.width = '0%';
+        bar.style.background = 'var(--gold)';
+        return;
+    }
+    label.style.opacity = '1';
+    label.innerText = `COMBO x${comboCount}`;
+    const pct = Math.min((comboCount / 8) * 100, 100);
+    bar.style.width = pct + '%';
+    bar.style.background = comboCount >= 5 ? 'var(--danger)' : comboCount >= 3 ? '#f97316' : 'var(--gold)';
+}
+
+// ── Spawn & merge ─────────────────────────────────────────────────────────────
+function spawn(x, y, lvl) {
+    const b = Bodies.circle(x, y, PLANET_DATA[lvl].r, {
+        restitution: 0.3,
+        friction: 0.1,
+        plugin: { lvl, merged: false, warn: 0, timestamp: Date.now() }
+    });
+    Composite.add(engine.world, b);
+}
+
+function createExplosion(x, y, color) {
+    if (!settings.particles) return;
+    for (let i = 0; i < 15; i++) {
+        particles.push({
+            x, y,
+            vx: (Math.random() - 0.5) * 12,
+            vy: (Math.random() - 0.5) * 12,
+            life: 1.0,
+            color
+        });
+    }
+}
+
+function performMerge(a, b) {
+    if (a.plugin.merged || b.plugin.merged) return;
+    a.plugin.merged = b.plugin.merged = true;
+
+    const nl  = a.plugin.lvl + 1;
+    const mid = {
+        x: (a.position.x + b.position.x) / 2,
+        y: (a.position.y + b.position.y) / 2
+    };
+
+    // Combo chain
+    const now = Date.now();
+    comboCount = (now - lastMergeTime < 1500) ? comboCount + 1 : 1;
+    lastMergeTime = now;
+
+    if (comboCount > 1) {
+        const pop = document.getElementById('combo-popup');
+        pop.innerText = `CHAIN x${comboCount}`;
+        pop.style.opacity = '1';
+        setTimeout(() => { pop.style.opacity = '0'; }, 800);
+    }
+
+    // Reset combo decay
+    if (comboDecayTimer) clearTimeout(comboDecayTimer);
+    comboDecayTimer = setTimeout(() => {
+        comboCount = 0;
+        updateComboMeter();
+    }, 1600);
+
+    updateComboMeter();
+
+    // Sound — big merge for level 6+
+    nl >= 6 ? playSound('bigmerge') : playSound('merge');
+
+    // Screen shake for big merges
+    if (nl >= 6) screenShake(nl * 1.5, 180 + nl * 10);
+
+    // Explosion
+    createExplosion(mid.x, mid.y, PLANET_DATA[Math.min(nl, 9)].color);
+
+    // Score
+    score += nl * 100 * comboCount;
+    sessionDust += nl;
+
+    // Update HUD (no localStorage read here)
+    const scoreEl = document.getElementById('score-label');
+    scoreEl.innerText = score.toLocaleString();
+    scoreEl.classList.remove('pop');
+    void scoreEl.offsetWidth; // reflow
+    scoreEl.classList.add('pop');
+
+    refreshDustHUD();
+
+    // New best check — only show from 2nd game onwards, beating the
+    // score that was saved before this session started.
+    const stats = _statsCache || { best: 0 };
+    if (gamesPlayed > 1 && score > previousBest && score > stats.best) {
+        previousBest = score; // throttle: only flash once per milestone
+        flashNewBest();
+    }
+
+    // Evo bar
+    const dots = document.querySelectorAll('.evo-dot');
+    if (dots[nl]) dots[nl].classList.add('active');
+
+    // Remove and spawn next
+    Composite.remove(engine.world, [a, b]);
+    if (nl < PLANET_DATA.length) spawn(mid.x, mid.y, nl);
+
+    // Discovery
+    if (_statsCache && nl > _statsCache.discovered) {
+        _statsCache.discovered = nl;
+        safeSet('sn_v6', _statsCache);
+    }
+}
+
+// ── Power-ups ─────────────────────────────────────────────────────────────────
+function buyPowerUp(cost, maxLvl) {
+    const stats   = loadStats();
+    const totalDust = stats.dust + sessionDust;
+    if (totalDust < cost) { showToast("Not enough Stardust!", 'var(--danger)'); return; }
+    if (sessionDust >= cost) {
+        sessionDust -= cost;
+    } else {
+        stats.dust -= (cost - sessionDust);
+        sessionDust = 0;
+    }
+    _statsCache = stats;
+    safeSet('sn_v6', stats);
+
+    Composite.allBodies(engine.world).forEach(b => {
+        if (b.plugin?.lvl <= maxLvl) {
+            createExplosion(b.position.x, b.position.y, PLANET_DATA[b.plugin.lvl].color);
+            Composite.remove(engine.world, b);
+        }
+    });
+
+    refreshDustHUD();
+    showToast("Power-up activated! 💥", 'var(--success)');
+    togglePause();
+}
+
+// ── Gravity flip ──────────────────────────────────────────────────────────────
+function flipGravity() {
+    if (gravityCharge < CHARGE_TIME) {
+        showToast("Gravity recharging…", 'var(--gold)');
+        return;
+    }
+    isFlipped = !isFlipped;
+    engine.gravity.y *= -1;
+    gravityCharge = 0;
+    playSound('flip');
+    screenShake(12, 300);
+    setNebulaMood('flipped');
+}
+
+// ── Pause ─────────────────────────────────────────────────────────────────────
+function togglePause() {
+    if (!gameStarted) return;
+    isPaused = !isPaused;
+    engine.enabled = !isPaused;
+    document.getElementById('pause-menu').style.display = isPaused ? 'flex' : 'none';
+    if (isPaused) {
+        renderDiscoveryLog();
+        if (cometTimer) clearTimeout(cometTimer); // halt comet spawning while paused
+    } else {
+        scheduleComet(); // resume comet scheduling
+    }
+}
+
+function restartMission() {
+    saveStats(false);
+    isPaused = false;
+    document.getElementById('pause-menu').style.display = 'none';
+    startGame();
+}
+
+function gameOver() {
+    saveStats(true);
+    gameStarted = false;
+    if (engine) engine.enabled = false;
+    if (cometTimer) clearTimeout(cometTimer);
+    comet = null; cometTail = [];
+    const btn = document.getElementById('comet-btn');
+    btn.style.display = 'none'; btn.style.pointerEvents = 'none';
+    document.getElementById('home-screen').style.display = 'flex';
+    setNebulaMood('normal');
+    loadStats();
+}
+
+// ── Start game ────────────────────────────────────────────────────────────────
+function startGame() {
+    document.getElementById('home-screen').style.display = 'none';
+
+    // Full teardown to prevent engine leaks
+    if (runner)  { Runner.stop(runner); runner = null; }
+    if (render)  { Render.stop(render); if (render.canvas) render.canvas.remove(); render = null; }
+    if (engine)  { Composite.clear(engine.world, false); Engine.clear(engine); engine = null; }
+
+    engine = Engine.create({ positionIterations: 10 });
+
+    // Canvas covers only the play area between the two bars
+    render = Render.create({
+        element: document.body,
+        engine,
+        options: { width, height: PLAY_H, wireframes: false, background: 'transparent' }
+    });
+    // Position the canvas below the top bar
+    render.canvas.style.position = 'fixed';
+    render.canvas.style.top = TOP_BAR + 'px';
+    render.canvas.style.left = '0';
+    Render.run(render);
+
+    runner = Runner.create();
+    Runner.run(runner, engine);
+
+    // Walls fitted to the play area (canvas coords: 0→PLAY_H)
+    Composite.add(engine.world, [
+        Bodies.rectangle(width / 2, PLAY_H + 30, width, 60,  { isStatic: true }), // floor
+        Bodies.rectangle(-15, PLAY_H / 2, 30, PLAY_H + 60,   { isStatic: true }), // left
+        Bodies.rectangle(width + 15, PLAY_H / 2, 30, PLAY_H + 60, { isStatic: true }), // right
+        Bodies.rectangle(width / 2, -30, width, 60,           { isStatic: true })  // ceiling
+    ]);
+
+    // Reset state
+    score = 0; sessionDust = 0;
+    isFlipped = false; isPaused = false;
+    engine.gravity.y = 1;
+    gameStarted = true;
+    comboCount = 0; particles = [];
+    gravityCharge = CHARGE_TIME;
+    gamesPlayed++;
+
+    // Reset comet
+    comet = null; cometTail = [];
+    if (cometTimer) clearTimeout(cometTimer);
+    const btn = document.getElementById('comet-btn');
+    btn.style.display = 'none'; btn.style.pointerEvents = 'none';
+    scheduleComet();
+
+    // Snapshot the best score saved BEFORE this session starts.
+    // New-best flash only triggers when gamesPlayed > 1 (i.e. from 2nd game).
+    previousBest = (_statsCache || loadStats()).best;
+
+    nextLevel      = Math.floor(Math.random() * 3);
+    afterNextLevel = Math.floor(Math.random() * 3);
+
+    document.getElementById('score-label').innerText = '0';
+    document.getElementById('evo-bar').innerHTML =
+        PLANET_DATA.map(p => `<div class="evo-dot" style="background:${p.color}"></div>`).join('');
+
+    updatePreview();
+    loadStats();
+    initEvents();
+    setNebulaMood('normal');
+
+    // Show gravity tooltip once
+    if (!gravityTooltipShown) {
+        gravityTooltipShown = true;
+        const tip = document.getElementById('g-tooltip');
+        tip.classList.add('show');
+        setTimeout(() => tip.classList.remove('show'), 3500);
+    }
+}
+
+// ── Events ────────────────────────────────────────────────────────────────────
+function initEvents() {
+    Events.off(engine);
+
+    // ── Planetary gravity ────────────────────────────────────────────────────
+    // Larger planets attract smaller ones within their influence radius.
+    // Force scales with the attractor's radius (mass proxy) and falls off
+    // with distance squared, capped so tiny planets don't get slingshot.
+    const GRAVITY_CONSTANT = 0.00012; // tune this to feel right
+    const MIN_ATTRACT_LEVEL = 3;      // only planets Solara (lvl 3) and above pull others
+
+    Events.on(engine, 'beforeUpdate', () => {
+        if (!gameStarted || isPaused) return;
+
+        const bodies = Composite.allBodies(engine.world).filter(
+            b => !b.isStatic && b.plugin?.lvl !== undefined
+        );
+
+        for (let i = 0; i < bodies.length; i++) {
+            const attractor = bodies[i];
+            if (attractor.plugin.lvl < MIN_ATTRACT_LEVEL) continue;
+
+            const aData  = PLANET_DATA[attractor.plugin.lvl];
+            const influenceRadius = aData.r * 5; // pull range = 5× planet radius
+
+            for (let j = 0; j < bodies.length; j++) {
+                if (i === j) continue;
+                const target = bodies[j];
+
+                const dx = attractor.position.x - target.position.x;
+                const dy = attractor.position.y - target.position.y;
+                const distSq = dx * dx + dy * dy;
+                const dist   = Math.sqrt(distSq);
+
+                if (dist > influenceRadius || dist < aData.r) continue;
+
+                // Attractor must be larger than the target to pull it
+                if (attractor.plugin.lvl <= target.plugin.lvl) continue;
+
+                // Force: proportional to attractor size, inverse square law
+                const force = GRAVITY_CONSTANT * (aData.r * aData.r) / distSq;
+                const fx = (dx / dist) * force;
+                const fy = (dy / dist) * force;
+
+                Matter.Body.applyForce(target, target.position, { x: fx, y: fy });
+            }
+        }
+    });
+
+    Events.on(engine, 'collisionStart', e => {
+        e.pairs.forEach(p => {
+            if (p.bodyA.plugin?.lvl === p.bodyB.plugin?.lvl) {
+                performMerge(p.bodyA, p.bodyB);
+            }
+        });
+    });
+
+    let dangerActive = false;
+
+    Events.on(render, 'afterRender', () => {
+        if (!gameStarted || isPaused) return;
+
+        const ctx = render.context;
+        // Canvas coords: 0 = top of play area, PLAY_H = bottom of play area
+        // Danger line sits 80px from the drop end
+        const limitY = isFlipped ? PLAY_H - 80 : 80;
+        let danger = false;
+
+        // Drop guide line
+        ctx.save();
+        ctx.setLineDash([5, 8]);
+        ctx.strokeStyle = 'rgba(56,189,248,0.4)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(currentX, isFlipped ? PLAY_H : 0);
+        ctx.lineTo(currentX, isFlipped ? PLAY_H - 100 : 100);
+        ctx.stroke();
+
+        // Danger line
+        ctx.setLineDash([10, 10]);
+        ctx.strokeStyle = 'rgba(239,68,68,0.5)';
+        ctx.beginPath();
+        ctx.moveTo(0, limitY); ctx.lineTo(width, limitY);
+        ctx.stroke();
+        ctx.restore();
+
+        // Particles
+        if (settings.particles) {
+            particles = particles.filter(p => p.life > 0);
+            particles.forEach(p => {
+                p.x += p.vx; p.y += p.vy; p.life -= 0.02;
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+            });
+        }
+
+        // Comet
+        drawComet(ctx);
+
+        // Bodies
+        Composite.allBodies(engine.world).forEach(b => {
+            if (b.isStatic || b.plugin?.lvl === undefined) return;
+            const lvl = b.plugin.lvl;
+            drawPlanet(ctx, b.position.x, b.position.y, lvl, b.angle);
+
+            // Draw gravity influence ring for large planets (lvl 3+)
+            if (lvl >= 3) {
+                const pd = PLANET_DATA[lvl];
+                const influenceRadius = pd.r * 5;
+                const alpha = Math.min(0.04 + (lvl - 3) * 0.012, 0.18);
+                ctx.save();
+                ctx.strokeStyle = pd.color;
+                ctx.globalAlpha = alpha;
+                ctx.lineWidth = 1;
+                ctx.setLineDash([3, 6]);
+                ctx.beginPath();
+                ctx.arc(b.position.x, b.position.y, influenceRadius, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            const crossing = isFlipped
+                ? b.position.y > limitY
+                : b.position.y < limitY;
+
+            if (crossing && (Date.now() - b.plugin.timestamp > 2000)) {
+                danger = true;
+                if (!b.plugin.warn) b.plugin.warn = Date.now();
+                if (Date.now() - b.plugin.warn > 7000) gameOver();
+            } else {
+                b.plugin.warn = 0;
+            }
+        });
+
+        // Danger alert — position relative to screen (not canvas)
+        const dangerEl = document.getElementById('danger-alert');
+        dangerEl.style.display = danger ? 'block' : 'none';
+        dangerEl.style.top = isFlipped
+            ? (height - BOT_BAR - 60) + 'px'
+            : (TOP_BAR + 10) + 'px';
+
+        if (danger !== dangerActive) {
+            dangerActive = danger;
+            setNebulaMood(danger ? 'danger' : isFlipped ? 'flipped' : 'normal');
+        }
+
+        // Gravity recharge
+        if (gravityCharge < CHARGE_TIME) gravityCharge += 200;
+        const pct = gravityCharge / CHARGE_TIME * 100;
+        document.getElementById('g-progress').style.clipPath = `inset(${100 - pct}% 0 0 0)`;
+    });
+}
+
+// ── Input ─────────────────────────────────────────────────────────────────────
+window.addEventListener('pointermove', e => { currentX = e.clientX; });
+
+window.addEventListener('pointerup', e => {
+    if (!gameStarted || isPaused) return;
+    if (Date.now() - lastDropTime < 600) return;
+    if (e.target.closest('.icon-btn, .btn, .shop-btn, #gravity-ui, .toggle, #bottom-bar, #top-bar')) return;
+
+    // Spawn at top of canvas (y=80 canvas-local) or bottom when flipped
+    spawn(currentX, isFlipped ? PLAY_H - 100 : 80, nextLevel);
+    playSound('drop');
+
+    nextLevel      = afterNextLevel;
+    afterNextLevel = Math.floor(Math.random() * 3);
+    updatePreview();
+    lastDropTime = Date.now();
+});
+
+// ── Auto-pause when app is backgrounded ──────────────────────────────────────
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && gameStarted && !isPaused) togglePause();
+});
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+loadSettings();
+checkDailyBonus();
+loadStats();
 </script>
 </body>
 </html>
