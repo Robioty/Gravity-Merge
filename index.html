@@ -1,25 +1,51 @@
-<!-- SUPERNOVA v5.0 (Optimised + Upgrades + Revive) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Supernova v5.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Supernova: Infinity v5.1</title>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
 
 <style>
-/* (same styles as before, unchanged for brevity) */
-body { margin:0; overflow:hidden; background:#010206; color:white; font-family:sans-serif;}
-.btn { padding:12px; margin:5px; background:#38bdf8; border:none; border-radius:10px; color:white; font-weight:bold;}
-.overlay { position:fixed; inset:0; background:rgba(0,0,0,0.9); display:flex; flex-direction:column; align-items:center; justify-content:center;}
+:root { --accent:#38bdf8; --gold:#fbbf24; --danger:#ef4444; --glass:rgba(255,255,255,0.08);}
+body{margin:0;overflow:hidden;background:#010206;color:white;font-family:'Segoe UI';touch-action:none;}
+
+#nebula{position:fixed;inset:0;background:radial-gradient(circle,#111827,#010206);z-index:-2;}
+#score-label{position:fixed;top:20px;left:50%;transform:translateX(-50%);font-size:2.5em;font-weight:900;}
+
+#ghost{position:absolute;border:2px dashed rgba(255,255,255,0.3);border-radius:50%;pointer-events:none;}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2000;}
+.btn{background:var(--accent);padding:14px;border:none;border-radius:12px;color:white;font-weight:900;margin:5px;}
+
+.shop-row{display:flex;justify-content:space-between;width:250px;margin:5px;}
 </style>
 </head>
 
 <body>
 
+<div id="nebula"></div>
+<div id="score-label">0</div>
+<div id="ghost"></div>
+
 <div id="home" class="overlay">
 <h1>SUPERNOVA</h1>
-<button class="btn" onclick="startGame()">PLAY</button>
+<button class="btn" onclick="startGame()">LAUNCH</button>
+
+<h3>UPGRADES</h3>
+<div class="shop-row">
+<span>Score Boost</span>
+<button class="btn" onclick="buyUpgrade('score')">✨</button>
+</div>
+<div class="shop-row">
+<span>Gravity Recharge</span>
+<button class="btn" onclick="buyUpgrade('gravity')">✨</button>
+</div>
+<div class="shop-row">
+<span>Combo Window</span>
+<button class="btn" onclick="buyUpgrade('combo')">✨</button>
+</div>
 </div>
 
 <div id="revive" class="overlay" style="display:none">
@@ -28,137 +54,112 @@ body { margin:0; overflow:hidden; background:#010206; color:white; font-family:s
 <button class="btn" onclick="endGame()">END</button>
 </div>
 
-<canvas id="game"></canvas>
-
 <script>
-const { Engine, Render, Runner, Bodies, Composite, Events, Body } = Matter;
+const {Engine,Render,Runner,Bodies,Composite,Events,Body} = Matter;
 
-let engine, render, runner;
-let activeBodies = [];
-let particles = [];
+let engine,render,runner;
+let activeBodies=[];
+let particles=[];
 
-let score = 0;
-let dust = 0;
-let sessionDust = 0;
-let dropCount = 0;
+let score=0,sessionDust=0;
+let dropCount=0;
+let reviveUsed=false;
 
-let gravityCharge = 120000;
-let CHARGE_TIME = 120000;
+let ghost=document.getElementById("ghost");
+let currentX=innerWidth/2;
 
-let audioCtx;
-let lastDrop = 0;
-let reviveUsed = false;
+const MAX_PARTICLES=300;
+const MERGE_PULL=0.0005;
 
-const MAX_PARTICLES = 300;
-const MERGE_PULL = 0.0005;
+let upgrades = JSON.parse(localStorage.getItem("sn_upgrades")||'{"score":0,"gravity":0,"combo":0}');
+let stats = JSON.parse(localStorage.getItem("sn_stats")||'{"dust":0}');
 
-const PLANETS = [
- {r:16},{r:24},{r:34},{r:45},{r:59},{r:78},{r:99},{r:120}
+const PLANETS=[
+{r:16},{r:24},{r:34},{r:45},{r:59},{r:78},{r:99},{r:120}
 ];
 
-function initAudio(){
- if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-}
-window.addEventListener("pointerdown", initAudio, {once:true});
+let audioCtx;
+window.addEventListener("pointerdown",()=>{if(!audioCtx) audioCtx=new AudioContext();},{once:true});
 
 function play(freq){
- if(!audioCtx) return;
- const o = audioCtx.createOscillator();
- const g = audioCtx.createGain();
- o.connect(g); g.connect(audioCtx.destination);
- o.frequency.value = freq;
- g.gain.value = 0.05;
- o.start();
- o.stop(audioCtx.currentTime+0.1);
+ if(!audioCtx)return;
+ let o=audioCtx.createOscillator(),g=audioCtx.createGain();
+ o.connect(g);g.connect(audioCtx.destination);
+ o.frequency.value=freq;g.gain.value=0.05;
+ o.start();o.stop(audioCtx.currentTime+0.1);
 }
 
 function startGame(){
  document.getElementById("home").style.display="none";
  document.getElementById("revive").style.display="none";
 
- engine = Engine.create();
- render = Render.create({
-  canvas: document.getElementById("game"),
-  engine,
-  options:{width:innerWidth,height:innerHeight,wireframes:false,background:"#000"}
- });
-
+ engine=Engine.create();
+ render=Render.create({element:document.body,engine,options:{width:innerWidth,height:innerHeight,wireframes:false,background:"transparent"}});
  Render.run(render);
- runner = Runner.create();
- Runner.run(runner, engine);
+ runner=Runner.create();
+ Runner.run(runner,engine);
 
- Composite.add(engine.world, [
-  Bodies.rectangle(innerWidth/2, innerHeight+50, innerWidth,100,{isStatic:true})
- ]);
+ Composite.add(engine.world,[Bodies.rectangle(innerWidth/2,innerHeight+40,innerWidth,80,{isStatic:true})]);
 
- score=0;
- sessionDust=0;
- dropCount=0;
- reviveUsed=false;
+ score=0;sessionDust=0;dropCount=0;reviveUsed=false;
  activeBodies=[];
 }
 
 function spawn(x,lvl){
- const b = Bodies.circle(x,100,PLANETS[lvl].r,{
-  restitution:0.3,
-  plugin:{lvl,merged:false}
- });
+ const b=Bodies.circle(x,100,PLANETS[lvl].r,{restitution:0.3,plugin:{lvl,merged:false}});
  activeBodies.push(b);
  Composite.add(engine.world,b);
 }
 
 function removeBody(b){
- activeBodies = activeBodies.filter(x=>x!==b);
+ activeBodies=activeBodies.filter(x=>x!==b);
  Composite.remove(engine.world,b);
 }
 
 function merge(a,b){
- if(a.plugin.merged||b.plugin.merged) return;
- a.plugin.merged = b.plugin.merged = true;
+ if(a.plugin.merged||b.plugin.merged)return;
+ a.plugin.merged=b.plugin.merged=true;
 
- const lvl = a.plugin.lvl+1;
- const x = (a.position.x+b.position.x)/2;
+ let lvl=a.plugin.lvl+1;
+ let x=(a.position.x+b.position.x)/2;
 
- removeBody(a);
- removeBody(b);
+ removeBody(a);removeBody(b);
 
- if(lvl < PLANETS.length){
-  spawn(x,lvl);
- }
+ if(lvl<PLANETS.length)spawn(x,lvl);
 
- score += lvl*100;
- sessionDust += lvl;
+ let multiplier=1+(upgrades.score*0.1);
+ score+=lvl*100*multiplier;
+ sessionDust+=lvl;
+
+ document.getElementById("score-label").innerText=Math.floor(score);
 
  play(800);
  screenShake();
 }
 
 function screenShake(){
- document.body.style.transform="translate(3px,-3px)";
- setTimeout(()=>document.body.style.transform="",100);
+ document.body.style.transform="translate(4px,-4px)";
+ setTimeout(()=>document.body.style.transform="",80);
 }
 
-Events.on(engine,"collisionStart", e=>{
+Events.on(engine,"collisionStart",e=>{
  e.pairs.forEach(p=>{
-  if(
-   p.bodyA !== p.bodyB &&
-   p.bodyA.plugin?.lvl === p.bodyB.plugin?.lvl &&
-   !p.bodyA.plugin.merged &&
-   !p.bodyB.plugin.merged
-  ){
-   merge(p.bodyA,p.bodyB);
+  if(p.bodyA!==p.bodyB &&
+     p.bodyA.plugin?.lvl===p.bodyB.plugin?.lvl &&
+     !p.bodyA.plugin.merged &&
+     !p.bodyB.plugin.merged){
+      merge(p.bodyA,p.bodyB);
   }
  });
 });
 
 Events.on(engine,"beforeUpdate",()=>{
- // merge assist
  activeBodies.forEach(a=>{
   activeBodies.forEach(b=>{
    if(a!==b && a.plugin.lvl===b.plugin.lvl){
-    const dx=b.position.x-a.position.x;
-    const dy=b.position.y-a.position.y;
-    const d=Math.sqrt(dx*dx+dy*dy);
+    let dx=b.position.x-a.position.x;
+    let dy=b.position.y-a.position.y;
+    let d=Math.sqrt(dx*dx+dy*dy);
     if(d<120){
      Body.applyForce(a,a.position,{x:dx*MERGE_PULL,y:dy*MERGE_PULL});
     }
@@ -169,17 +170,14 @@ Events.on(engine,"beforeUpdate",()=>{
 
 function revive(){
  if(reviveUsed) return;
+ if(sessionDust<100)return alert("Not enough dust");
 
- if(sessionDust < 100) return alert("Not enough dust");
+ sessionDust-=100;
+ reviveUsed=true;
 
- sessionDust -= 100;
- reviveUsed = true;
-
- // remove top 3 dangerous bodies
- activeBodies
-  .sort((a,b)=>a.position.y-b.position.y)
-  .slice(0,3)
-  .forEach(removeBody);
+ activeBodies.sort((a,b)=>a.position.y-b.position.y)
+ .slice(0,3)
+ .forEach(removeBody);
 
  document.getElementById("revive").style.display="none";
  engine.enabled=true;
@@ -187,31 +185,52 @@ function revive(){
 
 function gameOver(){
  engine.enabled=false;
-
  if(!reviveUsed){
   document.getElementById("revive").style.display="flex";
- } else {
-  endGame();
- }
+ } else endGame();
 }
 
 function endGame(){
+ stats.dust+=sessionDust;
+ localStorage.setItem("sn_stats",JSON.stringify(stats));
+
  document.getElementById("revive").style.display="none";
  document.getElementById("home").style.display="flex";
 }
 
-window.addEventListener("pointerup", e=>{
- if(Date.now()-lastDrop<500) return;
+function buyUpgrade(type){
+ let cost=50*(upgrades[type]+1);
+ if(stats.dust<cost)return alert("Not enough dust");
+ stats.dust-=cost;
+ upgrades[type]++;
+ localStorage.setItem("sn_upgrades",JSON.stringify(upgrades));
+ localStorage.setItem("sn_stats",JSON.stringify(stats));
+}
+
+window.addEventListener("pointermove",e=>{
+ currentX=e.clientX;
+
+ // ghost preview
+ let lvl=0;
+ let r=PLANETS[lvl].r;
+
+ ghost.style.width=ghost.style.height=(r*2)+"px";
+ ghost.style.left=(currentX-r)+"px";
+ ghost.style.top="80px";
+});
+
+window.addEventListener("pointerup",e=>{
+ if(Date.now()-lastDrop<500)return;
 
  dropCount++;
 
- let maxLvl = Math.min(3 + Math.floor(dropCount/20), 6);
- let lvl = Math.floor(Math.random()*maxLvl);
+ let maxLvl=Math.min(3+Math.floor(dropCount/20),6);
+ let lvl=Math.floor(Math.random()*maxLvl);
 
- spawn(e.clientX,lvl);
+ spawn(currentX,lvl);
  play(300);
 
- lastDrop = Date.now();
+ lastDrop=Date.now();
 });
 
 </script>
