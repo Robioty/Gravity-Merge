@@ -3,13 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Supernova: Infinity v9.0</title>
+    <title>Supernova: Infinity v10.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
-        :root{
-            --accent:#38bdf8;--gold:#fbbf24;--danger:#ef4444;
-            --glass:rgba(255,255,255,0.08);--success:#4ade80;--wind:#a78bfa;
-        }
+        :root{--accent:#38bdf8;--gold:#fbbf24;--danger:#ef4444;--glass:rgba(255,255,255,0.08);--success:#4ade80;--wind:#a78bfa;}
         *{box-sizing:border-box;}
         body{margin:0;overflow:hidden;background:#010206;font-family:'Segoe UI',sans-serif;color:white;user-select:none;touch-action:none;}
         #nebula{position:fixed;inset:0;background:radial-gradient(circle at 50% 50%,#111827 0%,#010206 100%);z-index:-2;transition:background 2s ease;}
@@ -22,7 +19,12 @@
         #score-label.pop{animation:scorePop 0.2s ease;}
         @keyframes scorePop{0%{transform:scale(1)}50%{transform:scale(1.18)}100%{transform:scale(1)}}
         #stardust-hud{background:var(--glass);padding:6px 12px;border-radius:16px;color:var(--gold);font-weight:900;border:1px solid rgba(251,191,36,0.3);backdrop-filter:blur(10px);font-size:0.85em;flex-shrink:0;}
-        #evo-bar{position:fixed;top:80px;left:50%;transform:translateX(-50%);display:flex;gap:5px;background:rgba(1,4,9,0.75);padding:5px 10px;border-radius:0 0 14px 14px;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.05);border-top:none;z-index:999;}
+
+        /* Session progress bar */
+        #session-bar-wrap{position:fixed;top:80px;left:0;right:0;height:3px;background:rgba(255,255,255,0.06);z-index:998;}
+        #session-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--wind));width:0%;transition:width 0.4s;}
+
+        #evo-bar{position:fixed;top:83px;left:50%;transform:translateX(-50%);display:flex;gap:5px;background:rgba(1,4,9,0.75);padding:5px 10px;border-radius:0 0 14px 14px;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.05);border-top:none;z-index:997;}
         .evo-dot{width:9px;height:9px;border-radius:50%;opacity:0.2;transition:0.3s;}
         .evo-dot.active{opacity:1;box-shadow:0 0 8px currentColor;}
 
@@ -51,19 +53,21 @@
         #g-tooltip.show{opacity:1;}
 
         /* HUD banners */
-        #anomaly-banner{position:fixed;top:90px;left:50%;transform:translateX(-50%);background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.5);color:var(--wind);font-size:0.78em;font-weight:900;padding:6px 16px;border-radius:20px;display:none;z-index:1001;pointer-events:none;backdrop-filter:blur(10px);animation:anomalyPulse 2s infinite alternate;}
+        #anomaly-banner{position:fixed;top:95px;left:50%;transform:translateX(-50%);background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.5);color:var(--wind);font-size:0.78em;font-weight:900;padding:6px 16px;border-radius:20px;display:none;z-index:1001;pointer-events:none;backdrop-filter:blur(10px);animation:anomalyPulse 2s infinite alternate;}
         @keyframes anomalyPulse{from{opacity:0.7}to{opacity:1}}
-        #anomaly-warn{position:fixed;top:88px;left:50%;transform:translateX(-50%);background:rgba(167,139,250,0.9);color:#1e1b4b;font-size:0.82em;font-weight:900;padding:8px 20px;border-radius:20px;display:none;z-index:1002;pointer-events:none;animation:warnBounce 0.4s infinite alternate;}
+        #anomaly-warn{position:fixed;top:92px;left:50%;transform:translateX(-50%);background:rgba(167,139,250,0.9);color:#1e1b4b;font-size:0.82em;font-weight:900;padding:8px 20px;border-radius:20px;display:none;z-index:1002;pointer-events:none;animation:warnBounce 0.4s infinite alternate;}
         @keyframes warnBounce{from{transform:translateX(-50%) scale(1)}to{transform:translateX(-50%) scale(1.04)}}
         #danger-alert{position:fixed;left:50%;transform:translateX(-50%);color:var(--danger);font-size:1.8em;font-weight:900;display:none;animation:flash 0.5s infinite alternate;text-shadow:0 0 15px var(--danger);z-index:1001;pointer-events:none;}
         @keyframes flash{from{opacity:0.2}to{opacity:1}}
-        #combo-popup{position:fixed;top:40%;left:50%;transform:translateX(-50%);font-size:2.2em;color:var(--gold);font-weight:900;opacity:0;pointer-events:none;transition:opacity 0.3s;z-index:1100;text-shadow:0 0 20px var(--gold);}
+        #combo-popup{position:fixed;top:38%;left:50%;transform:translateX(-50%);font-size:2.2em;color:var(--gold);font-weight:900;opacity:0;pointer-events:none;transition:opacity 0.3s;z-index:1100;text-shadow:0 0 20px var(--gold);}
+        #combo-popup.mega{font-size:3em;color:#f472b6;text-shadow:0 0 30px #f472b6;}
+        #screen-flash{position:fixed;inset:0;background:white;pointer-events:none;opacity:0;z-index:1050;transition:opacity 0.1s;}
         #toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);color:white;padding:10px 22px;border-radius:20px;font-weight:900;z-index:3000;opacity:0;transition:opacity 0.4s;pointer-events:none;border:1px solid rgba(255,255,255,0.1);max-width:90%;text-align:center;}
         #new-best{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2em;font-weight:900;color:var(--gold);text-shadow:0 0 30px var(--gold);pointer-events:none;opacity:0;z-index:1200;text-align:center;}
-        #comet-btn{position:fixed;width:70px;height:70px;border-radius:50%;background:transparent;border:none;cursor:pointer;pointer-events:none;z-index:1500;display:none;}
-
-        /* Ranked mode badge on top bar */
+        #near-miss-banner{position:fixed;top:45%;left:50%;transform:translate(-50%,-50%);font-size:1.6em;font-weight:900;color:var(--success);text-shadow:0 0 20px var(--success);pointer-events:none;opacity:0;z-index:1200;text-align:center;transition:opacity 0.3s;}
+        #daily-run-badge{position:fixed;top:84px;left:12px;background:rgba(251,191,36,0.2);border:1px solid rgba(251,191,36,0.5);color:var(--gold);font-size:0.6em;font-weight:900;padding:3px 10px;border-radius:10px;z-index:998;display:none;pointer-events:none;letter-spacing:1px;}
         #ranked-badge{position:fixed;top:84px;right:12px;background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.5);color:var(--danger);font-size:0.6em;font-weight:900;padding:3px 10px;border-radius:10px;z-index:998;display:none;pointer-events:none;letter-spacing:1px;}
+        #comet-btn{position:fixed;width:70px;height:70px;border-radius:50%;background:transparent;border:none;cursor:pointer;pointer-events:none;z-index:1500;display:none;}
 
         /* Laser overlay */
         #laser-overlay{position:fixed;inset:0;z-index:1800;display:none;pointer-events:none;}
@@ -72,12 +76,16 @@
         #laser-cancel{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--danger);color:white;border:none;padding:12px 30px;border-radius:14px;font-weight:900;font-size:1em;cursor:pointer;z-index:1802;}
 
         /* End screen */
-        #end-screen{position:fixed;inset:0;background:rgba(1,4,9,0.98);z-index:2100;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
-        .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0;}
-        .stat-cell{background:rgba(255,255,255,0.05);border-radius:12px;padding:12px 8px;text-align:center;}
-        .stat-val{font-size:1.4em;font-weight:900;color:var(--accent);}
-        .stat-lbl{font-size:0.62em;opacity:0.6;margin-top:2px;}
-        #rp-change-card{border-radius:16px;padding:14px;margin:8px 0;text-align:center;font-weight:900;}
+        #end-screen{position:fixed;inset:0;background:rgba(1,4,9,0.98);z-index:2100;display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow-y:auto;}
+        .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;}
+        .stat-cell{background:rgba(255,255,255,0.05);border-radius:12px;padding:10px 8px;text-align:center;}
+        .stat-val{font-size:1.3em;font-weight:900;color:var(--accent);}
+        .stat-lbl{font-size:0.6em;opacity:0.6;margin-top:2px;}
+        #rp-change-card{border-radius:16px;padding:12px;margin:6px 0;text-align:center;font-weight:900;}
+        #run-highlight{background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);border-radius:14px;padding:10px 14px;margin:6px 0;font-size:0.85em;font-style:italic;color:rgba(255,255,255,0.8);text-align:center;}
+        /* Pulse animation for Play Again button */
+        @keyframes pulseCTA{0%,100%{box-shadow:0 0 0 0 rgba(56,189,248,0.4)}50%{box-shadow:0 0 0 8px rgba(56,189,248,0)}}
+        .btn-cta{animation:pulseCTA 2s infinite;}
 
         /* Overlays */
         .overlay{position:fixed;inset:0;background:rgba(1,4,9,0.98);z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
@@ -93,32 +101,21 @@
         .discovery-track{display:flex;overflow-x:auto;gap:12px;padding:8px 0;margin-bottom:12px;pointer-events:auto;scrollbar-width:none;}
         .planet-slot{flex:0 0 58px;display:flex;flex-direction:column;align-items:center;font-size:0.58em;}
         .planet-slot canvas{background:rgba(255,255,255,0.03);border-radius:10px;margin-bottom:3px;width:52px;height:52px;}
-
-        /* Launch mode toggle */
         .mode-toggle-wrap{display:flex;background:rgba(255,255,255,0.06);border-radius:14px;padding:4px;margin-bottom:12px;gap:4px;}
         .mode-btn{flex:1;padding:10px 6px;border:none;border-radius:10px;font-weight:900;font-size:0.82em;cursor:pointer;transition:background 0.2s,color 0.2s;background:transparent;color:rgba(255,255,255,0.4);pointer-events:auto;}
         .mode-btn.active{background:var(--accent);color:#000;}
         .mode-btn.ranked-active{background:var(--danger);color:white;}
-
-        /* Rank badge component */
-        .rank-badge{display:inline-block;padding:3px 10px;border-radius:8px;font-weight:900;font-size:0.78em;border:1px solid;}
-
-        /* How to play */
         #how-to-play{position:fixed;inset:0;background:rgba(1,4,9,0.98);z-index:2500;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
         .htp-card{background:var(--glass);border:1px solid rgba(255,255,255,0.1);padding:22px;border-radius:28px;width:90%;max-width:390px;backdrop-filter:blur(25px);}
         .htp-card h3{color:var(--accent);margin-top:0;}
         .htp-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;font-size:0.84em;}
         .htp-icon{font-size:1.4em;flex-shrink:0;}
-
-        /* Settings */
         #settings-menu{position:fixed;inset:0;background:rgba(1,4,9,0.98);z-index:2500;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
         .toggle-row{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:13px;border-radius:14px;margin-bottom:8px;pointer-events:auto;}
         .toggle{width:48px;height:26px;background:rgba(255,255,255,0.2);border-radius:13px;position:relative;cursor:pointer;transition:background 0.3s;border:none;}
         .toggle.on{background:var(--accent);}
         .toggle::after{content:'';position:absolute;width:20px;height:20px;border-radius:50%;background:white;top:3px;left:3px;transition:transform 0.3s;}
         .toggle.on::after{transform:translateX(22px);}
-
-        /* Missions */
         #missions-screen{position:fixed;inset:0;background:rgba(1,4,9,0.98);z-index:2500;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
         .mission-row{background:rgba(255,255,255,0.05);border-radius:14px;padding:12px;margin-bottom:8px;text-align:left;}
         .mission-title{font-weight:900;font-size:0.88em;}
@@ -126,8 +123,6 @@
         .mission-bar{height:100%;background:var(--accent);border-radius:3px;transition:width 0.4s;}
         .mission-reward{font-size:0.72em;color:var(--gold);font-weight:900;}
         .mission-done{opacity:0.4;}
-
-        /* Constellation */
         #constellation-screen{position:fixed;inset:0;background:rgba(1,4,9,0.98);z-index:2500;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
         .const-row{background:rgba(255,255,255,0.05);border-radius:14px;padding:12px;margin-bottom:8px;pointer-events:auto;display:flex;align-items:center;justify-content:space-between;gap:10px;}
         .const-info{flex:1;text-align:left;}
@@ -136,8 +131,6 @@
         .const-level{font-size:0.68em;color:var(--accent);font-weight:900;margin-top:2px;}
         #daily-banner{background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(56,189,248,0.1));border:1px solid rgba(251,191,36,0.4);border-radius:14px;padding:10px;margin-bottom:10px;font-size:0.82em;display:none;}
         #const-dust-display{background:var(--glass);border:1px solid rgba(251,191,36,0.3);border-radius:12px;padding:8px 14px;color:var(--gold);font-weight:900;margin-bottom:12px;font-size:0.9em;}
-
-        /* Leaderboard */
         #leaderboard-screen{position:fixed;inset:0;background:rgba(1,4,9,0.98);z-index:2500;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
         .lb-row{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.05);border-radius:14px;padding:11px 14px;margin-bottom:8px;}
         .lb-row.lb-you{background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.3);}
@@ -145,8 +138,6 @@
         .lb-name{flex:1;font-weight:700;font-size:0.88em;}
         .lb-score{font-weight:900;color:var(--accent);font-size:0.88em;}
         .lb-rank-tag{font-size:0.62em;font-weight:900;padding:2px 8px;border-radius:6px;border:1px solid;white-space:nowrap;}
-
-        /* Rank ladder screen */
         #rank-screen{position:fixed;inset:0;background:rgba(1,4,9,0.98);z-index:2500;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
         .rank-row{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border-radius:14px;padding:11px 14px;margin-bottom:6px;}
         .rank-row.rank-current{border:1px solid var(--accent);background:rgba(56,189,248,0.08);}
@@ -155,12 +146,8 @@
         .rank-name-lbl{font-weight:900;font-size:0.9em;}
         .rank-threshold{font-size:0.68em;opacity:0.5;margin-top:2px;}
         .rank-rp-lbl{font-size:0.72em;font-weight:900;text-align:right;}
-
-        /* Tip jar */
         #tip-jar-btn{background:linear-gradient(135deg,#f472b6,#a78bfa);border:none;color:white;padding:13px;border-radius:14px;font-weight:900;cursor:pointer;width:100%;margin-top:8px;font-size:0.95em;pointer-events:auto;}
         #tip-jar-btn:active{opacity:0.85;}
-
-        /* Tutorial */
         #tutorial-overlay{position:fixed;inset:0;z-index:3500;pointer-events:none;display:none;}
         #tutorial-overlay.active{display:block;pointer-events:auto;}
         .tut-backdrop{position:absolute;inset:0;background:rgba(1,4,9,0.82);}
@@ -171,17 +158,24 @@
         .tut-btn{background:var(--accent);color:#000;border:none;padding:10px 28px;border-radius:10px;font-weight:900;cursor:pointer;margin-top:12px;font-size:0.95em;pointer-events:auto;}
         .tut-arrow{position:absolute;font-size:2em;pointer-events:none;animation:tutBounce 0.7s infinite alternate;}
         @keyframes tutBounce{from{transform:translateY(0)}to{transform:translateY(-8px)}}
+        /* Streak pulse when incremented */
+        #streak-val.new{animation:streakPop 0.5s ease;}
+        @keyframes streakPop{0%{transform:scale(1)}50%{transform:scale(1.5);color:#fff}100%{transform:scale(1)}}
     </style>
 </head>
 <body>
 <div id="nebula"></div>
+<div id="screen-flash"></div>
 <div id="combo-popup">CHAIN x2</div>
 <div id="new-best">🏆 NEW BEST!</div>
+<div id="near-miss-banner">🛡️ NEAR MISS SAVE!</div>
 <div id="toast"></div>
 <div id="anomaly-warn"></div>
 <div id="anomaly-banner"></div>
 <div id="danger-alert">⚠️ DANGER ⚠️</div>
+<div id="daily-run-badge">🌅 DAILY RUN</div>
 <div id="ranked-badge">⚔️ RANKED</div>
+<div id="session-bar-wrap"><div id="session-bar"></div></div>
 
 <div id="laser-overlay">
     <div id="laser-instructions">🚀 Tap up to 3 planets (Lvl 0–4) to vaporise!</div>
@@ -192,7 +186,8 @@
 <div id="top-bar">
     <button class="icon-btn" onclick="togglePause()">⚙️</button>
     <div id="score-label">0</div>
-    <div id="stardust-hud">✨ <span id="dust-val">0</span></div>
+    <button class="icon-btn" onclick="quickRestart()" id="quick-restart-btn" style="display:none" title="Quick Restart">🔄</button>
+    <div id="stardust-hud" style="display:none">✨ <span id="dust-val">0</span></div>
 </div>
 <div id="evo-bar"></div>
 
@@ -226,21 +221,23 @@
     <h1 style="font-size:2.8em;color:var(--accent);margin-bottom:14px;text-shadow:0 0 30px var(--accent)">SUPERNOVA</h1>
     <div class="menu-card scroll">
         <div id="daily-banner">🎁 Daily Bonus! <b>+100 ✨ Stardust</b> claimed!</div>
-        <!-- Stats strip -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
             <div style="background:rgba(255,255,255,0.03);padding:10px;border-radius:12px;">BEST<br><b id="best-score-val" style="color:var(--accent)">0</b></div>
             <div id="rank-cell" style="background:rgba(255,255,255,0.03);padding:10px;border-radius:12px;cursor:pointer;" onclick="showRankScreen()">
                 RANK<br><b id="rank-val" style="color:var(--accent)">Cadet</b><br>
                 <span style="font-size:0.65em;opacity:0.5" id="rp-val">0 RP</span>
             </div>
-            <div style="background:rgba(255,255,255,0.03);padding:10px;border-radius:12px;grid-column:1/3;">🔥 Daily Streak: <b id="streak-val" style="color:var(--gold)">0</b> day<span id="streak-plural">s</span></div>
+            <div style="background:rgba(255,255,255,0.03);padding:10px;border-radius:12px;grid-column:1/3;display:flex;align-items:center;justify-content:space-between;">
+                <span>🔥 Daily Streak: <b id="streak-val" style="color:var(--gold);display:inline-block">0</b> day<span id="streak-plural">s</span></span>
+                <span id="next-unlock-hint" style="font-size:0.7em;opacity:0.55;text-align:right"></span>
+            </div>
         </div>
-        <!-- Mode toggle -->
         <div class="mode-toggle-wrap">
             <button class="mode-btn active" id="mode-free-btn" onclick="setMode('free')">🌌 FREE PLAY</button>
             <button class="mode-btn" id="mode-ranked-btn" onclick="setMode('ranked')">⚔️ RANKED</button>
         </div>
-        <button class="btn" onclick="startGame()">🚀 LAUNCH MISSION</button>
+        <button class="btn btn-cta" onclick="startGame()">🚀 LAUNCH MISSION</button>
+        <button class="btn" style="background:linear-gradient(135deg,rgba(251,191,36,0.3),rgba(56,189,248,0.2));border:1px solid rgba(251,191,36,0.4)" onclick="startDailyRun()">🌅 DAILY RUN <span id="daily-run-status" style="font-size:0.7em;opacity:0.7"></span></button>
         <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="showLeaderboard()">🏆 LEADERBOARD</button>
         <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="showMissions()">📋 DAILY MISSIONS</button>
         <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="showConstellation()">🌌 CONSTELLATION</button>
@@ -255,10 +252,13 @@
     <div class="menu-card scroll">
         <h3>LOG & ARMORY</h3>
         <div class="discovery-track" id="discovery-log"></div>
-        <div class="shop-row"><div><b>NUKE</b><small>Removes all Lvl 0-1 planets</small></div><button class="shop-btn" onclick="buyPowerUp(250,1)">✨ 250</button></div>
-        <div class="shop-row"><div><b>COLLAPSE</b><small>Removes all Lvl 2-3 planets</small></div><button class="shop-btn" onclick="buyPowerUp(600,3)">✨ 600</button></div>
-        <div class="shop-row"><div><b>SEISMIC PULSE</b><small>Board hop — unsticks planets</small></div><button class="shop-btn" onclick="buySeismic()">✨ 150</button></div>
-        <div class="shop-row"><div><b>LASER STRIKE</b><small>Vaporise up to 3 planets (Lvl 0-4)</small></div><button class="shop-btn" onclick="buyLaserStrike()">✨ 400</button></div>
+        <div id="power-ups-section">
+            <div class="shop-row"><div><b>NUKE</b><small>Removes all Lvl 0-1 planets</small></div><button class="shop-btn" onclick="buyPowerUp(250,1)">✨ 250</button></div>
+            <div class="shop-row"><div><b>COLLAPSE</b><small>Removes all Lvl 2-3 planets</small></div><button class="shop-btn" onclick="buyPowerUp(600,3)">✨ 600</button></div>
+            <div class="shop-row"><div><b>SEISMIC PULSE</b><small>Board hop — unsticks planets</small></div><button class="shop-btn" onclick="buySeismic()">✨ 150</button></div>
+            <div class="shop-row"><div><b>LASER STRIKE</b><small>Vaporise up to 3 planets (Lvl 0-4)</small></div><button class="shop-btn" onclick="buyLaserStrike()">✨ 400</button></div>
+        </div>
+        <div id="newbie-note" style="display:none;font-size:0.75em;opacity:0.5;margin-bottom:8px;padding:8px;background:rgba(255,255,255,0.04);border-radius:10px;">🌱 Power-ups &amp; anomalies unlock after your first 3 games.</div>
         <button class="btn" onclick="togglePause()">▶ RESUME</button>
         <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="restartMission()">🔄 RESTART</button>
         <button class="btn" style="background:rgba(100,100,120,0.4);margin-top:6px;" onclick="reportBug()">🐛 SPACE BUG</button>
@@ -275,9 +275,9 @@
         <div class="htp-row"><span class="htp-icon">🤚</span><span>Tap <b style="color:var(--accent)">HOLD</b> to bank your planet. One use per drop.</span></div>
         <div class="htp-row"><span class="htp-icon">⚠️</span><span>Don't let planets cross the <b style="color:var(--danger)">danger line</b> for too long!</span></div>
         <div class="htp-row"><span class="htp-icon">🌀</span><span>Tap <b style="color:var(--gold)">G</b> to flip gravity — or catch a ☄️ comet for instant refill!</span></div>
-        <div class="htp-row"><span class="htp-icon">🌬️</span><span><b style="color:var(--wind)">Solar Wind</b> pushes planets sideways for 30s. Aim against it!</span></div>
-        <div class="htp-row"><span class="htp-icon">⚔️</span><span><b>RANKED</b> mode: score well to earn RP and climb. Score poorly and you'll drop. <b>FREE PLAY</b> is pressure-free.</span></div>
-        <div class="htp-row"><span class="htp-icon">🕳️</span><span>Reach <b>Vortex</b> (max) and it becomes a <b style="color:#f472b6">Black Hole</b>.</span></div>
+        <div class="htp-row"><span class="htp-icon">🛡️</span><span>Your first near-miss each run is <b>automatically saved</b> — top planets are cleared!</span></div>
+        <div class="htp-row"><span class="htp-icon">🌅</span><span><b>Daily Run</b>: every player gets the same planet sequence today. Compare scores!</span></div>
+        <div class="htp-row"><span class="htp-icon">⚔️</span><span><b>RANKED</b> mode earns/loses RP. <b>FREE PLAY</b> is pressure-free.</span></div>
         <button class="btn" onclick="hideHowToPlay()">GOT IT!</button>
     </div>
 </div>
@@ -289,7 +289,8 @@
         <div class="toggle-row"><span>Sound Effects</span><button class="toggle on" id="sfx-toggle" onclick="toggleSetting('sfx')"></button></div>
         <div class="toggle-row"><span>Screen Shake</span><button class="toggle on" id="shake-toggle" onclick="toggleSetting('shake')"></button></div>
         <div class="toggle-row"><span>Particles</span><button class="toggle on" id="particles-toggle" onclick="toggleSetting('particles')"></button></div>
-        <p style="font-size:0.7em;opacity:0.4;margin:10px 0 2px">Supernova: Infinity v9.0 · Built with ❤️</p>
+        <div class="toggle-row"><span>Haptic Feedback</span><button class="toggle on" id="haptic-toggle" onclick="toggleSetting('haptic')"></button></div>
+        <p style="font-size:0.7em;opacity:0.4;margin:10px 0 2px">Supernova: Infinity v10.0 · Built with ❤️</p>
         <button class="btn" onclick="hideSettings()">CLOSE</button>
     </div>
 </div>
@@ -333,7 +334,8 @@
 <!-- END SCREEN -->
 <div id="end-screen">
     <div class="menu-card scroll">
-        <h3 style="color:var(--gold)">MISSION REPORT</h3>
+        <h3 style="color:var(--gold);margin-bottom:4px">MISSION REPORT</h3>
+        <div id="run-highlight"></div>
         <div class="stat-grid">
             <div class="stat-cell"><div class="stat-val" id="end-score">0</div><div class="stat-lbl">SCORE</div></div>
             <div class="stat-cell"><div class="stat-val" id="end-merges">0</div><div class="stat-lbl">MERGES</div></div>
@@ -343,8 +345,9 @@
             <div class="stat-cell"><div class="stat-val" id="end-time">0:00</div><div class="stat-lbl">RUN TIME</div></div>
         </div>
         <div id="rp-change-card" style="display:none"></div>
-        <div id="end-new-best-banner" style="display:none;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);border-radius:12px;padding:8px;margin-bottom:8px;color:var(--gold);font-weight:900;">🏆 NEW PERSONAL BEST!</div>
-        <button class="btn" onclick="endScreenPlay()">🚀 PLAY AGAIN</button>
+        <div id="end-new-best-banner" style="display:none;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);border-radius:12px;padding:8px;margin-bottom:6px;color:var(--gold);font-weight:900;">🏆 NEW PERSONAL BEST!</div>
+        <div id="daily-run-result" style="display:none;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:12px;padding:8px;margin-bottom:6px;color:var(--gold);font-size:0.85em;font-weight:700;"></div>
+        <button class="btn btn-cta" onclick="endScreenPlay()">🚀 PLAY AGAIN</button>
         <button class="btn" style="background:rgba(56,189,248,0.25);border:1px solid rgba(56,189,248,0.4)" onclick="shareScore()">📤 SHARE SCORE</button>
         <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="endScreenHome()">🏠 HOME</button>
     </div>
@@ -376,64 +379,47 @@ const COMET_INTERVAL_MIN=25000, COMET_INTERVAL_MAX=45000, COMET_SPEED=4.5;
 const ANOMALY_INTERVAL_MIN=40000, ANOMALY_INTERVAL_MAX=80000, ANOMALY_DURATION=30000;
 const TIP_JAR_URL='https://ko-fi.com/YOUR_NAME_HERE';
 const BUG_REPORT_EMAIL='your@email.com';
+// Session progress milestones
+const SESSION_MILESTONES=[5000,10000,20000,35000,50000,75000,100000,150000];
+// Lucky drop chance
+const LUCKY_DROP_CHANCE=0.03;
 
 // ── Engine globals ────────────────────────────────────────────────────────────
 let engine, render, runner, audioCtx;
 
-// ── Ranked / mode state ───────────────────────────────────────────────────────
-let isRankedMode = false;  // set by mode toggle
+// ── Mode / run type ───────────────────────────────────────────────────────────
+let isRankedMode=false;
+let isDailyRun=false;
+let dailyRngState=0; // seeded RNG state
 
 // ── Rank system ───────────────────────────────────────────────────────────────
-// RP thresholds: the minimum RP to be AT that rank.
-// RP is earned/lost per ranked game based on score vs the tier target.
-const RANKS = [
-    { name:'Cadet',         icon:'🪐', color:'#94a3b8', border:'#64748b', min:0,     target:3000  },
-    { name:'Pilot',         icon:'✈️', color:'#4ade80', border:'#22c55e', min:200,   target:6000  },
-    { name:'Navigator',     icon:'🧭', color:'#34d399', border:'#10b981', min:500,   target:10000 },
-    { name:'Ace',           icon:'⚡', color:'#38bdf8', border:'#0ea5e9', min:900,   target:16000 },
-    { name:'Captain',       icon:'🎖️', color:'#818cf8', border:'#6366f1', min:1400,  target:24000 },
-    { name:'Major',         icon:'🌟', color:'#a78bfa', border:'#8b5cf6', min:2000,  target:35000 },
-    { name:'Colonel',       icon:'🔥', color:'#fbbf24', border:'#f59e0b', min:2700,  target:50000 },
-    { name:'Commander',     icon:'💎', color:'#f472b6', border:'#ec4899', min:3500,  target:70000 },
-    { name:'Admiral',       icon:'🌌', color:'#e879f9', border:'#d946ef', min:4500,  target:100000},
-    { name:'Grand Admiral', icon:'👑', color:'#fef08a', border:'#eab308', min:6000,  target:150000},
+const RANKS=[
+    {name:'Cadet',         icon:'🪐',color:'#94a3b8',border:'#64748b',min:0,    target:3000  },
+    {name:'Pilot',         icon:'✈️', color:'#4ade80',border:'#22c55e',min:200,  target:6000  },
+    {name:'Navigator',     icon:'🧭',color:'#34d399',border:'#10b981',min:500,  target:10000 },
+    {name:'Ace',           icon:'⚡', color:'#38bdf8',border:'#0ea5e9',min:900,  target:16000 },
+    {name:'Captain',       icon:'🎖️',color:'#818cf8',border:'#6366f1',min:1400, target:24000 },
+    {name:'Major',         icon:'🌟',color:'#a78bfa',border:'#8b5cf6',min:2000, target:35000 },
+    {name:'Colonel',       icon:'🔥',color:'#fbbf24',border:'#f59e0b',min:2700, target:50000 },
+    {name:'Commander',     icon:'💎',color:'#f472b6',border:'#ec4899',min:3500, target:70000 },
+    {name:'Admiral',       icon:'🌌',color:'#e879f9',border:'#d946ef',min:4500, target:100000},
+    {name:'Grand Admiral', icon:'👑',color:'#fef08a',border:'#eab308',min:6000, target:150000},
 ];
+function getRankFromRP(rp){let r=RANKS[0];for(const rank of RANKS){if(rp>=rank.min)r=rank;else break;}return r;}
+function getRankIndex(rp){let idx=0;for(let i=0;i<RANKS.length;i++){if(rp>=RANKS[i].min)idx=i;else break;}return idx;}
 
-function getRankFromRP(rp){
-    let r=RANKS[0];
-    for(const rank of RANKS){ if(rp>=rank.min) r=rank; else break; }
-    return r;
-}
-function getRankIndex(rp){
-    let idx=0;
-    for(let i=0;i<RANKS.length;i++){ if(rp>=RANKS[i].min) idx=i; else break; }
-    return idx;
-}
-
-// ── Simulated community leaderboard ──────────────────────────────────────────
-// Realistic distribution of fictional players. Your score slot is index where
-// you fit. Seeded from player name hash so it looks stable across sessions.
-const COMMUNITY_PLAYERS = [
-    {name:'StarPilot_99',  score:142800, rp:6800},
-    {name:'NebulaCrusher', score:128500, rp:6200},
-    {name:'VoidHunter',    score:115400, rp:5800},
-    {name:'GravSurfer',    score:104200, rp:5400},
-    {name:'CometRider',    score:98700,  rp:5100},
-    {name:'OrbitalAce',    score:89300,  rp:4700},
-    {name:'PlanetSmash',   score:81600,  rp:4400},
-    {name:'ZephyrKnight',  score:74100,  rp:4000},
-    {name:'NullarBreaker', score:67800,  rp:3700},
-    {name:'AuroraDrifter', score:61500,  rp:3400},
-    {name:'KrathMaster',   score:54200,  rp:3100},
-    {name:'Phaedrax',      score:47900,  rp:2800},
-    {name:'VortexStar',    score:42300,  rp:2500},
-    {name:'SoluxPilot',    score:37100,  rp:2200},
-    {name:'OrrathFlyer',   score:31800,  rp:1900},
-    {name:'MoteHunter',    score:26400,  rp:1600},
-    {name:'VerdisAce',     score:21700,  rp:1300},
-    {name:'GravityFlip',   score:17200,  rp:1000},
-    {name:'NebulaDancer',  score:13100,  rp:700 },
-    {name:'StarSeeker',    score:8900,   rp:400 },
+// ── Community leaderboard data ────────────────────────────────────────────────
+const COMMUNITY_PLAYERS=[
+    {name:'StarPilot_99',  score:142800,rp:6800},{name:'NebulaCrusher',score:128500,rp:6200},
+    {name:'VoidHunter',    score:115400,rp:5800},{name:'GravSurfer',   score:104200,rp:5400},
+    {name:'CometRider',    score:98700, rp:5100},{name:'OrbitalAce',   score:89300, rp:4700},
+    {name:'PlanetSmash',   score:81600, rp:4400},{name:'ZephyrKnight', score:74100, rp:4000},
+    {name:'NullarBreaker', score:67800, rp:3700},{name:'AuroraDrifter',score:61500, rp:3400},
+    {name:'KrathMaster',   score:54200, rp:3100},{name:'Phaedrax',     score:47900, rp:2800},
+    {name:'VortexStar',    score:42300, rp:2500},{name:'SoluxPilot',   score:37100, rp:2200},
+    {name:'OrrathFlyer',   score:31800, rp:1900},{name:'MoteHunter',   score:26400, rp:1600},
+    {name:'VerdisAce',     score:21700, rp:1300},{name:'GravityFlip',  score:17200, rp:1000},
+    {name:'NebulaDancer',  score:13100, rp:700 },{name:'StarSeeker',   score:8900,  rp:400 },
 ];
 
 // ── Game state ────────────────────────────────────────────────────────────────
@@ -449,20 +435,22 @@ let blackHoleTimer=null;
 let _sMerges=0, _sMaxCombo=0, _sFlips=0, _sBestPlanet=0, _runStartTime=0;
 let laserMode=false, laserTargets=[], laserShip=null, laserBeams=[];
 let tutStep=0, tutActive=false;
-let settings={ sfx:true, shake:true, particles:true };
+let reviveUsed=false; // near miss save
+let settings={sfx:true,shake:true,particles:true,haptic:true};
+let _sessionMilestoneIdx=0; // index into SESSION_MILESTONES
 
 // ── Planet data ───────────────────────────────────────────────────────────────
 const PLANET_DATA=[
-    {name:"Mote",    r:14,  color:'#ffffff',glow:'rgba(255,255,255,0.4)',star:true},
-    {name:"Verdis",  r:22,  color:'#4ade80',glow:'rgba(74,222,128,0.2)'},
-    {name:"Krath",   r:31,  color:'#f87171',glow:'rgba(248,113,113,0.2)'},
-    {name:"Auroris", r:41,  color:'#fbbf24',stripes:true,glow:'rgba(251,191,36,0.3)'},
-    {name:"Phaedra", r:53,  color:'#818cf8',stripes:true,glow:'rgba(129,140,248,0.3)'},
-    {name:"Orrath",  r:70,  color:'#38bdf8',rings:true,  glow:'rgba(56,189,248,0.4)'},
-    {name:"Solux",   r:89,  color:'#ffcc33',sun:true,    glow:'rgba(255,165,0,0.6)'},
-    {name:"Zephyra", r:108, color:'#e879f9',stripes:true,glow:'rgba(232,121,249,0.5)'},
-    {name:"Nullar",  r:131, color:'#000000',glow:'rgba(255,255,255,0.3)',singularity:true},
-    {name:"Vortex",  r:162, color:'#f472b6',sun:true,    glow:'rgba(244,114,182,0.8)'}
+    {name:"Mote",    r:14, color:'#ffffff',glow:'rgba(255,255,255,0.4)',star:true},
+    {name:"Verdis",  r:22, color:'#4ade80',glow:'rgba(74,222,128,0.2)'},
+    {name:"Krath",   r:31, color:'#f87171',glow:'rgba(248,113,113,0.2)'},
+    {name:"Auroris", r:41, color:'#fbbf24',stripes:true,glow:'rgba(251,191,36,0.3)'},
+    {name:"Phaedra", r:53, color:'#818cf8',stripes:true,glow:'rgba(129,140,248,0.3)'},
+    {name:"Orrath",  r:70, color:'#38bdf8',rings:true,  glow:'rgba(56,189,248,0.4)'},
+    {name:"Solux",   r:89, color:'#ffcc33',sun:true,    glow:'rgba(255,165,0,0.6)'},
+    {name:"Zephyra", r:108,color:'#e879f9',stripes:true,glow:'rgba(232,121,249,0.5)'},
+    {name:"Nullar",  r:131,color:'#000000',glow:'rgba(255,255,255,0.3)',singularity:true},
+    {name:"Vortex",  r:162,color:'#f472b6',sun:true,    glow:'rgba(244,114,182,0.8)'}
 ];
 
 // ── Safe storage ──────────────────────────────────────────────────────────────
@@ -470,131 +458,145 @@ const _mem={};
 function safeGet(k){try{const r=localStorage.getItem(k);return r?JSON.parse(r):null;}catch(e){return _mem[k]||null;}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){_mem[k]=v;}}
 
-// ── Stats & rank HUD ──────────────────────────────────────────────────────────
+// ── Stats ─────────────────────────────────────────────────────────────────────
 let _statsCache=null;
 function loadStats(){
-    _statsCache=safeGet('sn_v9')||{best:0,dust:0,discovered:2,rp:0};
+    _statsCache=safeGet('sn_v10')||{best:0,dust:0,discovered:2,rp:0};
     if(_statsCache.rp===undefined)_statsCache.rp=0;
     document.getElementById('best-score-val').innerText=_statsCache.best.toLocaleString();
     document.getElementById('dust-val').innerText=(_statsCache.dust+sessionDust).toLocaleString();
     updateRankHUD(_statsCache.rp);
+    updateNextUnlockHint();
     return _statsCache;
 }
-function saveStats(fin=false){
-    let d=loadStats();
-    d.best=Math.max(d.best,score);
-    if(fin){d.dust+=sessionDust;sessionDust=0;}
-    safeSet('sn_v9',d);
-    loadStats();
-}
-function refreshDustHUD(){
-    const base=_statsCache?_statsCache.dust:0;
-    const total=(base+sessionDust).toLocaleString();
-    document.getElementById('dust-val').innerText=total;
-    const cv=document.getElementById('const-dust-val');if(cv)cv.innerText=total;
-}
+function saveStats(fin=false){let d=loadStats();d.best=Math.max(d.best,score);if(fin){d.dust+=sessionDust;sessionDust=0;}safeSet('sn_v10',d);loadStats();}
+function refreshDustHUD(){const base=_statsCache?_statsCache.dust:0;const total=(base+sessionDust).toLocaleString();document.getElementById('dust-val').innerText=total;const cv=document.getElementById('const-dust-val');if(cv)cv.innerText=total;}
 function updateRankHUD(rp){
     const rank=getRankFromRP(rp);
-    const el=document.getElementById('rank-val');
-    const rpEl=document.getElementById('rp-val');
-    if(el){ el.innerText=rank.icon+' '+rank.name; el.style.color=rank.color; }
-    if(rpEl){ rpEl.innerText=rp.toLocaleString()+' RP'; }
+    const el=document.getElementById('rank-val'),rpEl=document.getElementById('rp-val');
+    if(el){el.innerText=rank.icon+' '+rank.name;el.style.color=rank.color;}
+    if(rpEl)rpEl.innerText=rp.toLocaleString()+' RP';
 }
 
-// ── RP / Ranked logic ─────────────────────────────────────────────────────────
-// RP earned = base + bonus scaled to how much you beat your tier's target score.
-// RP lost if score < 50% of tier target.
-function calcRPChange(finalScore){
-    const rp=(_statsCache||{rp:0}).rp;
-    const idx=getRankIndex(rp);
-    const rank=RANKS[idx];
-    const target=rank.target;
-
-    if(finalScore>=target){
-        // Beat the target — earn RP, more the higher above target
-        const ratio=finalScore/target;
-        const base=30;
-        const bonus=Math.floor((ratio-1)*60);
-        // Gain less RP at higher ranks (diminishing returns)
-        const tierPenalty=Math.max(0.4, 1 - idx*0.06);
-        return Math.round((base+bonus)*tierPenalty);
-    } else if(finalScore < target*0.5){
-        // Under 50% of target — lose RP
-        const ratio=finalScore/target;
-        const loss=Math.round((1-ratio*2)*25);
-        return -Math.min(loss, rp>0?loss:0); // never go below 0
+// ── Next unlock hint ──────────────────────────────────────────────────────────
+function updateNextUnlockHint(){
+    const discovered=(_statsCache||{discovered:2}).discovered;
+    const el=document.getElementById('next-unlock-hint');
+    if(!el)return;
+    if(discovered<PLANET_DATA.length-1){
+        el.innerText=`Next: ${PLANET_DATA[discovered+1].name} 🪐`;
     } else {
-        // 50–100% of target — earn a small consolation amount
-        return Math.round((finalScore/target)*12);
+        el.innerText='All planets found! 🎉';
     }
 }
 
-function applyRPChange(delta){
-    const stats=safeGet('sn_v9')||{best:0,dust:0,discovered:2,rp:0};
-    const oldRP=stats.rp||0;
-    stats.rp=Math.max(0, oldRP+delta);
-    safeSet('sn_v9',stats);
-    _statsCache=stats;
-    return {oldRP, newRP:stats.rp};
+// ── Idle Stardust ─────────────────────────────────────────────────────────────
+function checkIdleDust(){
+    const last=safeGet('sn_last_played');
+    const now=Date.now();
+    if(last){
+        const hoursAway=Math.floor((now-last)/3600000);
+        if(hoursAway>=2){
+            const earned=Math.min(hoursAway*8, 150); // 8/hr, cap 150
+            const d=safeGet('sn_v10')||{best:0,dust:0,discovered:2,rp:0};
+            d.dust+=earned; safeSet('sn_v10',d);
+            setTimeout(()=>showToast(`✨ +${earned} Stardust while you were away!`,'var(--gold)'),1000);
+        }
+    }
+    safeSet('sn_last_played',now);
 }
 
-// ── Mode toggle ───────────────────────────────────────────────────────────────
+// ── RP logic ──────────────────────────────────────────────────────────────────
+function calcRPChange(finalScore){
+    const rp=(_statsCache||{rp:0}).rp, idx=getRankIndex(rp), rank=RANKS[idx], target=rank.target;
+    if(finalScore>=target){const ratio=finalScore/target,base=30,bonus=Math.floor((ratio-1)*60),tierPenalty=Math.max(0.4,1-idx*0.06);return Math.round((base+bonus)*tierPenalty);}
+    else if(finalScore<target*0.5){const ratio=finalScore/target,loss=Math.round((1-ratio*2)*25);return -Math.min(loss,rp>0?loss:0);}
+    else{return Math.round((finalScore/target)*12);}
+}
+function applyRPChange(delta){const stats=safeGet('sn_v10')||{best:0,dust:0,discovered:2,rp:0};const oldRP=stats.rp||0;stats.rp=Math.max(0,oldRP+delta);safeSet('sn_v10',stats);_statsCache=stats;return{oldRP,newRP:stats.rp};}
+
+// ── Mode ──────────────────────────────────────────────────────────────────────
 function setMode(mode){
     isRankedMode=(mode==='ranked');
     document.getElementById('mode-free-btn').className='mode-btn'+(isRankedMode?'':' active');
     document.getElementById('mode-ranked-btn').className='mode-btn'+(isRankedMode?' ranked-active':'');
 }
 
+// ── Seeded RNG for Daily Run ──────────────────────────────────────────────────
+// Simple mulberry32 seeded PRNG
+function seedRNG(seed){dailyRngState=seed>>>0;}
+function rng(){
+    dailyRngState=(dailyRngState+0x6D2B79F5)>>>0;
+    let t=Math.imul(dailyRngState^(dailyRngState>>>15),1|dailyRngState);
+    t^=t+Math.imul(t^(t>>>7),61|t);
+    return ((t^(t>>>14))>>>0)/4294967296;
+}
+function getDailySeed(){
+    const d=new Date().toDateString();
+    let hash=0;for(let i=0;i<d.length;i++){hash=(Math.imul(31,hash)+d.charCodeAt(i))|0;}
+    return Math.abs(hash);
+}
+
+// ── Daily Run ─────────────────────────────────────────────────────────────────
+function startDailyRun(){
+    isDailyRun=true;
+    isRankedMode=false;
+    setMode('free');
+    startGame();
+}
+function getDailyRunStatus(){
+    const today=new Date().toDateString();
+    const saved=safeGet('sn_daily_run');
+    if(saved&&saved.date===today)return saved.score;
+    return null;
+}
+function updateDailyRunUI(){
+    const status=getDailyRunStatus();
+    const el=document.getElementById('daily-run-status');
+    if(el){el.innerText=status!==null?` — Best: ${status.toLocaleString()}`:'— Play today!';}
+}
+function getNextPlanetLevel(){
+    if(isDailyRun){
+        const base=Math.floor(rng()*3);
+        // lucky drop via seeded rng too
+        return (rng()<LUCKY_DROP_CHANCE&&base<PLANET_DATA.length-1)?base+1:base;
+    }
+    // Soft difficulty scaling: early games favour low-level planets
+    const scaledGames=Math.min(gamesPlayed,20);
+    const maxTier=score<5000?2:score<20000?3:score<50000?4:score<100000?5:score<150000?6:7;
+    const cappedMax=Math.min(maxTier,PLANET_DATA.length-1);
+    const base=Math.floor(Math.random()*(cappedMax+1));
+    // Lucky drop
+    return (Math.random()<LUCKY_DROP_CHANCE&&base<PLANET_DATA.length-1)?base+1:base;
+}
+
 // ── Leaderboard ───────────────────────────────────────────────────────────────
 function showLeaderboard(){
-    const myBest=(_statsCache||{best:0}).best;
-    const myRP=(_statsCache||{rp:0}).rp||0;
-    const myName='You';
-
-    // Merge player into community list
-    const all=[...COMMUNITY_PLAYERS, {name:myName, score:myBest, rp:myRP, isYou:true}];
+    const myBest=(_statsCache||{best:0}).best,myRP=(_statsCache||{rp:0}).rp||0;
+    const all=[...COMMUNITY_PLAYERS,{name:'You',score:myBest,rp:myRP,isYou:true}];
     all.sort((a,b)=>b.score-a.score);
-
-    const list=document.getElementById('lb-list');
-    list.innerHTML='';
+    const list=document.getElementById('lb-list');list.innerHTML='';
     all.forEach((p,i)=>{
         const rank=getRankFromRP(p.rp);
-        const row=document.createElement('div');
-        row.className='lb-row'+(p.isYou?' lb-you':'');
+        const row=document.createElement('div');row.className='lb-row'+(p.isYou?' lb-you':'');
         const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
-        row.innerHTML=`
-            <div class="lb-pos">${medal}</div>
-            <div class="lb-name">${p.isYou?'<b>YOU</b>':p.name}</div>
-            <span class="lb-rank-tag" style="color:${rank.color};border-color:${rank.border}">${rank.icon} ${rank.name}</span>
-            <div class="lb-score">${p.score.toLocaleString()}</div>
-        `;
+        row.innerHTML=`<div class="lb-pos">${medal}</div><div class="lb-name">${p.isYou?'<b>YOU</b>':p.name}</div><span class="lb-rank-tag" style="color:${rank.color};border-color:${rank.border}">${rank.icon} ${rank.name}</span><div class="lb-score">${p.score.toLocaleString()}</div>`;
         list.appendChild(row);
     });
     document.getElementById('leaderboard-screen').style.display='flex';
 }
 function hideLeaderboard(){document.getElementById('leaderboard-screen').style.display='none';}
 
-// ── Rank ladder screen ────────────────────────────────────────────────────────
+// ── Rank screen ───────────────────────────────────────────────────────────────
 function showRankScreen(){
-    const myRP=(_statsCache||{rp:0}).rp||0;
-    const myIdx=getRankIndex(myRP);
-    const list=document.getElementById('rank-ladder-list');
-    list.innerHTML='';
+    const myRP=(_statsCache||{rp:0}).rp||0,myIdx=getRankIndex(myRP);
+    const list=document.getElementById('rank-ladder-list');list.innerHTML='';
     RANKS.forEach((r,i)=>{
         const isCurrent=(i===myIdx);
-        const isNext=(i===myIdx+1);
-        const row=document.createElement('div');
-        row.className='rank-row'+(isCurrent?' rank-current':'');
+        const row=document.createElement('div');row.className='rank-row'+(isCurrent?' rank-current':'');
         const nextThresh=RANKS[i+1]?RANKS[i+1].min:null;
         const rpToNext=isCurrent&&nextThresh?`${nextThresh-myRP} RP to next`:'';
-        row.innerHTML=`
-            <div class="rank-icon">${r.icon}</div>
-            <div class="rank-info">
-                <div class="rank-name-lbl" style="color:${r.color}">${r.name}</div>
-                <div class="rank-threshold">From ${r.min.toLocaleString()} RP · Score target: ${r.target.toLocaleString()}</div>
-            </div>
-            <div class="rank-rp-lbl" style="color:${r.color}">${isCurrent?'◀ YOU'+(rpToNext?'<br><span style="font-size:0.8em;color:rgba(255,255,255,0.4)">'+rpToNext+'</span>':''):(i<myIdx?'✓':'')}</div>
-        `;
+        row.innerHTML=`<div class="rank-icon">${r.icon}</div><div class="rank-info"><div class="rank-name-lbl" style="color:${r.color}">${r.name}</div><div class="rank-threshold">From ${r.min.toLocaleString()} RP · Target: ${r.target.toLocaleString()}</div></div><div class="rank-rp-lbl" style="color:${r.color}">${isCurrent?'◀ YOU'+(rpToNext?'<br><span style="font-size:0.8em;color:rgba(255,255,255,0.4)">'+rpToNext+'</span>':''):(i<myIdx?'✓':'')}</div>`;
         list.appendChild(row);
     });
     document.getElementById('rank-screen').style.display='flex';
@@ -603,47 +605,56 @@ function hideRankScreen(){document.getElementById('rank-screen').style.display='
 
 // ── Daily bonus & streak ──────────────────────────────────────────────────────
 function checkDailyBonus(){
-    const today=new Date().toDateString();
-    const last=safeGet('sn_daily');
-    const streakData=safeGet('sn_streak')||{count:0,last:''};
+    const today=new Date().toDateString(),last=safeGet('sn_daily'),streakData=safeGet('sn_streak')||{count:0,last:''};
     const yesterday=new Date(Date.now()-86400000).toDateString();
-    if(last===today){ updateStreakDisplay(streakData.count); return; }
+    if(last===today){updateStreakDisplay(streakData.count,false);return;}
     safeSet('sn_daily',today);
-    let d=safeGet('sn_v9')||{best:0,dust:0,discovered:2,rp:0};
-    d.dust+=100; safeSet('sn_v9',d);
+    let d=safeGet('sn_v10')||{best:0,dust:0,discovered:2,rp:0};d.dust+=100;safeSet('sn_v10',d);
     document.getElementById('daily-banner').style.display='block';
     let newStreak=1;
-    if(streakData.last===yesterday) newStreak=streakData.count+1;
+    if(streakData.last===yesterday)newStreak=streakData.count+1;
     safeSet('sn_streak',{count:newStreak,last:today});
-    if(newStreak>1&&newStreak%7===0){
-        d=safeGet('sn_v9')||{best:0,dust:0,discovered:2,rp:0};
-        d.dust+=200; safeSet('sn_v9',d);
-        document.getElementById('daily-banner').innerHTML=`🎁 Day ${newStreak} streak! <b>+300 ✨ Stardust</b> claimed!`;
-    }
-    updateStreakDisplay(newStreak);
+    if(newStreak>1&&newStreak%7===0){d=safeGet('sn_v10')||{best:0,dust:0,discovered:2,rp:0};d.dust+=200;safeSet('sn_v10',d);document.getElementById('daily-banner').innerHTML=`🎁 Day ${newStreak} streak! <b>+300 ✨ Stardust</b> claimed!`;}
+    updateStreakDisplay(newStreak, newStreak>1);
 }
-function updateStreakDisplay(count){
+function updateStreakDisplay(count, animate=false){
     const el=document.getElementById('streak-val'),pl=document.getElementById('streak-plural');
-    if(el)el.innerText=count; if(pl)pl.innerText=count===1?'':'s';
+    if(el){el.innerText=count;if(animate){el.classList.remove('new');void el.offsetWidth;el.classList.add('new');}}
+    if(pl)pl.innerText=count===1?'':'s';
 }
 
 // ── Share score ───────────────────────────────────────────────────────────────
 function shareScore(){
     const planet=_sBestPlanet>=0?PLANET_DATA[Math.min(_sBestPlanet,9)].name:'Mote';
-    const rp=isRankedMode?` · ${(_statsCache||{rp:0}).rp} RP`:'';
-    const text=`🚀 Just scored ${score.toLocaleString()} on Supernova: Infinity!\n⭐ Best planet: ${planet} · 💥 ${_sMerges} merges${rp}\nCan you beat me? #SupernovaInfinity`;
-    if(navigator.share) navigator.share({title:'Supernova: Infinity',text}).catch(()=>{});
+    const tag=isDailyRun?'\n🌅 Daily Run':'';
+    const text=`🚀 Just scored ${score.toLocaleString()} on Supernova: Infinity!\n⭐ Best planet: ${planet} · 💥 ${_sMerges} merges${tag}\nCan you beat me? #SupernovaInfinity`;
+    if(navigator.share)navigator.share({title:'Supernova: Infinity',text}).catch(()=>{});
     else navigator.clipboard.writeText(text).then(()=>showToast('Score copied!','var(--success)')).catch(()=>showToast('Share not available','var(--danger)'));
 }
-function formatRunTime(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return `${m}:${String(s%60).padStart(2,'0')}`;}
+function formatRunTime(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return`${m}:${String(s%60).padStart(2,'0')}`;}
+
+// ── Run summary highlight ─────────────────────────────────────────────────────
+function generateRunHighlight(){
+    if(_sMaxCombo>=8) return '🔥 Cosmic Chain Master — unreal combo streaks!';
+    if(_sMaxCombo>=5) return '⛓️ Chain Reaction specialist — combos everywhere!';
+    if(_sBestPlanet>=8) return '🕳️ You touched the void — an elite run!';
+    if(_sBestPlanet>=6) return '🌟 Deep-space explorer — rare planet reached!';
+    if(_sMerges>=80)   return '💥 Merge machine — barely a gap between collisions!';
+    if(_sMerges>=40)   return '🪐 Seasoned navigator — solid, reliable play.';
+    if(_sFlips>=4)     return '🌀 Gravity acrobat — you owned the flip mechanic!';
+    if(score>=50000)   return '👑 Legendary score — top tier performance!';
+    if(score>=20000)   return '🚀 Excellent run — keep pushing those limits!';
+    if(score<3000&&_sMerges<10) return '🌱 Just getting started — the galaxy awaits!';
+    return '⭐ Solid run — every drop counts!';
+}
 
 // ── Constellation ─────────────────────────────────────────────────────────────
 const CONSTELLATIONS=[
-    {id:'grav_speed', title:'Stellar Recharge', desc:'Gravity recharges +10% faster',maxLvl:5,baseCost:500,costMult:1.8},
-    {id:'combo_grace',title:'Combo Flow',        desc:'+0.2s combo grace window',     maxLvl:5,baseCost:400,costMult:1.7},
-    {id:'dust_bonus', title:'Stardust Magnet',   desc:'+10% Stardust per merge',      maxLvl:5,baseCost:600,costMult:2.0},
-    {id:'danger_time',title:'Crisis Buffer',     desc:'+1s danger grace period',      maxLvl:3,baseCost:800,costMult:2.5},
-    {id:'happy_faces',title:'Happy Planets 😊',  desc:'Planets show smiley faces!',  maxLvl:1,baseCost:300,costMult:99},
+    {id:'grav_speed', title:'Stellar Recharge',desc:'Gravity recharges +10% faster',maxLvl:5,baseCost:500,costMult:1.8},
+    {id:'combo_grace',title:'Combo Flow',       desc:'+0.2s combo grace window',    maxLvl:5,baseCost:400,costMult:1.7},
+    {id:'dust_bonus', title:'Stardust Magnet',  desc:'+10% Stardust per merge',     maxLvl:5,baseCost:600,costMult:2.0},
+    {id:'danger_time',title:'Crisis Buffer',    desc:'+1s danger grace period',     maxLvl:3,baseCost:800,costMult:2.5},
+    {id:'happy_faces',title:'Happy Planets 😊', desc:'Planets show smiley faces!', maxLvl:1,baseCost:300,costMult:99},
 ];
 function getConstLevels(){return safeGet('sn_const')||{};}
 function getConstLevel(id){return(getConstLevels()[id]||0);}
@@ -672,18 +683,18 @@ function buyConst(id){
     const cost=constCost(c),stats=loadStats(),total=stats.dust+sessionDust;
     if(total<cost){showToast('Not enough Stardust!','var(--danger)');return;}
     if(sessionDust>=cost)sessionDust-=cost;else{stats.dust-=(cost-sessionDust);sessionDust=0;}
-    _statsCache=stats;safeSet('sn_v9',stats);
+    _statsCache=stats;safeSet('sn_v10',stats);
     const levels=getConstLevels();levels[id]=lvl+1;safeSet('sn_const',levels);
     refreshDustHUD();showToast(`${c.title} → Level ${lvl+1}!`,'var(--success)');showConstellation();
 }
 
 // ── Daily missions ────────────────────────────────────────────────────────────
 const MISSION_DEFS=[
-    {id:'merges',title:'Cosmic Collider', desc:'Perform {n} merges',         targets:[15,30,50],       reward:80},
-    {id:'combo', title:'Chain Reaction',  desc:'Reach a x{n} combo chain',   targets:[3,5,8],          reward:120},
-    {id:'score', title:'Orbit Master',    desc:'Score {n} points in one run',targets:[5000,15000,40000],reward:150},
-    {id:'flips', title:'Gravity Surfer',  desc:'Flip gravity {n} times',     targets:[2,4,6],          reward:100},
-    {id:'dust',  title:'Star Collector',  desc:'Earn {n} Stardust in a run', targets:[50,100,200],     reward:90},
+    {id:'merges',title:'Cosmic Collider',desc:'Perform {n} merges',          targets:[15,30,50],       reward:80},
+    {id:'combo', title:'Chain Reaction', desc:'Reach a x{n} combo chain',    targets:[3,5,8],          reward:120},
+    {id:'score', title:'Orbit Master',   desc:'Score {n} points in one run', targets:[5000,15000,40000],reward:150},
+    {id:'flips', title:'Gravity Surfer', desc:'Flip gravity {n} times',      targets:[2,4,6],          reward:100},
+    {id:'dust',  title:'Star Collector', desc:'Earn {n} Stardust in a run',  targets:[50,100,200],     reward:90},
 ];
 let missionData=[], missionProgress={};
 function initMissions(){
@@ -704,7 +715,7 @@ function trackMission(id,value){
     missionData.forEach(m=>{
         if(m.id===id&&!m.done&&missionProgress[id]>=m.target){
             m.done=true;
-            const stats=safeGet('sn_v9')||{best:0,dust:0,discovered:2,rp:0};stats.dust+=m.reward;safeSet('sn_v9',stats);_statsCache=stats;
+            const stats=safeGet('sn_v10')||{best:0,dust:0,discovered:2,rp:0};stats.dust+=m.reward;safeSet('sn_v10',stats);_statsCache=stats;
             refreshDustHUD();showToast(`✅ Mission: ${m.title}! +${m.reward} ✨`,'var(--success)');
         }
     });
@@ -722,7 +733,7 @@ function showMissions(){
 function hideMissions(){document.getElementById('missions-screen').style.display='none';}
 
 // ── Settings ──────────────────────────────────────────────────────────────────
-function loadSettings(){const s=safeGet('sn_settings');if(s)settings={...settings,...s};['sfx','shake','particles'].forEach(k=>{const el=document.getElementById(k+'-toggle');if(el)el.className='toggle'+(settings[k]?' on':'');});}
+function loadSettings(){const s=safeGet('sn_settings');if(s)settings={...settings,...s};['sfx','shake','particles','haptic'].forEach(k=>{const el=document.getElementById(k+'-toggle');if(el)el.className='toggle'+(settings[k]?' on':'');});}
 function toggleSetting(key){settings[key]=!settings[key];safeSet('sn_settings',settings);const el=document.getElementById(key+'-toggle');if(el)el.className='toggle'+(settings[key]?' on':'');}
 function showSettings(){document.getElementById('settings-menu').style.display='flex';}
 function hideSettings(){document.getElementById('settings-menu').style.display='none';}
@@ -730,13 +741,14 @@ function showHowToPlay(){document.getElementById('how-to-play').style.display='f
 function hideHowToPlay(){document.getElementById('how-to-play').style.display='none';}
 function openTipJar(){window.open(TIP_JAR_URL,'_blank');}
 
-// ── Space Bug reporter ────────────────────────────────────────────────────────
+// ── Haptic feedback ───────────────────────────────────────────────────────────
+function haptic(ms=10){if(settings.haptic&&navigator.vibrate)navigator.vibrate(ms);}
+
+// ── Bug reporter ──────────────────────────────────────────────────────────────
 function reportBug(){
-    const bodyCount=engine?Composite.allBodies(engine.world).filter(b=>!b.isStatic).length:0;
-    const state={version:'v9.0',timestamp:new Date().toISOString(),score,sessionDust,gamesPlayed,isFlipped,isRankedMode,gravityCharge:Math.round(gravityCharge/CHARGE_TIME*100)+'%',bodyCount,anomaly:anomaly?anomaly.type:'none',userAgent:navigator.userAgent,screenSize:`${width}x${height}`};
-    const subject=encodeURIComponent('Supernova Bug Report — v9.0');
-    const bodyEnc=encodeURIComponent(`Hi,\n\nI found a bug.\n\n[DESCRIBE WHAT HAPPENED]\n\n--- DEBUG ---\n${JSON.stringify(state,null,2)}\n`);
-    window.location.href=`mailto:${BUG_REPORT_EMAIL}?subject=${subject}&body=${bodyEnc}`;
+    const bc=engine?Composite.allBodies(engine.world).filter(b=>!b.isStatic).length:0;
+    const state={version:'v10.0',timestamp:new Date().toISOString(),score,sessionDust,gamesPlayed,isFlipped,isRankedMode,isDailyRun,bc,anomaly:anomaly?anomaly.type:'none',userAgent:navigator.userAgent,screenSize:`${width}x${height}`};
+    window.location.href=`mailto:${BUG_REPORT_EMAIL}?subject=${encodeURIComponent('Supernova Bug v10.0')}&body=${encodeURIComponent('Describe bug:\n\n'+JSON.stringify(state,null,2))}`;
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
@@ -761,15 +773,22 @@ function playSound(type){
         if(type==='laser'){osc.type='sawtooth';osc.frequency.setValueAtTime(2000,now);osc.frequency.exponentialRampToValueAtTime(100,now+0.3);gain.gain.setValueAtTime(0.2,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.3);osc.start();osc.stop(now+0.3);}
         if(type==='rank_up'){osc.type='sine';osc.frequency.setValueAtTime(400,now);osc.frequency.setValueAtTime(600,now+0.15);osc.frequency.setValueAtTime(800,now+0.3);gain.gain.setValueAtTime(0.18,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.5);osc.start();osc.stop(now+0.5);}
         if(type==='rank_down'){osc.type='sine';osc.frequency.setValueAtTime(400,now);osc.frequency.setValueAtTime(280,now+0.2);osc.frequency.setValueAtTime(180,now+0.4);gain.gain.setValueAtTime(0.12,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.5);osc.start();osc.stop(now+0.5);}
+        if(type==='save'){osc.type='sine';osc.frequency.setValueAtTime(300,now);osc.frequency.exponentialRampToValueAtTime(900,now+0.3);gain.gain.setValueAtTime(0.18,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.4);osc.start();osc.stop(now+0.4);}
+        if(type==='milestone'){osc.type='square';osc.frequency.setValueAtTime(500,now);osc.frequency.exponentialRampToValueAtTime(700,now+0.2);gain.gain.setValueAtTime(0.08,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.3);osc.start();osc.stop(now+0.3);}
     }catch(e){}
 }
 
-// ── Screen shake / nebula ─────────────────────────────────────────────────────
+// ── Screen shake / flash / nebula ─────────────────────────────────────────────
 function screenShake(intensity=8,duration=200){
     if(!settings.shake||!render)return;
     const canvas=render.canvas,start=Date.now();
     const tick=()=>{const e=Date.now()-start;if(e>duration){canvas.style.transform='';return;}const t=1-e/duration;canvas.style.transform=`translate(${(Math.random()-0.5)*intensity*t}px,${(Math.random()-0.5)*intensity*t}px)`;requestAnimationFrame(tick);};
     tick();
+}
+function screenFlash(){
+    const el=document.getElementById('screen-flash');
+    el.style.opacity='0.25';el.style.transition='opacity 0s';
+    setTimeout(()=>{el.style.transition='opacity 0.4s';el.style.opacity='0';},30);
 }
 function setNebulaMood(mood){
     const el=document.getElementById('nebula');
@@ -777,6 +796,20 @@ function setNebulaMood(mood){
     else if(mood==='flipped')el.style.background=`radial-gradient(circle at 50% ${isFlipped?'20%':'80%'},#0a0d1a 0%,#010206 100%)`;
     else if(mood==='wind')el.style.background='radial-gradient(circle at 15% 50%,#0d0a1a 0%,#010206 100%)';
     else el.style.background='radial-gradient(circle at 50% 50%,#111827 0%,#010206 100%)';
+}
+
+// ── Session progress bar ──────────────────────────────────────────────────────
+function updateSessionBar(){
+    const milestoneIdx=Math.min(_sessionMilestoneIdx, SESSION_MILESTONES.length-1);
+    const target=SESSION_MILESTONES[milestoneIdx];
+    const pct=Math.min(score/target*100,100);
+    document.getElementById('session-bar').style.width=pct+'%';
+    // Advance milestone when reached
+    if(score>=target&&_sessionMilestoneIdx<SESSION_MILESTONES.length-1){
+        _sessionMilestoneIdx++;
+        playSound('milestone');
+        showToast(`🎯 Milestone: ${target.toLocaleString()} reached!`,'var(--success)');
+    }
 }
 
 // ── Planet drawing ────────────────────────────────────────────────────────────
@@ -795,8 +828,7 @@ function drawPlanet(ctx,x,y,lvl,angle,alpha=1,highlighted=false){
     if(happyFacesEnabled()&&!d.singularity&&d.r>=14){
         ctx.save();ctx.globalAlpha=alpha*0.85;const fs=d.r*0.38;
         ctx.fillStyle='rgba(0,0,0,0.7)';ctx.beginPath();ctx.arc(-fs*0.38,-fs*0.1,fs*0.18,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(fs*0.38,-fs*0.1,fs*0.18,0,Math.PI*2);ctx.fill();
-        ctx.strokeStyle='rgba(0,0,0,0.7)';ctx.lineWidth=fs*0.18;ctx.lineCap='round';ctx.beginPath();ctx.arc(0,fs*0.1,fs*0.48,0.15*Math.PI,0.85*Math.PI);ctx.stroke();
-        ctx.restore();
+        ctx.strokeStyle='rgba(0,0,0,0.7)';ctx.lineWidth=fs*0.18;ctx.lineCap='round';ctx.beginPath();ctx.arc(0,fs*0.1,fs*0.48,0.15*Math.PI,0.85*Math.PI);ctx.stroke();ctx.restore();
     }
     ctx.restore();
 }
@@ -813,9 +845,9 @@ function updatePreview(){drawPreviewCanvas('next-vis',nextLevel,48);drawPreviewC
 function activateHold(){
     if(!gameStarted||isPaused)return;
     if(holdUsedThisDrop){showToast('Hold already used this drop!','var(--danger)');return;}
-    if(holdLevel<0){holdLevel=nextLevel;nextLevel=afterNextLevel;afterNextLevel=Math.floor(Math.random()*3);}
+    if(holdLevel<0){holdLevel=nextLevel;nextLevel=afterNextLevel;afterNextLevel=getNextPlanetLevel();}
     else{const tmp=holdLevel;holdLevel=nextLevel;nextLevel=tmp;}
-    holdUsedThisDrop=true;playSound('hold');
+    holdUsedThisDrop=true;playSound('hold');haptic(12);
     const box=document.getElementById('hold-box');box.classList.remove('flash');void box.offsetWidth;box.classList.add('flash');
     updatePreview();
 }
@@ -833,21 +865,44 @@ function performMerge(a,b){
     const nl=a.plugin.lvl+1,mid={x:(a.position.x+b.position.x)/2,y:(a.position.y+b.position.y)/2};
     const now=Date.now(),graceMs=1500+comboGraceBonus();
     comboCount=(now-lastMergeTime<graceMs)?comboCount+1:1;lastMergeTime=now;
-    if(comboCount>1){const pop=document.getElementById('combo-popup');pop.innerText=`CHAIN x${comboCount}`;pop.style.opacity='1';setTimeout(()=>pop.style.opacity='0',800);}
+
+    // Combo celebration tiers
+    const pop=document.getElementById('combo-popup');
+    if(comboCount>=3){
+        pop.innerText=`CHAIN x${comboCount}`;
+        if(comboCount>=8){
+            // Mega combo — screen flash + big text + burst
+            pop.className='combo-popup mega';pop.style.opacity='1';
+            screenFlash();screenShake(14,300);haptic(80);
+            for(let i=0;i<30;i++)particles.push({x:mid.x,y:mid.y,vx:(Math.random()-0.5)*18,vy:(Math.random()-0.5)*18,life:1.0,color:['#fbbf24','#f472b6','#38bdf8','#ffffff'][Math.floor(Math.random()*4)]});
+        } else if(comboCount>=5){
+            // Big combo — screen flash
+            pop.className='combo-popup';pop.style.opacity='1';
+            screenFlash();screenShake(9,200);haptic(40);
+        } else {
+            // Regular chain
+            pop.className='combo-popup';pop.style.opacity='1';
+            screenShake(4,100);haptic(20);
+        }
+        setTimeout(()=>{pop.style.opacity='0';setTimeout(()=>pop.className='combo-popup',400);},900);
+    } else if(comboCount>1){
+        pop.className='combo-popup';pop.innerText=`CHAIN x${comboCount}`;pop.style.opacity='1';setTimeout(()=>pop.style.opacity='0',800);
+    }
+
     if(comboDecayTimer)clearTimeout(comboDecayTimer);
     comboDecayTimer=setTimeout(()=>{comboCount=0;updateComboMeter();},graceMs+100);
     updateComboMeter();
     nl>=6?playSound('bigmerge'):playSound('merge');
-    if(nl>=6)screenShake(nl*1.5,180+nl*10);
+    if(nl>=6){screenShake(nl*1.5,180+nl*10);haptic(Math.min(nl*8,60));}
     createExplosion(mid.x,mid.y,PLANET_DATA[Math.min(nl,9)].color);
     score+=nl*100*comboCount;
     const dustEarned=Math.ceil(nl*dustBonus());sessionDust+=dustEarned;
     const scoreEl=document.getElementById('score-label');scoreEl.innerText=score.toLocaleString();scoreEl.classList.remove('pop');void scoreEl.offsetWidth;scoreEl.classList.add('pop');
-    refreshDustHUD();
+    refreshDustHUD();updateSessionBar();
     if(gamesPlayed>1&&score>previousBest&&score>(_statsCache||{best:0}).best){previousBest=score;flashNewBest();}
     const dots=document.querySelectorAll('.evo-dot');if(dots[nl])dots[nl].classList.add('active');
     Composite.remove(engine.world,[a,b]);if(nl<PLANET_DATA.length)spawn(mid.x,mid.y,nl);
-    if(_statsCache&&nl>_statsCache.discovered){_statsCache.discovered=nl;safeSet('sn_v9',_statsCache);}
+    if(_statsCache&&nl>_statsCache.discovered){_statsCache.discovered=nl;safeSet('sn_v10',_statsCache);}
     _sMerges++;_sMaxCombo=Math.max(_sMaxCombo,comboCount);_sBestPlanet=Math.max(_sBestPlanet,nl);
     trackMission('merges',_sMerges);trackMission('combo',_sMaxCombo);trackMission('score',score);trackMission('dust',sessionDust);
 }
@@ -860,29 +915,50 @@ function updateComboMeter(){
     bar.style.background=comboCount>=5?'var(--danger)':comboCount>=3?'#f97316':'var(--gold)';
 }
 
+// ── Near Miss Save ────────────────────────────────────────────────────────────
+function nearMissSave(){
+    // Remove the 3 bodies that are highest up (closest to danger line)
+    const bodies=Composite.allBodies(engine.world).filter(b=>!b.isStatic&&b.plugin?.lvl!==undefined);
+    const limitY=isFlipped?PLAY_H-80:80;
+    // Sort by proximity to danger line
+    const sorted=[...bodies].sort((a,b)=>isFlipped?b.position.y-a.position.y:a.position.y-b.position.y);
+    const toRemove=sorted.slice(0,3);
+    toRemove.forEach(b=>{createExplosion(b.position.x,b.position.y,PLANET_DATA[b.plugin.lvl].color);Composite.remove(engine.world,b);});
+    reviveUsed=true;
+    playSound('save');screenShake(10,200);haptic(50);
+    const banner=document.getElementById('near-miss-banner');
+    banner.style.opacity='1';banner.style.transition='opacity 0.3s';
+    setTimeout(()=>{banner.style.transition='opacity 1s';banner.style.opacity='0';},2000);
+    showToast('🛡️ Near Miss Save used!','var(--success)');
+    // Reset warn timers
+    bodies.forEach(b=>{if(b.plugin)b.plugin.warn=0;});
+}
+
 // ── Power-ups ─────────────────────────────────────────────────────────────────
 function buyPowerUp(cost,maxLvl){
+    if(gamesPlayed<3){showToast('Power-ups unlock after 3 games!','var(--wind)');return;}
     const stats=loadStats(),total=stats.dust+sessionDust;
     if(total<cost){showToast('Not enough Stardust!','var(--danger)');return;}
     if(sessionDust>=cost)sessionDust-=cost;else{stats.dust-=(cost-sessionDust);sessionDust=0;}
-    _statsCache=stats;safeSet('sn_v9',stats);
+    _statsCache=stats;safeSet('sn_v10',stats);
     Composite.allBodies(engine.world).forEach(b=>{if(b.plugin?.lvl<=maxLvl){createExplosion(b.position.x,b.position.y,PLANET_DATA[b.plugin.lvl].color);Composite.remove(engine.world,b);}});
     refreshDustHUD();showToast('Power-up activated! 💥','var(--success)');togglePause();
 }
 function buySeismic(){
+    if(gamesPlayed<3){showToast('Power-ups unlock after 3 games!','var(--wind)');return;}
     const cost=150,stats=loadStats(),total=stats.dust+sessionDust;
     if(total<cost){showToast('Not enough Stardust!','var(--danger)');return;}
     if(sessionDust>=cost)sessionDust-=cost;else{stats.dust-=(cost-sessionDust);sessionDust=0;}
-    _statsCache=stats;safeSet('sn_v9',stats);refreshDustHUD();togglePause();
+    _statsCache=stats;safeSet('sn_v10',stats);refreshDustHUD();togglePause();
     setTimeout(()=>{Composite.allBodies(engine.world).forEach(b=>{if(!b.isStatic&&b.plugin?.lvl!==undefined)Body.applyForce(b,b.position,{x:(Math.random()-0.5)*0.015,y:isFlipped?0.02:-0.02});});screenShake(14,350);playSound('seismic');showToast('🌍 Seismic Pulse!','var(--accent)');},300);
 }
 function buyLaserStrike(){
+    if(gamesPlayed<3){showToast('Power-ups unlock after 3 games!','var(--wind)');return;}
     const cost=400,stats=loadStats(),total=stats.dust+sessionDust;
     if(total<cost){showToast('Not enough Stardust!','var(--danger)');return;}
     if(sessionDust>=cost)sessionDust-=cost;else{stats.dust-=(cost-sessionDust);sessionDust=0;}
-    _statsCache=stats;safeSet('sn_v9',stats);refreshDustHUD();
-    isPaused=false;engine.enabled=true;
-    document.getElementById('pause-menu').style.display='none';
+    _statsCache=stats;safeSet('sn_v10',stats);refreshDustHUD();
+    isPaused=false;engine.enabled=true;document.getElementById('pause-menu').style.display='none';
     laserMode=true;laserTargets=[];laserShip=null;laserBeams=[];
     document.getElementById('laser-overlay').classList.add('active');
     showToast('🚀 Laser mode — tap up to 3 planets!','var(--accent)');
@@ -896,7 +972,24 @@ function fireLaser(){
     laserShip.fireQueue.forEach(t=>{t._fireX=Math.max(100,t.position.x-50);});
 }
 
-// ── Laser ship draw ───────────────────────────────────────────────────────────
+// ── Gravity flip ──────────────────────────────────────────────────────────────
+function flipGravity(){
+    if(gamesPlayed<3){showToast('Gravity flip unlocks after 3 games!','var(--wind)');return;}
+    if(gravityCharge<CHARGE_TIME){showToast('Gravity recharging…','var(--gold)');return;}
+    isFlipped=!isFlipped;engine.gravity.y*=-1;gravityCharge=0;
+    playSound('flip');screenShake(12,300);haptic(30);setNebulaMood('flipped');
+    _sFlips++;trackMission('flips',_sFlips);
+}
+
+// ── Quick Restart ─────────────────────────────────────────────────────────────
+function quickRestart(){
+    if(!gameStarted)return;
+    saveStats(false);
+    isPaused=false;
+    startGame();
+}
+
+// ── Laser ship ────────────────────────────────────────────────────────────────
 function drawLaserShip(ctx){
     if(!laserShip)return;
     const s=laserShip;s.x+=s.vx;
@@ -904,20 +997,12 @@ function drawLaserShip(ctx){
     ctx.save();ctx.fillStyle=eng;ctx.beginPath();ctx.arc(s.x-38,s.y,20,0,Math.PI*2);ctx.fill();ctx.restore();
     ctx.save();ctx.translate(s.x,s.y);ctx.fillStyle='#c0d8ff';ctx.beginPath();ctx.moveTo(-42,0);ctx.lineTo(20,-15);ctx.lineTo(48,0);ctx.lineTo(20,15);ctx.closePath();ctx.fill();ctx.fillStyle='#38bdf8';ctx.beginPath();ctx.ellipse(12,0,15,8,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(56,189,248,0.45)';ctx.beginPath();ctx.moveTo(-8,-15);ctx.lineTo(14,-24);ctx.lineTo(20,-15);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(-8,15);ctx.lineTo(14,24);ctx.lineTo(20,15);ctx.closePath();ctx.fill();ctx.restore();
     if(!s.done){
-        if(s.shotCooldown>0){s.shotCooldown--;}
+        if(s.shotCooldown>0)s.shotCooldown--;
         else{const tgt=s.fireQueue[s.targetIdx];if(tgt&&s.x>=tgt._fireX){if(!tgt.plugin?.merged){laserBeams.push({x1:s.x+48,y1:s.y,x2:tgt.position.x,y2:tgt.position.y,life:1.0});createExplosion(tgt.position.x,tgt.position.y,PLANET_DATA[tgt.plugin.lvl].color);Composite.remove(engine.world,tgt);playSound('laser');screenShake(8,150);s.shotCooldown=28;}s.targetIdx++;if(s.targetIdx>=s.fireQueue.length)s.done=true;}}
     }
     laserBeams=laserBeams.filter(b=>b.life>0);
     laserBeams.forEach(b=>{ctx.save();ctx.globalAlpha=b.life;ctx.strokeStyle='#ef4444';ctx.lineWidth=3;ctx.shadowColor='#ef4444';ctx.shadowBlur=14;ctx.beginPath();ctx.moveTo(b.x1,b.y1);ctx.lineTo(b.x2,b.y2);ctx.stroke();ctx.fillStyle=`rgba(239,68,68,${b.life})`;ctx.beginPath();ctx.arc(b.x2,b.y2,9*b.life,0,Math.PI*2);ctx.fill();ctx.restore();b.life-=0.04;});
     if(s.x>width+110)laserShip=null;
-}
-
-// ── Gravity flip ──────────────────────────────────────────────────────────────
-function flipGravity(){
-    if(gravityCharge<CHARGE_TIME){showToast('Gravity recharging…','var(--gold)');return;}
-    isFlipped=!isFlipped;engine.gravity.y*=-1;gravityCharge=0;
-    playSound('flip');screenShake(12,300);setNebulaMood('flipped');
-    _sFlips++;trackMission('flips',_sFlips);
 }
 
 // ── Comet ─────────────────────────────────────────────────────────────────────
@@ -926,7 +1011,7 @@ function cometCorridorClear(y,r){const bodies=Composite.allBodies(engine.world).
 function trySpawnComet(){const r=14;for(let i=0;i<8;i++){const y=PLAY_H*0.2+Math.random()*PLAY_H*0.45;if(cometCorridorClear(y,r)){spawnComet(y,r);return;}}scheduleComet();}
 function spawnComet(y,r=14){const fromLeft=Math.random()>0.5,angle=(Math.random()*25-12)*(Math.PI/180),speed=COMET_SPEED+Math.random()*2;comet={x:fromLeft?-40:width+40,y,vx:fromLeft?speed*Math.cos(angle):-speed*Math.cos(angle),vy:speed*Math.sin(angle),radius:r,alive:true};cometTail=[];const btn=document.getElementById('comet-btn');btn.style.display='block';btn.style.pointerEvents='auto';updateCometBtn();const crossTime=(width+80)/speed*(1000/60)+500;setTimeout(()=>{if(comet&&comet.alive)dismissComet();},crossTime);}
 function updateCometBtn(){if(!comet)return;const btn=document.getElementById('comet-btn');btn.style.left=(comet.x-35)+'px';btn.style.top=(comet.y+TOP_BAR-35)+'px';}
-function catchComet(){if(!comet||!comet.alive)return;const cx=comet.x,cy=comet.y;for(let i=0;i<40;i++){const a=(Math.PI*2/40)*i,sp=4+Math.random()*8;particles.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1.0,color:i%3===0?'#fbbf24':i%3===1?'#38bdf8':'#ffffff'});}playSound('comet');screenShake(10,250);gravityCharge=CHARGE_TIME;showToast('☄️ COMET CAUGHT! Gravity recharged!','var(--accent)');_dismissComet();scheduleComet();}
+function catchComet(){if(!comet||!comet.alive)return;const cx=comet.x,cy=comet.y;for(let i=0;i<40;i++){const a=(Math.PI*2/40)*i,sp=4+Math.random()*8;particles.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1.0,color:i%3===0?'#fbbf24':i%3===1?'#38bdf8':'#ffffff'});}playSound('comet');screenShake(10,250);haptic(40);gravityCharge=CHARGE_TIME;showToast('☄️ COMET CAUGHT! Gravity recharged!','var(--accent)');_dismissComet();scheduleComet();}
 function _dismissComet(){comet=null;cometTail=[];const btn=document.getElementById('comet-btn');btn.style.display='none';btn.style.pointerEvents='none';}
 function dismissComet(){_dismissComet();scheduleComet();}
 function drawComet(ctx){
@@ -942,7 +1027,10 @@ function drawComet(ctx){
 }
 
 // ── Solar wind ────────────────────────────────────────────────────────────────
-function scheduleAnomaly(){if(anomalyTimer)clearTimeout(anomalyTimer);const d=ANOMALY_INTERVAL_MIN+Math.random()*(ANOMALY_INTERVAL_MAX-ANOMALY_INTERVAL_MIN);anomalyTimer=setTimeout(()=>{if(gameStarted&&!isPaused)warnAnomaly();else scheduleAnomaly();},d);}
+function scheduleAnomaly(){
+    if(gamesPlayed<3){anomalyTimer=setTimeout(scheduleAnomaly,5000);return;}
+    if(anomalyTimer)clearTimeout(anomalyTimer);const d=ANOMALY_INTERVAL_MIN+Math.random()*(ANOMALY_INTERVAL_MAX-ANOMALY_INTERVAL_MIN);anomalyTimer=setTimeout(()=>{if(gameStarted&&!isPaused)warnAnomaly();else scheduleAnomaly();},d);
+}
 function warnAnomaly(){const w=document.getElementById('anomaly-warn');w.innerText='⚠️ SOLAR WIND INCOMING!';w.style.display='block';setTimeout(()=>{w.style.display='none';startAnomaly();},3000);}
 function startAnomaly(){const dir=Math.random()>0.5?1:-1;anomaly={type:'solar_wind',dir,force:0.0003,endTime:Date.now()+ANOMALY_DURATION};const b=document.getElementById('anomaly-banner');b.innerText=`🌬️ SOLAR WIND — pushing ${dir>0?'RIGHT':'LEFT'}`;b.style.display='block';setNebulaMood('wind');}
 function stopAnomaly(){anomaly=null;document.getElementById('anomaly-banner').style.display='none';setNebulaMood('normal');scheduleAnomaly();}
@@ -962,7 +1050,7 @@ function startBlackHole(){
     },4000);
 }
 
-// ── Ghost planet Y ────────────────────────────────────────────────────────────
+// ── Ghost Y ───────────────────────────────────────────────────────────────────
 function calcGhostY(x,flipped){
     const r=PLANET_DATA[nextLevel].r;
     const bodies=Composite.allBodies(engine.world).filter(b=>!b.isStatic&&b.plugin?.lvl!==undefined);
@@ -972,7 +1060,7 @@ function calcGhostY(x,flipped){
 }
 
 // ── End screen ────────────────────────────────────────────────────────────────
-function showEndScreen(dustEarned, wasNewBest){
+function showEndScreen(dustEarned,wasNewBest){
     document.getElementById('end-score').innerText=score.toLocaleString();
     document.getElementById('end-merges').innerText=_sMerges;
     document.getElementById('end-best-planet').innerText=_sBestPlanet>=0?PLANET_DATA[Math.min(_sBestPlanet,9)].name:'—';
@@ -981,47 +1069,61 @@ function showEndScreen(dustEarned, wasNewBest){
     document.getElementById('end-time').innerText=formatRunTime(Date.now()-_runStartTime);
     document.getElementById('end-new-best-banner').style.display=(gamesPlayed>1&&wasNewBest)?'block':'none';
 
-    // Ranked RP change card
+    // Run highlight
+    const rhEl=document.getElementById('run-highlight');
+    rhEl.innerText=generateRunHighlight();rhEl.style.display='block';
+
+    // Daily run result
+    const drEl=document.getElementById('daily-run-result');
+    if(isDailyRun){
+        const today=new Date().toDateString();
+        const existing=getDailyRunStatus();
+        if(!existing||score>existing){
+            safeSet('sn_daily_run',{date:today,score});
+            drEl.innerText=`🌅 Daily Run best: ${score.toLocaleString()} — saved!`;
+        } else {
+            drEl.innerText=`🌅 Daily Run: your best is ${existing.toLocaleString()}`;
+        }
+        drEl.style.display='block';
+        updateDailyRunUI();
+    } else { drEl.style.display='none'; }
+
+    // RP change
     const rpCard=document.getElementById('rp-change-card');
-    if(isRankedMode){
+    if(isRankedMode&&!isDailyRun){
         const delta=calcRPChange(score);
         const {oldRP,newRP}=applyRPChange(delta);
-        const oldRank=getRankFromRP(oldRP), newRank=getRankFromRP(newRP);
+        const oldRank=getRankFromRP(oldRP),newRank=getRankFromRP(newRP);
         const rankChanged=oldRank.name!==newRank.name;
-        const sign=delta>=0?'+':'';
-        const color=delta>=0?'var(--success)':'var(--danger)';
-        let html=`<div style="font-size:0.75em;opacity:0.55;margin-bottom:4px">⚔️ RANKED RESULT</div>`;
-        html+=`<div style="font-size:1.6em;font-weight:900;color:${color}">${sign}${delta} RP</div>`;
-        html+=`<div style="font-size:0.8em;margin-top:4px">${newRP.toLocaleString()} RP total</div>`;
-        if(rankChanged){
-            const up=newRank.min>oldRank.min;
-            html+=`<div style="margin-top:8px;font-size:0.9em;font-weight:900;color:${up?'var(--gold)':'var(--danger)'}">${up?'🎉 RANK UP':'📉 RANK DOWN'}: ${newRank.icon} ${newRank.name}</div>`;
-            playSound(up?'rank_up':'rank_down');
-        }
-        rpCard.style.display='block';
-        rpCard.style.background=delta>=0?'rgba(74,222,128,0.08)':'rgba(239,68,68,0.08)';
-        rpCard.style.border=`1px solid ${delta>=0?'rgba(74,222,128,0.3)':'rgba(239,68,68,0.3)'}`;
-        rpCard.innerHTML=html;
+        const sign=delta>=0?'+':'',color=delta>=0?'var(--success)':'var(--danger)';
+        let html=`<div style="font-size:0.72em;opacity:0.55;margin-bottom:4px">⚔️ RANKED RESULT</div>`;
+        html+=`<div style="font-size:1.5em;font-weight:900;color:${color}">${sign}${delta} RP</div>`;
+        html+=`<div style="font-size:0.78em;margin-top:3px">${newRP.toLocaleString()} RP total</div>`;
+        if(rankChanged){const up=newRank.min>oldRank.min;html+=`<div style="margin-top:7px;font-size:0.88em;font-weight:900;color:${up?'var(--gold)':'var(--danger)'}">${up?'🎉 RANK UP':'📉 RANK DOWN'}: ${newRank.icon} ${newRank.name}</div>`;playSound(up?'rank_up':'rank_down');}
+        rpCard.style.display='block';rpCard.style.background=delta>=0?'rgba(74,222,128,0.08)':'rgba(239,68,68,0.08)';rpCard.style.border=`1px solid ${delta>=0?'rgba(74,222,128,0.3)':'rgba(239,68,68,0.3)'}`;rpCard.innerHTML=html;
         updateRankHUD(newRP);
-    } else {
-        rpCard.style.display='none';
-    }
+    } else { rpCard.style.display='none'; }
 
     document.getElementById('end-screen').style.display='flex';
 }
-function endScreenPlay(){document.getElementById('end-screen').style.display='none';startGame();}
-function endScreenHome(){document.getElementById('end-screen').style.display='none';loadStats();document.getElementById('home-screen').style.display='flex';}
+function endScreenPlay(){document.getElementById('end-screen').style.display='none';isDailyRun=false;startGame();}
+function endScreenHome(){document.getElementById('end-screen').style.display='none';isDailyRun=false;loadStats();document.getElementById('home-screen').style.display='flex';}
 
 // ── Pause / abandon ───────────────────────────────────────────────────────────
 function togglePause(){
     if(!gameStarted)return;
     isPaused=!isPaused;engine.enabled=!isPaused;
     document.getElementById('pause-menu').style.display=isPaused?'flex':'none';
+    // Show/hide power-ups based on gamesPlayed
+    const ppSection=document.getElementById('power-ups-section');
+    const newbieNote=document.getElementById('newbie-note');
+    if(ppSection)ppSection.style.display=gamesPlayed<3?'none':'block';
+    if(newbieNote)newbieNote.style.display=gamesPlayed<3?'block':'none';
     if(isPaused){renderDiscoveryLog();if(cometTimer)clearTimeout(cometTimer);if(anomalyTimer)clearTimeout(anomalyTimer);}
     else{scheduleComet();scheduleAnomaly();}
 }
 function confirmAbandon(){isPaused=false;document.getElementById('pause-menu').style.display='none';gameOver();}
-function restartMission(){saveStats(false);isPaused=false;document.getElementById('pause-menu').style.display='none';startGame();}
+function restartMission(){saveStats(false);isPaused=false;document.getElementById('pause-menu').style.display='none';isDailyRun=false;startGame();}
 
 function gameOver(){
     const dustEarned=sessionDust;
@@ -1037,11 +1139,15 @@ function gameOver(){
     document.getElementById('anomaly-banner').style.display='none';
     document.getElementById('anomaly-warn').style.display='none';
     document.getElementById('ranked-badge').style.display='none';
+    document.getElementById('daily-run-badge').style.display='none';
+    document.getElementById('quick-restart-btn').style.display='none';
+    document.getElementById('stardust-hud').style.display='none';
     document.getElementById('top-bar').style.display='none';
     document.getElementById('bottom-bar').style.display='none';
     document.getElementById('evo-bar').style.display='none';
-    setNebulaMood('normal');
-    showEndScreen(dustEarned, wasNewBest);
+    document.getElementById('session-bar-wrap').style.display='none';
+    setNebulaMood('normal');safeSet('sn_last_played',Date.now());
+    showEndScreen(dustEarned,wasNewBest);
 }
 
 // ── Discovery log ─────────────────────────────────────────────────────────────
@@ -1062,7 +1168,7 @@ function renderDiscoveryLog(){
 const TUT_STEPS=[
     {text:'<b>Drag left and right</b> to aim, then <b>lift your finger</b> to drop a planet.',spotFn:()=>({x:width/2,y:TOP_BAR+80,r:60}),arrowFn:()=>({x:width/2-10,y:TOP_BAR+50}),label:'STEP 1 OF 3'},
     {text:'Drop planets of the <b>same type</b> on each other to <b>merge</b> them. Chain merges for a <b>COMBO!</b>',spotFn:()=>({x:width/2,y:TOP_BAR+PLAY_H*0.5,r:80}),arrowFn:()=>({x:width/2-10,y:TOP_BAR+PLAY_H*0.3}),label:'STEP 2 OF 3'},
-    {text:'Don\'t let planets cross the <b style="color:var(--danger)">red line</b>. Use the <b style="color:var(--gold)">G button</b> to flip gravity!',spotFn:()=>({x:width-40,y:height-BOT_BAR/2,r:44}),arrowFn:()=>({x:width-80,y:height-BOT_BAR-30}),label:'STEP 3 OF 3'},
+    {text:'Don\'t let planets cross the <b style="color:var(--danger)">red line</b>. Use the <b style="color:var(--gold)">G button</b> to flip gravity — unlocks after game 3!',spotFn:()=>({x:width-40,y:height-BOT_BAR/2,r:44}),arrowFn:()=>({x:width-80,y:height-BOT_BAR-30}),label:'STEP 3 OF 3'},
 ];
 function startTutorial(){tutStep=0;tutActive=true;if(engine)engine.enabled=false;document.getElementById('tutorial-overlay').classList.add('active');showTutStep(0);}
 function showTutStep(i){
@@ -1083,7 +1189,11 @@ function startGame(){
     document.getElementById('top-bar').style.display='flex';
     document.getElementById('bottom-bar').style.display='flex';
     document.getElementById('evo-bar').style.display='flex';
+    document.getElementById('session-bar-wrap').style.display='block';
+    document.getElementById('stardust-hud').style.display='block';
+    document.getElementById('quick-restart-btn').style.display='block';
     document.getElementById('ranked-badge').style.display=isRankedMode?'block':'none';
+    document.getElementById('daily-run-badge').style.display=isDailyRun?'block':'none';
 
     if(runner){Runner.stop(runner);runner=null;}
     if(render){Render.stop(render);if(render.canvas)render.canvas.remove();render=null;}
@@ -1107,21 +1217,28 @@ function startGame(){
     gravityCharge=CHARGE_TIME;holdLevel=-1;holdUsedThisDrop=false;
     anomaly=null;document.getElementById('anomaly-banner').style.display='none';
     laserMode=false;laserShip=null;laserTargets=[];laserBeams=[];
+    reviveUsed=false;_sessionMilestoneIdx=0;
     gamesPlayed++;_sMerges=0;_sMaxCombo=0;_sFlips=0;_sBestPlanet=0;_runStartTime=Date.now();
     previousBest=(_statsCache||loadStats()).best;
-    nextLevel=Math.floor(Math.random()*3);afterNextLevel=Math.floor(Math.random()*3);
+
+    // Seed daily RNG if daily run
+    if(isDailyRun)seedRNG(getDailySeed());
+
     document.getElementById('score-label').innerText='0';
+    document.getElementById('session-bar').style.width='0%';
     document.getElementById('evo-bar').innerHTML=PLANET_DATA.map(p=>`<div class="evo-dot" style="background:${p.color}"></div>`).join('');
+
+    nextLevel=getNextPlanetLevel();afterNextLevel=getNextPlanetLevel();
     updatePreview();loadStats();initEvents();setNebulaMood('normal');
     comet=null;cometTail=[];if(cometTimer)clearTimeout(cometTimer);_dismissComet();scheduleComet();scheduleAnomaly();
-    if(!gravityTooltipShown){gravityTooltipShown=true;const tip=document.getElementById('g-tooltip');tip.classList.add('show');setTimeout(()=>tip.classList.remove('show'),3500);}
-    if(gamesPlayed===1&&!safeGet('sn_tutdone')) setTimeout(startTutorial,800);
+    if(!gravityTooltipShown&&gamesPlayed>=3){gravityTooltipShown=true;const tip=document.getElementById('g-tooltip');tip.classList.add('show');setTimeout(()=>tip.classList.remove('show'),3500);}
+    if(gamesPlayed===1&&!safeGet('sn_tutdone'))setTimeout(startTutorial,800);
 }
 
 // ── Events ────────────────────────────────────────────────────────────────────
 function initEvents(){
     Events.off(engine);
-    const GC=0.00012, MAL=3;
+    const GC=0.00012,MAL=3;
     Events.on(engine,'beforeUpdate',()=>{
         if(!gameStarted||isPaused)return;
         const bodies=Composite.allBodies(engine.world).filter(b=>!b.isStatic&&b.plugin?.lvl!==undefined);
@@ -1140,8 +1257,7 @@ function initEvents(){
         ctx.setLineDash([5,8]);ctx.strokeStyle='rgba(56,189,248,0.4)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(currentX,isFlipped?PLAY_H:0);ctx.lineTo(currentX,isFlipped?PLAY_H-100:100);ctx.stroke();
         const ghostY=calcGhostY(currentX,isFlipped);drawPlanet(ctx,currentX,ghostY,nextLevel,0,0.18);
         ctx.setLineDash([3,5]);ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(currentX,isFlipped?PLAY_H-100:100);ctx.lineTo(currentX,ghostY);ctx.stroke();
-        ctx.setLineDash([10,10]);ctx.strokeStyle='rgba(239,68,68,0.5)';ctx.beginPath();ctx.moveTo(0,limitY);ctx.lineTo(width,limitY);ctx.stroke();
-        ctx.restore();
+        ctx.setLineDash([10,10]);ctx.strokeStyle='rgba(239,68,68,0.5)';ctx.beginPath();ctx.moveTo(0,limitY);ctx.lineTo(width,limitY);ctx.stroke();ctx.restore();
         if(settings.particles){particles=particles.filter(p=>p.life>0);particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life-=0.02;ctx.save();ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();ctx.restore();});}
         drawComet(ctx);drawLaserShip(ctx);
         Composite.allBodies(engine.world).forEach(b=>{
@@ -1151,7 +1267,15 @@ function initEvents(){
             if(lvl>=3){const pd=PLANET_DATA[lvl],inf=pd.r*5,alpha=Math.min(0.04+(lvl-3)*0.012,0.18);ctx.save();ctx.strokeStyle=pd.color;ctx.globalAlpha=alpha;ctx.lineWidth=1;ctx.setLineDash([3,6]);ctx.beginPath();ctx.arc(b.position.x,b.position.y,inf,0,Math.PI*2);ctx.stroke();ctx.restore();}
             if(lvl===9&&blackHoleTimer){const pulse=0.3+0.2*Math.sin(Date.now()/400);ctx.save();ctx.strokeStyle='#f472b6';ctx.globalAlpha=pulse;ctx.lineWidth=3;ctx.setLineDash([]);ctx.beginPath();ctx.arc(b.position.x,b.position.y,PLANET_DATA[9].r*1.35,0,Math.PI*2);ctx.stroke();ctx.restore();}
             const crossing=isFlipped?b.position.y>limitY:b.position.y<limitY;
-            if(crossing&&(Date.now()-b.plugin.timestamp>2000)){danger=true;if(!b.plugin.warn)b.plugin.warn=Date.now();if(Date.now()-b.plugin.warn>7000+dangerTimeBonus())gameOver();}else{b.plugin.warn=0;}
+            if(crossing&&(Date.now()-b.plugin.timestamp>2000)){
+                danger=true;if(!b.plugin.warn)b.plugin.warn=Date.now();
+                const graceMs=7000+dangerTimeBonus();
+                if(Date.now()-b.plugin.warn>graceMs){
+                    // Near miss save intercept
+                    if(!reviveUsed){nearMissSave();}
+                    else{gameOver();}
+                }
+            }else{b.plugin.warn=0;}
         });
         const dangerEl=document.getElementById('danger-alert');dangerEl.style.display=danger?'block':'none';dangerEl.style.top=isFlipped?(height-BOT_BAR-60)+'px':(TOP_BAR+10)+'px';
         if(danger!==dangerActive){dangerActive=danger;setNebulaMood(danger?'danger':anomaly?'wind':isFlipped?'flipped':'normal');}
@@ -1176,18 +1300,18 @@ window.addEventListener('pointerup',e=>{
     if(!gameStarted||isPaused)return;
     if(Date.now()-lastDropTime<600)return;
     if(e.target.closest('.icon-btn,.btn,.shop-btn,#gravity-ui,.toggle,#bottom-bar,#top-bar,#hold-box'))return;
-    spawn(currentX,isFlipped?PLAY_H-100:80,nextLevel);playSound('drop');
+    spawn(currentX,isFlipped?PLAY_H-100:80,nextLevel);playSound('drop');haptic(8);
     const dots=document.querySelectorAll('.evo-dot');if(dots[nextLevel])dots[nextLevel].classList.add('active');
     _sBestPlanet=Math.max(_sBestPlanet,nextLevel);
-    nextLevel=afterNextLevel;afterNextLevel=Math.floor(Math.random()*3);
+    nextLevel=afterNextLevel;afterNextLevel=getNextPlanetLevel();
     holdUsedThisDrop=false;updatePreview();lastDropTime=Date.now();
 });
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&gameStarted&&!isPaused)togglePause();});
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
-loadSettings();checkDailyBonus();initMissions();loadStats();
-const _savedStreak=safeGet('sn_streak')||{count:0};
-updateStreakDisplay(_savedStreak.count);
+loadSettings();checkDailyBonus();checkIdleDust();initMissions();loadStats();
+updateDailyRunUI();
+const _ss=safeGet('sn_streak')||{count:0};updateStreakDisplay(_ss.count,false);
 </script>
 </body>
 </html>
