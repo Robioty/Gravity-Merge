@@ -131,13 +131,13 @@
         .const-level{font-size:0.68em;color:var(--accent);font-weight:900;margin-top:2px;}
         #daily-banner{background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(56,189,248,0.1));border:1px solid rgba(251,191,36,0.4);border-radius:14px;padding:10px;margin-bottom:10px;font-size:0.82em;display:none;}
         #const-dust-display{background:var(--glass);border:1px solid rgba(251,191,36,0.3);border-radius:12px;padding:8px 14px;color:var(--gold);font-weight:900;margin-bottom:12px;font-size:0.9em;}
-        #leaderboard-screen{position:fixed;inset:0;background:rgba(1,4,9,0.98);z-index:2500;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
-        .lb-row{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.05);border-radius:14px;padding:11px 14px;margin-bottom:8px;}
+        #leaderboard-screen{position:fixed;inset:0;background:rgba(1,4,9,0.98);z-index:2500;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
+        .lb-row{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.05);border-radius:14px;padding:9px 12px;margin-bottom:7px;}
         .lb-row.lb-you{background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.3);}
-        .lb-pos{font-size:1em;font-weight:900;min-width:28px;text-align:center;color:var(--gold);}
-        .lb-name{flex:1;font-weight:700;font-size:0.88em;}
-        .lb-score{font-weight:900;color:var(--accent);font-size:0.88em;}
-        .lb-rank-tag{font-size:0.62em;font-weight:900;padding:2px 8px;border-radius:6px;border:1px solid;white-space:nowrap;}
+        .lb-pos{font-size:0.9em;font-weight:900;min-width:24px;text-align:center;color:var(--gold);}
+        .lb-name{flex:1;font-weight:700;font-size:0.82em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px;}
+        .lb-score{font-weight:900;color:var(--accent);font-size:0.82em;white-space:nowrap;}
+        .lb-rank-tag{font-size:0.58em;font-weight:900;padding:2px 6px;border-radius:6px;border:1px solid;white-space:nowrap;flex-shrink:0;}
         #rank-screen{position:fixed;inset:0;background:rgba(1,4,9,0.98);z-index:2500;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
         .rank-row{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border-radius:14px;padding:11px 14px;margin-bottom:6px;}
         .rank-row.rank-current{border:1px solid var(--accent);background:rgba(56,189,248,0.08);}
@@ -654,7 +654,8 @@ const CONSTELLATIONS=[
     {id:'combo_grace',title:'Combo Flow',       desc:'+0.2s combo grace window',    maxLvl:5,baseCost:400,costMult:1.7},
     {id:'dust_bonus', title:'Stardust Magnet',  desc:'+10% Stardust per merge',     maxLvl:5,baseCost:600,costMult:2.0},
     {id:'danger_time',title:'Crisis Buffer',    desc:'+1s danger grace period',     maxLvl:3,baseCost:800,costMult:2.5},
-    {id:'happy_faces',title:'Happy Planets 😊', desc:'Planets show smiley faces!', maxLvl:1,baseCost:300,costMult:99},
+    {id:'happy_faces',title:'Happy Planets 😊', desc:'Planets show smiley faces — toggle once unlocked', maxLvl:1,baseCost:300,costMult:99},
+    {id:'fart_sounds',title:'Planet Gas 💨',    desc:'Planets fart on merge — toggle once unlocked',     maxLvl:1,baseCost:200,costMult:99},
 ];
 function getConstLevels(){return safeGet('sn_const')||{};}
 function getConstLevel(id){return(getConstLevels()[id]||0);}
@@ -663,15 +664,41 @@ function gravSpeedBonus(){return 1+getConstLevel('grav_speed')*0.10;}
 function comboGraceBonus(){return getConstLevel('combo_grace')*200;}
 function dustBonus(){return 1+getConstLevel('dust_bonus')*0.10;}
 function dangerTimeBonus(){return getConstLevel('danger_time')*1000;}
-function happyFacesEnabled(){return getConstLevel('happy_faces')>=1;}
+function happyFacesEnabled(){return getConstLevel('happy_faces')>=1 && (safeGet('sn_cosmetic_toggles')||{}).happy_faces!==false;}
+function fartSoundsEnabled(){return getConstLevel('fart_sounds')>=1 && (safeGet('sn_cosmetic_toggles')||{}).fart_sounds!==false;}
+
+function toggleCosmeticSetting(id){
+    const t=safeGet('sn_cosmetic_toggles')||{};
+    t[id]=!( t[id]!==false ); // flip (default is true if unlocked)
+    safeSet('sn_cosmetic_toggles',t);
+    showConstellation(); // re-render to show updated toggle state
+}
+
 function showConstellation(){
     const list=document.getElementById('constellation-list');list.innerHTML='';
     const levels=getConstLevels(),total=(_statsCache?_statsCache.dust:0)+sessionDust;
     const cv=document.getElementById('const-dust-val');if(cv)cv.innerText=total.toLocaleString();
+    const cosmeticToggles=safeGet('sn_cosmetic_toggles')||{};
+    // COSMETIC IDs that get a toggle once purchased
+    const cosmeticIds=['happy_faces','fart_sounds'];
     CONSTELLATIONS.forEach(c=>{
         const lvl=levels[c.id]||0,maxed=lvl>=c.maxLvl,cost=constCost(c);
+        const isCosmetic=cosmeticIds.includes(c.id);
         const row=document.createElement('div');row.className='const-row';
-        row.innerHTML=`<div class="const-info"><div class="const-title">${c.title}</div><div class="const-desc">${c.desc}</div><div class="const-level">Level ${lvl}/${c.maxLvl}</div></div>${maxed?'<span style="color:var(--gold);font-weight:900">MAX ✓</span>':`<button class="shop-btn" onclick="buyConst('${c.id}')" ${total<cost?'disabled style="opacity:0.4"':''}>✨${cost.toLocaleString()}</button>`}`;
+        let rightSide;
+        if(maxed&&isCosmetic){
+            // Unlocked cosmetic — show toggle
+            const on=cosmeticToggles[c.id]!==false;
+            rightSide=`<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                <span style="font-size:0.6em;font-weight:900;color:var(--gold)">UNLOCKED</span>
+                <button class="toggle ${on?'on':''}" onclick="toggleCosmeticSetting('${c.id}')"></button>
+            </div>`;
+        } else if(maxed){
+            rightSide='<span style="color:var(--gold);font-weight:900">MAX ✓</span>';
+        } else {
+            rightSide=`<button class="shop-btn" onclick="buyConst('${c.id}')" ${total<cost?'disabled style="opacity:0.4"':''}>✨${cost.toLocaleString()}</button>`;
+        }
+        row.innerHTML=`<div class="const-info"><div class="const-title">${c.title}</div><div class="const-desc">${c.desc}</div><div class="const-level">Level ${lvl}/${c.maxLvl}</div></div>${rightSide}`;
         list.appendChild(row);
     });
     document.getElementById('constellation-screen').style.display='flex';
@@ -775,6 +802,42 @@ function playSound(type){
         if(type==='rank_down'){osc.type='sine';osc.frequency.setValueAtTime(400,now);osc.frequency.setValueAtTime(280,now+0.2);osc.frequency.setValueAtTime(180,now+0.4);gain.gain.setValueAtTime(0.12,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.5);osc.start();osc.stop(now+0.5);}
         if(type==='save'){osc.type='sine';osc.frequency.setValueAtTime(300,now);osc.frequency.exponentialRampToValueAtTime(900,now+0.3);gain.gain.setValueAtTime(0.18,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.4);osc.start();osc.stop(now+0.4);}
         if(type==='milestone'){osc.type='square';osc.frequency.setValueAtTime(500,now);osc.frequency.exponentialRampToValueAtTime(700,now+0.2);gain.gain.setValueAtTime(0.08,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.3);osc.start();osc.stop(now+0.3);}
+    }catch(e){}
+}
+
+// ── Fart sound (synthesised, separate from main audio chain) ──────────────────
+function playFart(lvl=0){
+    if(!settings.sfx)return;
+    try{
+        if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+        // Noise buffer for the body of the fart
+        const bufLen=audioCtx.sampleRate*0.35;
+        const buf=audioCtx.createBuffer(1,bufLen,audioCtx.sampleRate);
+        const data=buf.getChannelData(0);
+        for(let i=0;i<bufLen;i++) data[i]=(Math.random()*2-1);
+        const noise=audioCtx.createBufferSource();noise.buffer=buf;
+        // Low-pass filter to make it bassy
+        const filt=audioCtx.createBiquadFilter();
+        filt.type='lowpass';
+        // Bigger planets = deeper/longer fart
+        filt.frequency.value=180+lvl*20;
+        filt.Q.value=8;
+        const fGain=audioCtx.createGain();
+        const now=audioCtx.currentTime;
+        const dur=0.18+lvl*0.04;
+        fGain.gain.setValueAtTime(0,now);
+        fGain.gain.linearRampToValueAtTime(0.55,now+0.04);
+        fGain.gain.exponentialRampToValueAtTime(0.001,now+dur);
+        noise.connect(filt);filt.connect(fGain);fGain.connect(audioCtx.destination);
+        noise.start(now);noise.stop(now+dur);
+        // Pitch oscillator for extra character
+        const osc2=audioCtx.createOscillator(),g2=audioCtx.createGain();
+        osc2.type='sawtooth';
+        osc2.frequency.setValueAtTime(90+lvl*10,now);
+        osc2.frequency.exponentialRampToValueAtTime(40,now+dur);
+        g2.gain.setValueAtTime(0.15,now);g2.gain.exponentialRampToValueAtTime(0.001,now+dur);
+        osc2.connect(g2);g2.connect(audioCtx.destination);
+        osc2.start(now);osc2.stop(now+dur);
     }catch(e){}
 }
 
@@ -893,6 +956,7 @@ function performMerge(a,b){
     comboDecayTimer=setTimeout(()=>{comboCount=0;updateComboMeter();},graceMs+100);
     updateComboMeter();
     nl>=6?playSound('bigmerge'):playSound('merge');
+    if(fartSoundsEnabled())playFart(nl);
     if(nl>=6){screenShake(nl*1.5,180+nl*10);haptic(Math.min(nl*8,60));}
     createExplosion(mid.x,mid.y,PLANET_DATA[Math.min(nl,9)].color);
     score+=nl*100*comboCount;
@@ -1242,7 +1306,10 @@ function initEvents(){
     Events.on(engine,'beforeUpdate',()=>{
         if(!gameStarted||isPaused)return;
         const bodies=Composite.allBodies(engine.world).filter(b=>!b.isStatic&&b.plugin?.lvl!==undefined);
-        for(let i=0;i<bodies.length;i++){const att=bodies[i];if(att.plugin.lvl<MAL)continue;const aD=PLANET_DATA[att.plugin.lvl],inf=aD.r*5;for(let j=0;j<bodies.length;j++){if(i===j)continue;const tgt=bodies[j];const dx=att.position.x-tgt.position.x,dy=att.position.y-tgt.position.y;const distSq=dx*dx+dy*dy,dist=Math.sqrt(distSq);if(dist>inf||dist<aD.r||att.plugin.lvl<=tgt.plugin.lvl)continue;const force=GC*(aD.r*aD.r)/distSq;Body.applyForce(tgt,tgt.position,{x:(dx/dist)*force,y:(dy/dist)*force});}}
+        // Scale gravity down as the board fills up — prevents end-game crushing
+        const bodyCount=bodies.length;
+        const gravScale=Math.max(0.2, 1 - Math.max(0,bodyCount-8)*0.04);
+        for(let i=0;i<bodies.length;i++){const att=bodies[i];if(att.plugin.lvl<MAL)continue;const aD=PLANET_DATA[att.plugin.lvl],inf=aD.r*5;for(let j=0;j<bodies.length;j++){if(i===j)continue;const tgt=bodies[j];const dx=att.position.x-tgt.position.x,dy=att.position.y-tgt.position.y;const distSq=dx*dx+dy*dy,dist=Math.sqrt(distSq);if(dist>inf||dist<aD.r||att.plugin.lvl<=tgt.plugin.lvl)continue;const force=Math.min(GC*(aD.r*aD.r)/distSq, 0.0008)*gravScale;Body.applyForce(tgt,tgt.position,{x:(dx/dist)*force,y:(dy/dist)*force});}}
         applyAnomaly(bodies);
         const hasNexus=bodies.some(b=>b.plugin.lvl===9);
         if(hasNexus&&!blackHoleTimer)startBlackHole();
