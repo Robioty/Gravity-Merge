@@ -334,22 +334,50 @@
 <!-- END SCREEN -->
 <div id="end-screen">
     <div class="menu-card scroll">
-        <h3 style="color:var(--gold);margin-bottom:4px">MISSION REPORT</h3>
         <div id="run-highlight"></div>
-        <div class="stat-grid">
-            <div class="stat-cell"><div class="stat-val" id="end-score">0</div><div class="stat-lbl">SCORE</div></div>
-            <div class="stat-cell"><div class="stat-val" id="end-merges">0</div><div class="stat-lbl">MERGES</div></div>
-            <div class="stat-cell"><div class="stat-val" id="end-best-planet">—</div><div class="stat-lbl">BEST PLANET</div></div>
-            <div class="stat-cell"><div class="stat-val" id="end-dust">0</div><div class="stat-lbl">STARDUST EARNED</div></div>
-            <div class="stat-cell"><div class="stat-val" id="end-combo">x1</div><div class="stat-lbl">BEST COMBO</div></div>
-            <div class="stat-cell"><div class="stat-val" id="end-time">0:00</div><div class="stat-lbl">RUN TIME</div></div>
+        <!-- Card A: The Run -->
+        <div style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.2);border-radius:16px;padding:12px;margin:8px 0;">
+            <div style="font-size:0.65em;font-weight:900;color:var(--gold);letter-spacing:1px;margin-bottom:8px">📊 THE RUN</div>
+            <div class="stat-grid" style="margin:0">
+                <div class="stat-cell"><div class="stat-val" id="end-score">0</div><div class="stat-lbl">SCORE</div></div>
+                <div class="stat-cell"><div class="stat-val" id="end-merges">0</div><div class="stat-lbl">MERGES</div></div>
+                <div class="stat-cell"><div class="stat-val" id="end-best-planet">—</div><div class="stat-lbl">BEST PLANET</div></div>
+                <div class="stat-cell"><div class="stat-val" id="end-dust">0</div><div class="stat-lbl">STARDUST EARNED</div></div>
+                <div class="stat-cell"><div class="stat-val" id="end-combo">x1</div><div class="stat-lbl">BEST COMBO</div></div>
+                <div class="stat-cell"><div class="stat-val" id="end-time">0:00</div><div class="stat-lbl">RUN TIME</div></div>
+            </div>
+            <div id="end-new-best-banner" style="display:none;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);border-radius:12px;padding:6px;margin-top:8px;color:var(--gold);font-weight:900;text-align:center;">🏆 NEW PERSONAL BEST!</div>
+            <div id="daily-run-result" style="display:none;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:12px;padding:6px;margin-top:8px;color:var(--gold);font-size:0.82em;font-weight:700;text-align:center;"></div>
         </div>
-        <div id="rp-change-card" style="display:none"></div>
-        <div id="end-new-best-banner" style="display:none;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);border-radius:12px;padding:8px;margin-bottom:6px;color:var(--gold);font-weight:900;">🏆 NEW PERSONAL BEST!</div>
-        <div id="daily-run-result" style="display:none;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:12px;padding:8px;margin-bottom:6px;color:var(--gold);font-size:0.85em;font-weight:700;"></div>
+        <!-- Card B: The Career -->
+        <div id="career-card" style="background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.2);border-radius:16px;padding:12px;margin:8px 0;display:none;">
+            <div style="font-size:0.65em;font-weight:900;color:var(--accent);letter-spacing:1px;margin-bottom:8px">🏆 THE CAREER</div>
+            <div id="rp-change-card"></div>
+            <div id="career-rank-progress" style="margin-top:8px;font-size:0.78em;"></div>
+        </div>
         <button class="btn btn-cta" onclick="endScreenPlay()">🚀 PLAY AGAIN</button>
         <button class="btn" style="background:rgba(56,189,248,0.25);border:1px solid rgba(56,189,248,0.4)" onclick="shareScore()">📤 SHARE SCORE</button>
         <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="endScreenHome()">🏠 HOME</button>
+    </div>
+</div>
+
+<!-- COMET CHOICE CHEST -->
+<div id="comet-choice" style="display:none;position:fixed;inset:0;background:rgba(1,4,9,0.92);z-index:2800;flex-direction:column;align-items:center;justify-content:center;padding:20px;">
+    <div style="text-align:center;margin-bottom:18px;">
+        <div style="font-size:2.5em">☄️</div>
+        <div style="font-size:1.4em;font-weight:900;color:var(--accent)">COMET CAUGHT!</div>
+        <div style="font-size:0.8em;opacity:0.6;margin-top:4px">Choose your cosmic reward:</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;width:90%;max-width:340px;">
+        <button onclick="cometChoice('vacuum')" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.5);color:white;padding:16px;border-radius:16px;font-weight:900;font-size:0.95em;cursor:pointer;text-align:left;">
+            🌀 <b>VACUUM</b><br><span style="font-size:0.75em;opacity:0.6;font-weight:400">Delete all Level 0 planets on the board</span>
+        </button>
+        <button onclick="cometChoice('gravity')" style="background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.5);color:white;padding:16px;border-radius:16px;font-weight:900;font-size:0.95em;cursor:pointer;text-align:left;">
+            🌀 <b>GRAVITY SURGE</b><br><span style="font-size:0.75em;opacity:0.6;font-weight:400">Instantly recharge gravity flip</span>
+        </button>
+        <button onclick="cometChoice('double')" style="background:rgba(56,189,248,0.15);border:1px solid rgba(56,189,248,0.5);color:white;padding:16px;border-radius:16px;font-weight:900;font-size:0.95em;cursor:pointer;text-align:left;">
+            ✨ <b>DOUBLE SCORE</b><br><span style="font-size:0.75em;opacity:0.6;font-weight:400">Next 3 merges worth ×2 points</span>
+        </button>
     </div>
 </div>
 
@@ -436,6 +464,7 @@ let _sMerges=0, _sMaxCombo=0, _sFlips=0, _sBestPlanet=0, _runStartTime=0;
 let laserMode=false, laserTargets=[], laserShip=null, laserBeams=[];
 let tutStep=0, tutActive=false;
 let reviveUsed=false; // near miss save
+let doubleScoreMerges=0; // comet double-score power: merges remaining at ×2
 let settings={sfx:true,shake:true,particles:true,haptic:true};
 let _sessionMilestoneIdx=0; // index into SESSION_MILESTONES
 
@@ -513,7 +542,16 @@ function calcRPChange(finalScore){
     else if(finalScore<target*0.5){const ratio=finalScore/target,loss=Math.round((1-ratio*2)*25);return -Math.min(loss,rp>0?loss:0);}
     else{return Math.round((finalScore/target)*12);}
 }
-function applyRPChange(delta){const stats=safeGet('sn_v10')||{best:0,dust:0,discovered:2,rp:0};const oldRP=stats.rp||0;stats.rp=Math.max(0,oldRP+delta);safeSet('sn_v10',stats);_statsCache=stats;return{oldRP,newRP:stats.rp};}
+function applyRPChange(delta){
+    const stats=safeGet('sn_v10')||{best:0,dust:0,discovered:2,rp:0};
+    const oldRP=stats.rp||0;
+    // Rank floor: track the highest rank ever achieved, RP can't drop below its min
+    const highWaterIdx=getRankIndex(oldRP);
+    const floorRP=RANKS[highWaterIdx].min; // e.g. Captain = 1400 RP floor
+    stats.rp=Math.max(floorRP, oldRP+delta);
+    safeSet('sn_v10',stats);_statsCache=stats;
+    return{oldRP,newRP:stats.rp};
+}
 
 // ── Mode ──────────────────────────────────────────────────────────────────────
 function setMode(mode){
@@ -555,19 +593,39 @@ function updateDailyRunUI(){
     const el=document.getElementById('daily-run-status');
     if(el){el.innerText=status!==null?` — Best: ${status.toLocaleString()}`:'— Play today!';}
 }
+// glitter state — separate from level so preview rendering knows
+let nextIsGlitter=false, afterNextIsGlitter=false, holdIsGlitter=false;
+
+// ── Glitter Planet ────────────────────────────────────────────────────────────
+// Rare wildcard planet: upgrades whatever it collides with by +1 level.
+// Unlocks once player reaches Captain rank (index 4). 2% spawn chance.
+const GLITTER_CHANCE=0.02;
+function glitterUnlocked(){return getRankIndex((_statsCache||{rp:0}).rp)>=4;}
+
+function shouldBeGlitter(){
+    if(!glitterUnlocked())return false;
+    return (isDailyRun?rng():Math.random())<GLITTER_CHANCE;
+}
+
 function getNextPlanetLevel(){
-    if(isDailyRun){
-        const base=Math.floor(rng()*3);
-        // lucky drop via seeded rng too
-        return (rng()<LUCKY_DROP_CHANCE&&base<PLANET_DATA.length-1)?base+1:base;
+    // Weighted drop system: early game heavy on small planets, late game allows mid-tier
+    // Weights: [Lvl0, Lvl1, Lvl2, Lvl3] — higher score unlocks higher weights
+    let weights;
+    if(score < 5000)       weights=[60,30,10,0];   // Early: 60/30/10
+    else if(score < 20000) weights=[50,30,15,5];   // Mid-early
+    else if(score < 50000) weights=[45,30,18,7];   // Mid
+    else if(score < 100000)weights=[42,30,20,8];   // Late
+    else                   weights=[40,30,20,10];  // End-game: 40/30/20/10
+
+    const roll=(isDailyRun?rng():Math.random())*100;
+    let cumulative=0, base=0;
+    for(let i=0;i<weights.length;i++){
+        cumulative+=weights[i];
+        if(roll<cumulative){base=i;break;}
     }
-    // Soft difficulty scaling: early games favour low-level planets
-    const scaledGames=Math.min(gamesPlayed,20);
-    const maxTier=score<5000?2:score<20000?3:score<50000?4:score<100000?5:score<150000?6:7;
-    const cappedMax=Math.min(maxTier,PLANET_DATA.length-1);
-    const base=Math.floor(Math.random()*(cappedMax+1));
-    // Lucky drop
-    return (Math.random()<LUCKY_DROP_CHANCE&&base<PLANET_DATA.length-1)?base+1:base;
+    // Lucky drop: small chance to bump +1 level (uses seeded RNG for daily run)
+    const luckyRoll=isDailyRun?rng():Math.random();
+    return (luckyRoll<LUCKY_DROP_CHANCE&&base<PLANET_DATA.length-1)?base+1:base;
 }
 
 // ── Leaderboard ───────────────────────────────────────────────────────────────
@@ -895,32 +953,87 @@ function drawPlanet(ctx,x,y,lvl,angle,alpha=1,highlighted=false){
     }
     ctx.restore();
 }
-function drawPreviewCanvas(id,lvl,size){
+
+// Draw glitter sparkle on top of a planet (called from afterRender loop)
+function drawGlitterOverlay(ctx,x,y,r){
+    const t=Date.now()/300;
+    ctx.save();ctx.translate(x,y);
+    for(let i=0;i<6;i++){
+        const a=t+(Math.PI*2/6)*i;
+        const px=Math.cos(a)*(r*0.85), py=Math.sin(a)*(r*0.85);
+        const pulse=0.5+0.5*Math.sin(t*2+i);
+        ctx.save();ctx.globalAlpha=pulse*0.9;ctx.fillStyle='#fef08a';
+        ctx.beginPath();
+        // 4-pointed star shape
+        ctx.moveTo(px,py-4*pulse);ctx.lineTo(px+1.5,py);ctx.lineTo(px,py+4*pulse);ctx.lineTo(px-1.5,py);ctx.closePath();ctx.fill();
+        ctx.restore();
+    }
+    // Inner glow ring
+    const pulse2=0.3+0.3*Math.sin(t*3);
+    ctx.strokeStyle='rgba(254,240,138,'+pulse2+')';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,r*1.1,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
+}
+function drawPreviewCanvas(id,lvl,size,isGlitter=false){
     const canvas=document.getElementById(id);if(!canvas)return;
     canvas.width=canvas.height=size;const ctx=canvas.getContext('2d');ctx.clearRect(0,0,size,size);
     if(lvl<0)return;
     const p=PLANET_DATA[lvl],scale=(size/2-4)/p.r;
     ctx.save();ctx.translate(size/2,size/2);ctx.scale(scale,scale);drawPlanet(ctx,0,0,lvl,0);ctx.restore();
+    if(isGlitter){
+        // ✨ sparkle border on preview
+        ctx.save();ctx.strokeStyle='#fef08a';ctx.lineWidth=2;ctx.shadowColor='#fef08a';ctx.shadowBlur=6;ctx.beginPath();ctx.arc(size/2,size/2,size/2-2,0,Math.PI*2);ctx.stroke();ctx.restore();
+    }
 }
-function updatePreview(){drawPreviewCanvas('next-vis',nextLevel,48);drawPreviewCanvas('after-next-vis',afterNextLevel,36);drawPreviewCanvas('hold-vis',holdLevel,44);}
+function updatePreview(){
+    drawPreviewCanvas('next-vis',nextLevel,48,nextIsGlitter);
+    drawPreviewCanvas('after-next-vis',afterNextLevel,36,afterNextIsGlitter);
+    drawPreviewCanvas('hold-vis',holdLevel,44,holdIsGlitter);
+}
 
 // ── Hold slot ─────────────────────────────────────────────────────────────────
 function activateHold(){
     if(!gameStarted||isPaused)return;
     if(holdUsedThisDrop){showToast('Hold already used this drop!','var(--danger)');return;}
-    if(holdLevel<0){holdLevel=nextLevel;nextLevel=afterNextLevel;afterNextLevel=getNextPlanetLevel();}
-    else{const tmp=holdLevel;holdLevel=nextLevel;nextLevel=tmp;}
+    if(holdLevel<0){
+        holdLevel=nextLevel;holdIsGlitter=nextIsGlitter;
+        nextLevel=afterNextLevel;nextIsGlitter=afterNextIsGlitter;
+        afterNextLevel=getNextPlanetLevel();afterNextIsGlitter=shouldBeGlitter();
+    } else {
+        const tmp=holdLevel,tmpG=holdIsGlitter;
+        holdLevel=nextLevel;holdIsGlitter=nextIsGlitter;
+        nextLevel=tmp;nextIsGlitter=tmpG;
+    }
     holdUsedThisDrop=true;playSound('hold');haptic(12);
     const box=document.getElementById('hold-box');box.classList.remove('flash');void box.offsetWidth;box.classList.add('flash');
     updatePreview();
 }
 
 // ── Spawn / merge ─────────────────────────────────────────────────────────────
-function spawn(x,y,lvl){
-    const b=Bodies.circle(x,y,PLANET_DATA[lvl].r,{restitution:0.3,friction:0.1,plugin:{lvl,merged:false,warn:0,timestamp:Date.now()}});
+function spawn(x,y,lvl,isGlitter=false){
+    const b=Bodies.circle(x,y,PLANET_DATA[lvl].r,{restitution:0.3,friction:0.1,plugin:{lvl,merged:false,warn:0,timestamp:Date.now(),isGlitter}});
     Composite.add(engine.world,b);
 }
 function createExplosion(x,y,color){if(!settings.particles)return;for(let i=0;i<15;i++)particles.push({x,y,vx:(Math.random()-0.5)*12,vy:(Math.random()-0.5)*12,life:1.0,color});}
+
+// ── Glitter wildcard merge ────────────────────────────────────────────────────
+function performGlitterMerge(glitterBody, targetBody){
+    if(glitterBody.plugin.merged||targetBody.plugin.merged)return;
+    glitterBody.plugin.merged=targetBody.plugin.merged=true;
+    const nl=Math.min(targetBody.plugin.lvl+1, PLANET_DATA.length-1);
+    const mid={x:(glitterBody.position.x+targetBody.position.x)/2, y:(glitterBody.position.y+targetBody.position.y)/2};
+    // Big sparkle explosion
+    for(let i=0;i<30;i++) particles.push({x:mid.x,y:mid.y,vx:(Math.random()-0.5)*16,vy:(Math.random()-0.5)*16,life:1.0,color:['#fef08a','#f472b6','#38bdf8','#ffffff','#4ade80'][Math.floor(Math.random()*5)]});
+    screenFlash();screenShake(10,200);haptic(50);playSound('bigmerge');
+    showToast(`✨ GLITTER! ${targetBody.plugin.lvl===PLANET_DATA.length-1?'MAX LEVEL!':PLANET_DATA[nl].name+' upgrade!'}`, 'var(--gold)');
+    score+=nl*200; // bonus points for glitter merge
+    sessionDust+=nl*2;
+    const scoreEl=document.getElementById('score-label');scoreEl.innerText=score.toLocaleString();scoreEl.classList.remove('pop');void scoreEl.offsetWidth;scoreEl.classList.add('pop');
+    refreshDustHUD();
+    const dots=document.querySelectorAll('.evo-dot');if(dots[nl])dots[nl].classList.add('active');
+    Composite.remove(engine.world,[glitterBody,targetBody]);
+    spawn(mid.x,mid.y,nl);
+    _sMerges++;_sBestPlanet=Math.max(_sBestPlanet,nl);
+}
 
 function performMerge(a,b){
     if(a.plugin.merged||b.plugin.merged)return;
@@ -955,11 +1068,16 @@ function performMerge(a,b){
     if(comboDecayTimer)clearTimeout(comboDecayTimer);
     comboDecayTimer=setTimeout(()=>{comboCount=0;updateComboMeter();},graceMs+100);
     updateComboMeter();
-    nl>=6?playSound('bigmerge'):playSound('merge');
-    if(fartSoundsEnabled())playFart(nl);
+    if(fartSoundsEnabled()){
+        // Planet Gas mode: fart sound replaces normal merge/bigmerge sounds
+        playFart(nl);
+    } else {
+        nl>=6?playSound('bigmerge'):playSound('merge');
+    }
     if(nl>=6){screenShake(nl*1.5,180+nl*10);haptic(Math.min(nl*8,60));}
     createExplosion(mid.x,mid.y,PLANET_DATA[Math.min(nl,9)].color);
-    score+=nl*100*comboCount;
+    score+=nl*100*comboCount*(doubleScoreMerges>0?2:1);
+    if(doubleScoreMerges>0){doubleScoreMerges--;if(doubleScoreMerges===0)showToast('Double score finished!','var(--accent)');}
     const dustEarned=Math.ceil(nl*dustBonus());sessionDust+=dustEarned;
     const scoreEl=document.getElementById('score-label');scoreEl.innerText=score.toLocaleString();scoreEl.classList.remove('pop');void scoreEl.offsetWidth;scoreEl.classList.add('pop');
     refreshDustHUD();updateSessionBar();
@@ -1075,7 +1193,34 @@ function cometCorridorClear(y,r){const bodies=Composite.allBodies(engine.world).
 function trySpawnComet(){const r=14;for(let i=0;i<8;i++){const y=PLAY_H*0.2+Math.random()*PLAY_H*0.45;if(cometCorridorClear(y,r)){spawnComet(y,r);return;}}scheduleComet();}
 function spawnComet(y,r=14){const fromLeft=Math.random()>0.5,angle=(Math.random()*25-12)*(Math.PI/180),speed=COMET_SPEED+Math.random()*2;comet={x:fromLeft?-40:width+40,y,vx:fromLeft?speed*Math.cos(angle):-speed*Math.cos(angle),vy:speed*Math.sin(angle),radius:r,alive:true};cometTail=[];const btn=document.getElementById('comet-btn');btn.style.display='block';btn.style.pointerEvents='auto';updateCometBtn();const crossTime=(width+80)/speed*(1000/60)+500;setTimeout(()=>{if(comet&&comet.alive)dismissComet();},crossTime);}
 function updateCometBtn(){if(!comet)return;const btn=document.getElementById('comet-btn');btn.style.left=(comet.x-35)+'px';btn.style.top=(comet.y+TOP_BAR-35)+'px';}
-function catchComet(){if(!comet||!comet.alive)return;const cx=comet.x,cy=comet.y;for(let i=0;i<40;i++){const a=(Math.PI*2/40)*i,sp=4+Math.random()*8;particles.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1.0,color:i%3===0?'#fbbf24':i%3===1?'#38bdf8':'#ffffff'});}playSound('comet');screenShake(10,250);haptic(40);gravityCharge=CHARGE_TIME;showToast('☄️ COMET CAUGHT! Gravity recharged!','var(--accent)');_dismissComet();scheduleComet();}
+function catchComet(){
+    if(!comet||!comet.alive)return;
+    // Pause physics and show choice
+    if(gameStarted&&!isPaused){isPaused=true;engine.enabled=false;}
+    const cx=comet.x,cy=comet.y;
+    for(let i=0;i<40;i++){const a=(Math.PI*2/40)*i,sp=4+Math.random()*8;particles.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1.0,color:i%3===0?'#fbbf24':i%3===1?'#38bdf8':'#ffffff'});}
+    playSound('comet');screenShake(10,250);haptic(40);
+    _dismissComet();
+    document.getElementById('comet-choice').style.display='flex';
+}
+function cometChoice(type){
+    document.getElementById('comet-choice').style.display='none';
+    // Resume physics
+    if(gameStarted){isPaused=false;engine.enabled=true;scheduleComet();scheduleAnomaly();}
+    if(type==='vacuum'){
+        // Delete all Level 0 planets
+        const toRemove=Composite.allBodies(engine.world).filter(b=>!b.isStatic&&b.plugin?.lvl===0);
+        toRemove.forEach(b=>{createExplosion(b.position.x,b.position.y,PLANET_DATA[0].color);Composite.remove(engine.world,b);});
+        showToast(`🌀 Vacuum! Removed ${toRemove.length} tiny planets`,'var(--danger)');
+        haptic(30);
+    } else if(type==='gravity'){
+        gravityCharge=CHARGE_TIME;
+        showToast('🌀 Gravity Surge! Flip recharged!','var(--gold)');haptic(30);
+    } else if(type==='double'){
+        doubleScoreMerges=3;
+        showToast('✨ Double Score! Next 3 merges ×2!','var(--accent)');haptic(30);
+    }
+}
 function _dismissComet(){comet=null;cometTail=[];const btn=document.getElementById('comet-btn');btn.style.display='none';btn.style.pointerEvents='none';}
 function dismissComet(){_dismissComet();scheduleComet();}
 function drawComet(ctx){
@@ -1125,6 +1270,7 @@ function calcGhostY(x,flipped){
 
 // ── End screen ────────────────────────────────────────────────────────────────
 function showEndScreen(dustEarned,wasNewBest){
+    // Card A: The Run
     document.getElementById('end-score').innerText=score.toLocaleString();
     document.getElementById('end-merges').innerText=_sMerges;
     document.getElementById('end-best-planet').innerText=_sBestPlanet>=0?PLANET_DATA[Math.min(_sBestPlanet,9)].name:'—';
@@ -1140,33 +1286,43 @@ function showEndScreen(dustEarned,wasNewBest){
     // Daily run result
     const drEl=document.getElementById('daily-run-result');
     if(isDailyRun){
-        const today=new Date().toDateString();
-        const existing=getDailyRunStatus();
-        if(!existing||score>existing){
-            safeSet('sn_daily_run',{date:today,score});
-            drEl.innerText=`🌅 Daily Run best: ${score.toLocaleString()} — saved!`;
-        } else {
-            drEl.innerText=`🌅 Daily Run: your best is ${existing.toLocaleString()}`;
-        }
-        drEl.style.display='block';
-        updateDailyRunUI();
+        const today=new Date().toDateString(),existing=getDailyRunStatus();
+        if(!existing||score>existing){safeSet('sn_daily_run',{date:today,score});drEl.innerText=`🌅 Daily Run best: ${score.toLocaleString()} — saved!`;}
+        else{drEl.innerText=`🌅 Daily Run: your best is ${existing.toLocaleString()}`;}
+        drEl.style.display='block';updateDailyRunUI();
     } else { drEl.style.display='none'; }
 
-    // RP change
-    const rpCard=document.getElementById('rp-change-card');
+    // Card B: The Career (ranked only)
+    const careerCard=document.getElementById('career-card');
     if(isRankedMode&&!isDailyRun){
         const delta=calcRPChange(score);
         const {oldRP,newRP}=applyRPChange(delta);
         const oldRank=getRankFromRP(oldRP),newRank=getRankFromRP(newRP);
         const rankChanged=oldRank.name!==newRank.name;
         const sign=delta>=0?'+':'',color=delta>=0?'var(--success)':'var(--danger)';
-        let html=`<div style="font-size:0.72em;opacity:0.55;margin-bottom:4px">⚔️ RANKED RESULT</div>`;
-        html+=`<div style="font-size:1.5em;font-weight:900;color:${color}">${sign}${delta} RP</div>`;
-        html+=`<div style="font-size:0.78em;margin-top:3px">${newRP.toLocaleString()} RP total</div>`;
-        if(rankChanged){const up=newRank.min>oldRank.min;html+=`<div style="margin-top:7px;font-size:0.88em;font-weight:900;color:${up?'var(--gold)':'var(--danger)'}">${up?'🎉 RANK UP':'📉 RANK DOWN'}: ${newRank.icon} ${newRank.name}</div>`;playSound(up?'rank_up':'rank_down');}
-        rpCard.style.display='block';rpCard.style.background=delta>=0?'rgba(74,222,128,0.08)':'rgba(239,68,68,0.08)';rpCard.style.border=`1px solid ${delta>=0?'rgba(74,222,128,0.3)':'rgba(239,68,68,0.3)'}`;rpCard.innerHTML=html;
+
+        // RP change section
+        let rpHtml=`<div style="display:flex;align-items:center;justify-content:space-between;">`;
+        rpHtml+=`<span style="font-size:0.85em">${newRank.icon} ${newRank.name}</span>`;
+        rpHtml+=`<span style="font-size:1.4em;font-weight:900;color:${color}">${sign}${delta} RP</span></div>`;
+        rpHtml+=`<div style="font-size:0.72em;opacity:0.55;margin-top:3px">${newRP.toLocaleString()} RP total</div>`;
+        if(rankChanged){const up=newRank.min>oldRank.min;rpHtml+=`<div style="margin-top:6px;font-weight:900;color:${up?'var(--gold)':'var(--danger)'};font-size:0.9em">${up?'🎉 RANK UP':'📉 RANK DOWN'}: ${newRank.icon} ${newRank.name}</div>`;playSound(up?'rank_up':'rank_down');}
+        document.getElementById('rp-change-card').innerHTML=rpHtml;
+
+        // Progress to next rank
+        const progEl=document.getElementById('career-rank-progress');
+        const nextRankIdx=getRankIndex(newRP)+1;
+        if(nextRankIdx<RANKS.length){
+            const nextRank=RANKS[nextRankIdx];
+            const pct=Math.min(100,Math.round((newRP-newRank.min)/(nextRank.min-newRank.min)*100));
+            progEl.innerHTML=`<div style="font-size:0.7em;opacity:0.55;margin-bottom:4px">Progress to ${nextRank.icon} ${nextRank.name}</div><div style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--accent);border-radius:3px;transition:width 0.8s"></div></div><div style="font-size:0.65em;opacity:0.4;margin-top:2px">${pct}% complete</div>`;
+        } else {
+            progEl.innerHTML=`<div style="color:var(--gold);font-weight:900">👑 Grand Admiral — Maximum Rank!</div>`;
+        }
+
+        careerCard.style.display='block';
         updateRankHUD(newRP);
-    } else { rpCard.style.display='none'; }
+    } else { careerCard.style.display='none'; }
 
     document.getElementById('end-screen').style.display='flex';
 }
@@ -1199,8 +1355,8 @@ function gameOver(){
     if(cometTimer)clearTimeout(cometTimer);if(anomalyTimer)clearTimeout(anomalyTimer);
     if(blackHoleTimer){clearInterval(blackHoleTimer);blackHoleTimer=null;}
     anomaly=null;_dismissComet();laserMode=false;laserShip=null;laserTargets=[];
+    document.getElementById('comet-choice').style.display='none';
     document.getElementById('laser-overlay').classList.remove('active');
-    document.getElementById('anomaly-banner').style.display='none';
     document.getElementById('anomaly-warn').style.display='none';
     document.getElementById('ranked-badge').style.display='none';
     document.getElementById('daily-run-badge').style.display='none';
@@ -1281,7 +1437,7 @@ function startGame(){
     gravityCharge=CHARGE_TIME;holdLevel=-1;holdUsedThisDrop=false;
     anomaly=null;document.getElementById('anomaly-banner').style.display='none';
     laserMode=false;laserShip=null;laserTargets=[];laserBeams=[];
-    reviveUsed=false;_sessionMilestoneIdx=0;
+    reviveUsed=false;_sessionMilestoneIdx=0;doubleScoreMerges=0;
     gamesPlayed++;_sMerges=0;_sMaxCombo=0;_sFlips=0;_sBestPlanet=0;_runStartTime=Date.now();
     previousBest=(_statsCache||loadStats()).best;
 
@@ -1292,7 +1448,9 @@ function startGame(){
     document.getElementById('session-bar').style.width='0%';
     document.getElementById('evo-bar').innerHTML=PLANET_DATA.map(p=>`<div class="evo-dot" style="background:${p.color}"></div>`).join('');
 
-    nextLevel=getNextPlanetLevel();afterNextLevel=getNextPlanetLevel();
+    nextLevel=getNextPlanetLevel();nextIsGlitter=shouldBeGlitter();
+    afterNextLevel=getNextPlanetLevel();afterNextIsGlitter=shouldBeGlitter();
+    holdLevel=-1;holdIsGlitter=false;
     updatePreview();loadStats();initEvents();setNebulaMood('normal');
     comet=null;cometTail=[];if(cometTimer)clearTimeout(cometTimer);_dismissComet();scheduleComet();scheduleAnomaly();
     if(!gravityTooltipShown&&gamesPlayed>=3){gravityTooltipShown=true;const tip=document.getElementById('g-tooltip');tip.classList.add('show');setTimeout(()=>tip.classList.remove('show'),3500);}
@@ -1315,7 +1473,20 @@ function initEvents(){
         if(hasNexus&&!blackHoleTimer)startBlackHole();
         if(!hasNexus&&blackHoleTimer){clearInterval(blackHoleTimer);blackHoleTimer=null;}
     });
-    Events.on(engine,'collisionStart',e=>{e.pairs.forEach(p=>{if(p.bodyA.plugin?.lvl===p.bodyB.plugin?.lvl)performMerge(p.bodyA,p.bodyB);});});
+    Events.on(engine,'collisionStart',e=>{
+        e.pairs.forEach(p=>{
+            const A=p.bodyA, B=p.bodyB;
+            if(!A.plugin||!B.plugin)return;
+            // Glitter wildcard: upgrades the non-glitter planet by 1 level
+            if(A.plugin.isGlitter&&!A.plugin.merged&&!B.plugin.merged&&B.plugin.lvl!==undefined){
+                performGlitterMerge(A,B);
+            } else if(B.plugin.isGlitter&&!B.plugin.merged&&!A.plugin.merged&&A.plugin.lvl!==undefined){
+                performGlitterMerge(B,A);
+            } else if(A.plugin?.lvl===B.plugin?.lvl){
+                performMerge(A,B);
+            }
+        });
+    });
     let dangerActive=false;
     Events.on(render,'afterRender',()=>{
         if(!gameStarted||isPaused)return;
@@ -1331,6 +1502,7 @@ function initEvents(){
             if(b.isStatic||b.plugin?.lvl===undefined)return;
             const lvl=b.plugin.lvl;
             drawPlanet(ctx,b.position.x,b.position.y,lvl,b.angle,1,laserTargets.includes(b));
+            if(b.plugin.isGlitter) drawGlitterOverlay(ctx,b.position.x,b.position.y,PLANET_DATA[lvl].r);
             if(lvl>=3){const pd=PLANET_DATA[lvl],inf=pd.r*5,alpha=Math.min(0.04+(lvl-3)*0.012,0.18);ctx.save();ctx.strokeStyle=pd.color;ctx.globalAlpha=alpha;ctx.lineWidth=1;ctx.setLineDash([3,6]);ctx.beginPath();ctx.arc(b.position.x,b.position.y,inf,0,Math.PI*2);ctx.stroke();ctx.restore();}
             if(lvl===9&&blackHoleTimer){const pulse=0.3+0.2*Math.sin(Date.now()/400);ctx.save();ctx.strokeStyle='#f472b6';ctx.globalAlpha=pulse;ctx.lineWidth=3;ctx.setLineDash([]);ctx.beginPath();ctx.arc(b.position.x,b.position.y,PLANET_DATA[9].r*1.35,0,Math.PI*2);ctx.stroke();ctx.restore();}
             const crossing=isFlipped?b.position.y>limitY:b.position.y<limitY;
@@ -1367,10 +1539,12 @@ window.addEventListener('pointerup',e=>{
     if(!gameStarted||isPaused)return;
     if(Date.now()-lastDropTime<600)return;
     if(e.target.closest('.icon-btn,.btn,.shop-btn,#gravity-ui,.toggle,#bottom-bar,#top-bar,#hold-box'))return;
-    spawn(currentX,isFlipped?PLAY_H-100:80,nextLevel);playSound('drop');haptic(8);
+    spawn(currentX,isFlipped?PLAY_H-100:80,nextLevel,nextIsGlitter);playSound('drop');haptic(8);
     const dots=document.querySelectorAll('.evo-dot');if(dots[nextLevel])dots[nextLevel].classList.add('active');
     _sBestPlanet=Math.max(_sBestPlanet,nextLevel);
-    nextLevel=afterNextLevel;afterNextLevel=getNextPlanetLevel();
+    // Advance preview queue with glitter state
+    nextLevel=afterNextLevel;nextIsGlitter=afterNextIsGlitter;
+    afterNextLevel=getNextPlanetLevel();afterNextIsGlitter=shouldBeGlitter();
     holdUsedThisDrop=false;updatePreview();lastDropTime=Date.now();
 });
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&gameStarted&&!isPaused)togglePause();});
