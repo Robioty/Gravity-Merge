@@ -490,15 +490,23 @@ function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){_m
 // ── Stats ─────────────────────────────────────────────────────────────────────
 let _statsCache=null;
 function loadStats(){
-    _statsCache=safeGet('sn_v10')||{best:0,dust:0,discovered:2,rp:0};
+    _statsCache=safeGet('sn_v10')||{best:0,dust:0,discovered:2,rp:0,totalGames:0};
     if(_statsCache.rp===undefined)_statsCache.rp=0;
+    if(_statsCache.totalGames===undefined)_statsCache.totalGames=0;
+    // gamesPlayed tracks session games, but for unlock gates we use totalGames
     document.getElementById('best-score-val').innerText=_statsCache.best.toLocaleString();
     document.getElementById('dust-val').innerText=(_statsCache.dust+sessionDust).toLocaleString();
     updateRankHUD(_statsCache.rp);
     updateNextUnlockHint();
     return _statsCache;
 }
-function saveStats(fin=false){let d=loadStats();d.best=Math.max(d.best,score);if(fin){d.dust+=sessionDust;sessionDust=0;}safeSet('sn_v10',d);loadStats();}
+function totalGamesEver(){return(_statsCache||{totalGames:0}).totalGames||0;}
+function saveStats(fin=false){
+    let d=loadStats();
+    d.best=Math.max(d.best,score);
+    if(fin){d.dust+=sessionDust;sessionDust=0;d.totalGames=(d.totalGames||0)+1;}
+    safeSet('sn_v10',d);loadStats();
+}
 function refreshDustHUD(){const base=_statsCache?_statsCache.dust:0;const total=(base+sessionDust).toLocaleString();document.getElementById('dust-val').innerText=total;const cv=document.getElementById('const-dust-val');if(cv)cv.innerText=total;}
 function updateRankHUD(rp){
     const rank=getRankFromRP(rp);
@@ -872,101 +880,105 @@ function ensureAudioCtx(){
 }
 
 // ── Fart sound — fully synthesised, convincing, kid-approved 💨 ───────────────
-// Architecture: filtered noise burst (the body) + resonant bandpass wobble
-// (the wet character) + pitch-drop oscillator (the deflation tail).
-// Bigger planet level = deeper pitch, longer, wetter fart.
 function playFart(lvl=0){
     if(!settings.sfx)return;
     try{
         const ctx=ensureAudioCtx();
         const now=ctx.currentTime;
 
-        // Duration and pitch scale with planet level
-        const dur    = 0.28 + lvl * 0.09;   // 0.28s (Mote) → 1.1s (Vortex)
-        const baseHz = 95  - lvl * 4;        // 95Hz (small) → 59Hz (big) — bassy
+        // Master compressor to make everything loud and present
+        const comp=ctx.createDynamicsCompressor();
+        comp.threshold.value=-6;comp.knee.value=3;
+        comp.ratio.value=8;comp.attack.value=0.001;comp.release.value=0.05;
+        comp.connect(ctx.destination);
 
-        // ── Layer 1: Noise source (the "body" of the fart) ──────────────────
+        // Master gain — significantly boosted
+        const masterGain=ctx.createGain();
+        masterGain.gain.value=3.5 + lvl*0.3; // loud! bigger planets = louder
+        masterGain.connect(comp);
+
+        const dur = 0.35 + lvl * 0.1;   // 0.35s (Mote) → 1.25s (Vortex)
+        const baseHz = 90 - lvl * 3;    // deeper for bigger planets
+
+        // ── Layer 1: Brown noise burst ────────────────────────────────────
         const bufSamples = Math.ceil(ctx.sampleRate * dur);
         const buf = ctx.createBuffer(1, bufSamples, ctx.sampleRate);
         const data = buf.getChannelData(0);
-        // Brown noise (more rumble than white) — each sample correlated with last
-        let last = 0;
-        for(let i=0; i<bufSamples; i++){
-            const white = Math.random()*2 - 1;
-            data[i] = (last + 0.06*white) / 1.06;
-            last = data[i];
-            data[i] *= 4; // boost amplitude
+        let last=0;
+        for(let i=0;i<bufSamples;i++){
+            const white=Math.random()*2-1;
+            data[i]=(last+0.1*white)/1.1;
+            last=data[i];
+            data[i]*=3.5;
         }
-        const noiseSrc = ctx.createBufferSource();
-        noiseSrc.buffer = buf;
+        const noiseSrc=ctx.createBufferSource();
+        noiseSrc.buffer=buf;
 
-        // Bandpass filter — this is what makes it sound "wet" and resonant
-        const bp = ctx.createBiquadFilter();
-        bp.type = 'bandpass';
-        bp.frequency.setValueAtTime(baseHz * 2.2, now);
-        bp.frequency.exponentialRampToValueAtTime(baseHz * 0.6, now + dur * 0.6);
-        bp.Q.value = 18 + lvl * 3;  // higher Q = more resonant wobble
+        // Two bandpass filters in series — the resonance creates the wet "splat"
+        const bp1=ctx.createBiquadFilter();
+        bp1.type='bandpass';
+        bp1.frequency.setValueAtTime(baseHz*2.5,now);
+        bp1.frequency.exponentialRampToValueAtTime(baseHz*0.7,now+dur*0.65);
+        bp1.Q.value=22+lvl*2;
 
-        // Second bandpass for the mid "splat" character
-        const bp2 = ctx.createBiquadFilter();
-        bp2.type = 'bandpass';
-        bp2.frequency.setValueAtTime(baseHz * 3.5, now);
-        bp2.frequency.exponentialRampToValueAtTime(baseHz * 1.2, now + dur * 0.4);
-        bp2.Q.value = 12;
+        const bp2=ctx.createBiquadFilter();
+        bp2.type='bandpass';
+        bp2.frequency.setValueAtTime(baseHz*4,now);
+        bp2.frequency.exponentialRampToValueAtTime(baseHz*1.5,now+dur*0.4);
+        bp2.Q.value=14;
 
-        // Gain envelope: sharp attack, then exponential decay (like a real fart)
-        const noiseGain = ctx.createGain();
-        noiseGain.gain.setValueAtTime(0, now);
-        noiseGain.gain.linearRampToValueAtTime(0.9, now + 0.02);  // fast attack
-        noiseGain.gain.setValueAtTime(0.9, now + dur * 0.15);     // hold briefly
-        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + dur); // decay
+        const noiseEnv=ctx.createGain();
+        noiseEnv.gain.setValueAtTime(0,now);
+        noiseEnv.gain.linearRampToValueAtTime(1.2,now+0.018); // very fast attack — punchy
+        noiseEnv.gain.setValueAtTime(1.2,now+dur*0.12);
+        noiseEnv.gain.exponentialRampToValueAtTime(0.001,now+dur);
 
-        // Route: noise → bp → bp2 → gain → output
-        noiseSrc.connect(bp);
-        bp.connect(bp2);
-        bp2.connect(noiseGain);
-        noiseGain.connect(ctx.destination);
-        noiseSrc.start(now);
-        noiseSrc.stop(now + dur + 0.05);
+        noiseSrc.connect(bp1);bp1.connect(bp2);bp2.connect(noiseEnv);noiseEnv.connect(masterGain);
+        noiseSrc.start(now);noiseSrc.stop(now+dur+0.05);
 
-        // ── Layer 2: Pitch-wobble oscillator (the "raspberry" character) ────
-        const osc = ctx.createOscillator();
-        osc.type = 'sawtooth';
-        // Pitch starts mid, drops sharply — the classic "deflating" fart
-        osc.frequency.setValueAtTime(baseHz * 1.8, now);
-        osc.frequency.exponentialRampToValueAtTime(baseHz * 0.5, now + dur * 0.7);
-        osc.frequency.exponentialRampToValueAtTime(baseHz * 0.3, now + dur);
+        // ── Layer 2: Sawtooth "raspberry" with pitch drop ─────────────────
+        const osc=ctx.createOscillator();
+        osc.type='sawtooth';
+        osc.frequency.setValueAtTime(baseHz*2.2,now);
+        osc.frequency.exponentialRampToValueAtTime(baseHz*0.55,now+dur*0.75);
+        osc.frequency.exponentialRampToValueAtTime(baseHz*0.3,now+dur);
 
-        const oscGain = ctx.createGain();
-        oscGain.gain.setValueAtTime(0, now);
-        oscGain.gain.linearRampToValueAtTime(0.35, now + 0.025);
-        oscGain.gain.exponentialRampToValueAtTime(0.001, now + dur * 0.85);
+        const lp=ctx.createBiquadFilter();
+        lp.type='lowpass';lp.frequency.value=800;
 
-        // Lowpass to remove harshness from sawtooth
-        const lp = ctx.createBiquadFilter();
-        lp.type = 'lowpass';
-        lp.frequency.value = 600;
+        const oscEnv=ctx.createGain();
+        oscEnv.gain.setValueAtTime(0,now);
+        oscEnv.gain.linearRampToValueAtTime(0.7,now+0.02);
+        oscEnv.gain.exponentialRampToValueAtTime(0.001,now+dur*0.9);
 
-        osc.connect(lp);
-        lp.connect(oscGain);
-        oscGain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + dur);
+        osc.connect(lp);lp.connect(oscEnv);oscEnv.connect(masterGain);
+        osc.start(now);osc.stop(now+dur);
 
-        // ── Layer 3: Sub-bass thump for big planets (lvl >= 4) ────────────
-        if(lvl >= 4){
-            const sub = ctx.createOscillator();
-            sub.type = 'sine';
-            sub.frequency.setValueAtTime(baseHz * 0.5, now);
-            sub.frequency.exponentialRampToValueAtTime(baseHz * 0.2, now + dur * 0.5);
-            const subGain = ctx.createGain();
-            subGain.gain.setValueAtTime(0.4, now);
-            subGain.gain.exponentialRampToValueAtTime(0.001, now + dur * 0.6);
-            sub.connect(subGain);
-            subGain.connect(ctx.destination);
-            sub.start(now);
-            sub.stop(now + dur * 0.6);
+        // ── Layer 3: Sub-bass punch for bigger planets ────────────────────
+        if(lvl>=2){
+            const sub=ctx.createOscillator();
+            sub.type='sine';
+            sub.frequency.setValueAtTime(baseHz*0.6,now);
+            sub.frequency.exponentialRampToValueAtTime(baseHz*0.2,now+dur*0.55);
+            const subEnv=ctx.createGain();
+            subEnv.gain.setValueAtTime(0.8,now);
+            subEnv.gain.exponentialRampToValueAtTime(0.001,now+dur*0.6);
+            sub.connect(subEnv);subEnv.connect(masterGain);
+            sub.start(now);sub.stop(now+dur*0.6);
         }
+
+        // ── Layer 4: Wet "blap" transient at attack (makes it sound real) ─
+        const blap=ctx.createOscillator();
+        blap.type='square';
+        blap.frequency.setValueAtTime(baseHz*3,now);
+        blap.frequency.exponentialRampToValueAtTime(baseHz*0.8,now+0.06);
+        const blapEnv=ctx.createGain();
+        blapEnv.gain.setValueAtTime(0.5,now);
+        blapEnv.gain.exponentialRampToValueAtTime(0.001,now+0.08);
+        const blapLp=ctx.createBiquadFilter();
+        blapLp.type='lowpass';blapLp.frequency.value=400;
+        blap.connect(blapLp);blapLp.connect(blapEnv);blapEnv.connect(masterGain);
+        blap.start(now);blap.stop(now+0.09);
 
     }catch(e){}
 }
@@ -1190,7 +1202,7 @@ function nearMissSave(){
 
 // ── Power-ups ─────────────────────────────────────────────────────────────────
 function buyPowerUp(cost,maxLvl){
-    if(gamesPlayed<3){showToast('Power-ups unlock after 3 games!','var(--wind)');return;}
+    if(totalGamesEver()<3){showToast('Power-ups unlock after 3 games!','var(--wind)');return;}
     const stats=loadStats(),total=stats.dust+sessionDust;
     if(total<cost){showToast('Not enough Stardust!','var(--danger)');return;}
     if(sessionDust>=cost)sessionDust-=cost;else{stats.dust-=(cost-sessionDust);sessionDust=0;}
@@ -1199,7 +1211,7 @@ function buyPowerUp(cost,maxLvl){
     refreshDustHUD();showToast('Power-up activated! 💥','var(--success)');togglePause();
 }
 function buySeismic(){
-    if(gamesPlayed<3){showToast('Power-ups unlock after 3 games!','var(--wind)');return;}
+    if(totalGamesEver()<3){showToast('Power-ups unlock after 3 games!','var(--wind)');return;}
     const cost=150,stats=loadStats(),total=stats.dust+sessionDust;
     if(total<cost){showToast('Not enough Stardust!','var(--danger)');return;}
     if(sessionDust>=cost)sessionDust-=cost;else{stats.dust-=(cost-sessionDust);sessionDust=0;}
@@ -1207,7 +1219,7 @@ function buySeismic(){
     setTimeout(()=>{Composite.allBodies(engine.world).forEach(b=>{if(!b.isStatic&&b.plugin?.lvl!==undefined)Body.applyForce(b,b.position,{x:(Math.random()-0.5)*0.015,y:isFlipped?0.02:-0.02});});screenShake(14,350);playSound('seismic');showToast('🌍 Seismic Pulse!','var(--accent)');},300);
 }
 function buyLaserStrike(){
-    if(gamesPlayed<3){showToast('Power-ups unlock after 3 games!','var(--wind)');return;}
+    if(totalGamesEver()<3){showToast('Power-ups unlock after 3 games!','var(--wind)');return;}
     const cost=400,stats=loadStats(),total=stats.dust+sessionDust;
     if(total<cost){showToast('Not enough Stardust!','var(--danger)');return;}
     if(sessionDust>=cost)sessionDust-=cost;else{stats.dust-=(cost-sessionDust);sessionDust=0;}
@@ -1228,7 +1240,7 @@ function fireLaser(){
 
 // ── Gravity flip ──────────────────────────────────────────────────────────────
 function flipGravity(){
-    if(gamesPlayed<3){showToast('Gravity flip unlocks after 3 games!','var(--wind)');return;}
+    if(totalGamesEver()<3){showToast('Gravity flip unlocks after 3 games!','var(--wind)');return;}
     if(gravityCharge<CHARGE_TIME){showToast('Gravity recharging…','var(--gold)');return;}
     isFlipped=!isFlipped;engine.gravity.y*=-1;gravityCharge=0;
     playSound('flip');screenShake(12,300);haptic(30);setNebulaMood('flipped');
@@ -1309,7 +1321,7 @@ function drawComet(ctx){
 
 // ── Solar wind ────────────────────────────────────────────────────────────────
 function scheduleAnomaly(){
-    if(gamesPlayed<3){anomalyTimer=setTimeout(scheduleAnomaly,5000);return;}
+    if(totalGamesEver()<3){anomalyTimer=setTimeout(scheduleAnomaly,5000);return;}
     if(anomalyTimer)clearTimeout(anomalyTimer);const d=ANOMALY_INTERVAL_MIN+Math.random()*(ANOMALY_INTERVAL_MAX-ANOMALY_INTERVAL_MIN);anomalyTimer=setTimeout(()=>{if(gameStarted&&!isPaused)warnAnomaly();else scheduleAnomaly();},d);
 }
 function warnAnomaly(){const w=document.getElementById('anomaly-warn');w.innerText='⚠️ SOLAR WIND INCOMING!';w.style.display='block';setTimeout(()=>{w.style.display='none';startAnomaly();},3000);}
@@ -1409,8 +1421,8 @@ function togglePause(){
     // Show/hide power-ups based on gamesPlayed
     const ppSection=document.getElementById('power-ups-section');
     const newbieNote=document.getElementById('newbie-note');
-    if(ppSection)ppSection.style.display=gamesPlayed<3?'none':'block';
-    if(newbieNote)newbieNote.style.display=gamesPlayed<3?'block':'none';
+    if(ppSection)ppSection.style.display=totalGamesEver()<3?'none':'block';
+    if(newbieNote)newbieNote.style.display=totalGamesEver()<3?'block':'none';
     if(isPaused){renderDiscoveryLog();if(cometTimer)clearTimeout(cometTimer);if(anomalyTimer)clearTimeout(anomalyTimer);}
     else{scheduleComet();scheduleAnomaly();}
 }
@@ -1538,7 +1550,8 @@ function initEvents(){
         const bodies=Composite.allBodies(engine.world).filter(b=>!b.isStatic&&b.plugin?.lvl!==undefined);
         // Scale gravity down as the board fills up — prevents end-game crushing
         const bodyCount=bodies.length;
-        const gravScale=Math.max(0.2, 1 - Math.max(0,bodyCount-8)*0.04);
+        // Disable planetary gravity entirely above 15 bodies — at that density it just squeezes everything
+        const gravScale=bodyCount>=16?0:Math.max(0.15, 1 - Math.max(0,bodyCount-6)*0.055);
         for(let i=0;i<bodies.length;i++){const att=bodies[i];if(att.plugin.lvl<MAL)continue;const aD=PLANET_DATA[att.plugin.lvl],inf=aD.r*5;for(let j=0;j<bodies.length;j++){if(i===j)continue;const tgt=bodies[j];const dx=att.position.x-tgt.position.x,dy=att.position.y-tgt.position.y;const distSq=dx*dx+dy*dy,dist=Math.sqrt(distSq);if(dist>inf||dist<aD.r||att.plugin.lvl<=tgt.plugin.lvl)continue;const force=Math.min(GC*(aD.r*aD.r)/distSq, 0.0008)*gravScale;Body.applyForce(tgt,tgt.position,{x:(dx/dist)*force,y:(dy/dist)*force});}}
         applyAnomaly(bodies);
         const hasNexus=bodies.some(b=>b.plugin.lvl===9);
@@ -1575,7 +1588,9 @@ function initEvents(){
             const lvl=b.plugin.lvl;
             drawPlanet(ctx,b.position.x,b.position.y,lvl,b.angle,1,laserTargets.includes(b));
             if(b.plugin.isGlitter) drawGlitterOverlay(ctx,b.position.x,b.position.y,PLANET_DATA[lvl].r);
-            if(lvl>=3){const pd=PLANET_DATA[lvl],inf=pd.r*5,alpha=Math.min(0.04+(lvl-3)*0.012,0.18);ctx.save();ctx.strokeStyle=pd.color;ctx.globalAlpha=alpha;ctx.lineWidth=1;ctx.setLineDash([3,6]);ctx.beginPath();ctx.arc(b.position.x,b.position.y,inf,0,Math.PI*2);ctx.stroke();ctx.restore();}
+            // Only draw gravity rings when board is sparse — they add too much clutter late game
+            const boardCount=Composite.allBodies(engine.world).filter(x=>!x.isStatic).length;
+            if(lvl>=3&&boardCount<=10){const pd=PLANET_DATA[lvl],inf=pd.r*4,alpha=Math.min(0.03+(lvl-3)*0.01,0.12);ctx.save();ctx.strokeStyle=pd.color;ctx.globalAlpha=alpha;ctx.lineWidth=1;ctx.setLineDash([3,6]);ctx.beginPath();ctx.arc(b.position.x,b.position.y,inf,0,Math.PI*2);ctx.stroke();ctx.restore();}
             if(lvl===9&&blackHoleTimer){const pulse=0.3+0.2*Math.sin(Date.now()/400);ctx.save();ctx.strokeStyle='#f472b6';ctx.globalAlpha=pulse;ctx.lineWidth=3;ctx.setLineDash([]);ctx.beginPath();ctx.arc(b.position.x,b.position.y,PLANET_DATA[9].r*1.35,0,Math.PI*2);ctx.stroke();ctx.restore();}
             const crossing=isFlipped?b.position.y>limitY:b.position.y<limitY;
             if(crossing&&(Date.now()-b.plugin.timestamp>2000)){
