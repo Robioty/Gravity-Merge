@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Supernova: Infinity v10.0</title>
+    <title>Supernova: Infinity v12.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         :root{--accent:#38bdf8;--gold:#fbbf24;--danger:#ef4444;--glass:rgba(255,255,255,0.08);--success:#4ade80;--wind:#a78bfa;}
@@ -395,22 +395,77 @@
 
 <script>
 "use strict";
+/* =============================================================
+   SUPERNOVA: INFINITY  —  Single-file HTML5 mobile game
+   Physics: Matter.js 0.19  |  Audio: Web Audio API (synthesised)
+   Storage: localStorage (keys: sn_v10, sn_const, sn_settings,
+            sn_streak, sn_daily, sn_daily_run, sn_missions,
+            sn_cosmetic_toggles, sn_last_played, sn_tutdone)
+   Deploy:  drop index.html anywhere — no build step, no server
+
+   ★★ BEFORE PUBLISHING — update the two constants below ★★
+   ============================================================= */
+// ── ★ Publisher config — change these before going live ★ ──────────────────
+const TIP_JAR_URL      = 'https://ko-fi.com/YOUR_NAME_HERE'; // donation link
+const BUG_REPORT_EMAIL = 'your@email.com';                   // support email
+
+/* -------------------------------------------------------------
+   VERSION HISTORY
+   v12.0  Bug fix: CHARGE_TIME/COMET_INTERVAL/ANOMALY_INTERVAL
+          constants were lost in header restructure, causing
+          ReferenceError on load — all restored to constants block.
+          Zephyra (lvl 7): r:108 → r:97 (−10%),
+          Nullar (lvl 8): r:131 → r:118 (−10%),
+          Vortex (lvl 9): r:162 → r:31 — compact Black Hole with
+          per-frame gravitational pull on small planets + 4s consume
+          timer + capture zone ring. Wormhole event: two lvl-9 Black
+          Holes merging triggers performWormhole() — clears 200px
+          radius, animated void canvas, 200pts per planet consumed.
+   v11.0  Weighted drops (60/30/10 → 40/30/20/10 by score),
+          Glitter planet wildcard (Captain+ rank, 2% chance),
+          Comet Choice Chest (3 power options on catch),
+          Rank floor safety net (can't drop below earned rank),
+          Two-card end screen (THE RUN / THE CAREER),
+          Boosted fart synthesis with compressor + 4 layers,
+          Power-up unlock now persists across sessions,
+          boardCount perf fix (moved out of per-body loop),
+          Duplicate holdLevel reset removed
+   v10.0  Daily Run (seeded PRNG, same sequence all players),
+          Near Miss Save (auto-remove 3 planets once per run),
+          Combo celebration tiers (x3/x5/x8),
+          Quick Restart button in top bar,
+          Haptic feedback with settings toggle,
+          Lucky Drop (3% chance +1 level),
+          Idle Stardust (8/hr while away, cap 150),
+          Session progress bar with milestones,
+          Next planet unlock hint on home screen,
+          Play Again CTA pulse animation
+   v9.0   Ranked mode + RP system, 10-rank ladder,
+          Community leaderboard (20 simulated players + you),
+          Free Play vs Ranked toggle
+   v8.0   Run timer, daily streak counter, share score button,
+          3-step tutorial overlay (pauses physics),
+          Laser ship sequential firing with cooldown
+   v7.0   Fictional planet names (Mote→Vortex), radii −10%,
+          Laser Strike power-up, Space Bug mailto reporter,
+          Tip Jar button, comet clear-corridor check,
+          End-game stats screen, Happy Planets constellation
+   ------------------------------------------------------------- */
+
 const { Engine, Render, Runner, Bodies, Body, Composite, Events } = Matter;
 
-// ── Layout ────────────────────────────────────────────────────────────────────
+// ── Layout (fixed — derived from screen size at load time) ───────────────────
 const width=window.innerWidth, height=window.innerHeight;
 const TOP_BAR=80, BOT_BAR=90, PLAY_H=height-TOP_BAR-BOT_BAR;
 
-// ── Config ────────────────────────────────────────────────────────────────────
-const CHARGE_TIME=360000;
-const COMET_INTERVAL_MIN=25000, COMET_INTERVAL_MAX=45000, COMET_SPEED=4.5;
+// ── Game constants ────────────────────────────────────────────────────────────
+const CHARGE_TIME=360000;                                    // gravity flip recharge ms
+const COMET_INTERVAL_MIN=25000, COMET_INTERVAL_MAX=45000;   // ms between comets
+const COMET_SPEED=4.5;                                       // px/frame
 const ANOMALY_INTERVAL_MIN=40000, ANOMALY_INTERVAL_MAX=80000, ANOMALY_DURATION=30000;
-const TIP_JAR_URL='https://ko-fi.com/YOUR_NAME_HERE';
-const BUG_REPORT_EMAIL='your@email.com';
-// Session progress milestones
 const SESSION_MILESTONES=[5000,10000,20000,35000,50000,75000,100000,150000];
-// Lucky drop chance
-const LUCKY_DROP_CHANCE=0.03;
+const LUCKY_DROP_CHANCE=0.03;   // 3% chance to bump drop level +1
+const GLITTER_CHANCE=0.02;      // 2% chance of glitter planet (Captain+ only)
 
 // ── Engine globals ────────────────────────────────────────────────────────────
 let engine, render, runner, audioCtx;
@@ -460,6 +515,7 @@ let previousBest=0, gamesPlayed=0, gravityTooltipShown=false;
 let comet=null, cometTail=[], cometTimer=null;
 let anomaly=null, anomalyTimer=null;
 let blackHoleTimer=null;
+let wormholeActive=false; // true while wormhole animation is playing
 let _sMerges=0, _sMaxCombo=0, _sFlips=0, _sBestPlanet=0, _runStartTime=0;
 let laserMode=false, laserTargets=[], laserShip=null, laserBeams=[];
 let tutStep=0, tutActive=false;
@@ -469,17 +525,21 @@ let settings={sfx:true,shake:true,particles:true,haptic:true};
 let _sessionMilestoneIdx=0; // index into SESSION_MILESTONES
 
 // ── Planet data ───────────────────────────────────────────────────────────────
+// Levels 0-8 scale gradually. Level 9 (Vortex) is a compact Black Hole —
+// physically small (same radius as Krath) but mechanically deadly: it
+// actively sucks in nearby small planets. Two Black Holes merging triggers
+// a Wormhole event that clears the board locally and then disappears.
 const PLANET_DATA=[
-    {name:"Mote",    r:14, color:'#ffffff',glow:'rgba(255,255,255,0.4)',star:true},
-    {name:"Verdis",  r:22, color:'#4ade80',glow:'rgba(74,222,128,0.2)'},
-    {name:"Krath",   r:31, color:'#f87171',glow:'rgba(248,113,113,0.2)'},
-    {name:"Auroris", r:41, color:'#fbbf24',stripes:true,glow:'rgba(251,191,36,0.3)'},
-    {name:"Phaedra", r:53, color:'#818cf8',stripes:true,glow:'rgba(129,140,248,0.3)'},
-    {name:"Orrath",  r:70, color:'#38bdf8',rings:true,  glow:'rgba(56,189,248,0.4)'},
-    {name:"Solux",   r:89, color:'#ffcc33',sun:true,    glow:'rgba(255,165,0,0.6)'},
-    {name:"Zephyra", r:108,color:'#e879f9',stripes:true,glow:'rgba(232,121,249,0.5)'},
-    {name:"Nullar",  r:131,color:'#000000',glow:'rgba(255,255,255,0.3)',singularity:true},
-    {name:"Vortex",  r:162,color:'#f472b6',sun:true,    glow:'rgba(244,114,182,0.8)'}
+    {name:"Mote",    r:14,  color:'#ffffff',glow:'rgba(255,255,255,0.4)',star:true},
+    {name:"Verdis",  r:22,  color:'#4ade80',glow:'rgba(74,222,128,0.2)'},
+    {name:"Krath",   r:31,  color:'#f87171',glow:'rgba(248,113,113,0.2)'},
+    {name:"Auroris", r:41,  color:'#fbbf24',stripes:true,glow:'rgba(251,191,36,0.3)'},
+    {name:"Phaedra", r:53,  color:'#818cf8',stripes:true,glow:'rgba(129,140,248,0.3)'},
+    {name:"Orrath",  r:70,  color:'#38bdf8',rings:true,  glow:'rgba(56,189,248,0.4)'},
+    {name:"Solux",   r:89,  color:'#ffcc33',sun:true,    glow:'rgba(255,165,0,0.6)'},
+    {name:"Zephyra", r:97,  color:'#e879f9',stripes:true,glow:'rgba(232,121,249,0.5)'},  // was 108 (−10%)
+    {name:"Nullar",  r:118, color:'#000000',glow:'rgba(255,255,255,0.3)',singularity:true}, // was 131 (−10%)
+    {name:"Vortex",  r:31,  color:'#000000',glow:'rgba(244,114,182,0.9)',blackhole:true}    // compact Black Hole
 ];
 
 // ── Safe storage ──────────────────────────────────────────────────────────────
@@ -606,8 +666,7 @@ let nextIsGlitter=false, afterNextIsGlitter=false, holdIsGlitter=false;
 
 // ── Glitter Planet ────────────────────────────────────────────────────────────
 // Rare wildcard planet: upgrades whatever it collides with by +1 level.
-// Unlocks once player reaches Captain rank (index 4). 2% spawn chance.
-const GLITTER_CHANCE=0.02;
+// Unlocks once player reaches Captain rank (index 4). Spawn chance: GLITTER_CHANCE
 function glitterUnlocked(){return getRankIndex((_statsCache||{rp:0}).rp)>=4;}
 
 function shouldBeGlitter(){
@@ -841,7 +900,7 @@ function haptic(ms=10){if(settings.haptic&&navigator.vibrate)navigator.vibrate(m
 function reportBug(){
     const bc=engine?Composite.allBodies(engine.world).filter(b=>!b.isStatic).length:0;
     const state={version:'v10.0',timestamp:new Date().toISOString(),score,sessionDust,gamesPlayed,isFlipped,isRankedMode,isDailyRun,bc,anomaly:anomaly?anomaly.type:'none',userAgent:navigator.userAgent,screenSize:`${width}x${height}`};
-    window.location.href=`mailto:${BUG_REPORT_EMAIL}?subject=${encodeURIComponent('Supernova Bug v10.0')}&body=${encodeURIComponent('Describe bug:\n\n'+JSON.stringify(state,null,2))}`;
+    window.location.href=`mailto:${BUG_REPORT_EMAIL}?subject=${encodeURIComponent('Supernova Bug v12.0')}&body=${encodeURIComponent('Describe bug:\n\n'+JSON.stringify(state,null,2))}`;
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
@@ -1021,16 +1080,34 @@ function updateSessionBar(){
 function drawPlanet(ctx,x,y,lvl,angle,alpha=1,highlighted=false){
     const d=PLANET_DATA[lvl];
     ctx.save();ctx.globalAlpha=alpha;ctx.translate(x,y);
-    const glow=ctx.createRadialGradient(0,0,d.r,0,0,d.r*1.5);glow.addColorStop(0,d.glow);glow.addColorStop(1,'transparent');
-    ctx.fillStyle=glow;ctx.beginPath();ctx.arc(0,0,d.r*1.5,0,Math.PI*2);ctx.fill();
+    // Glow halo
+    const glow=ctx.createRadialGradient(0,0,d.r,0,0,d.r*2.5);glow.addColorStop(0,d.glow);glow.addColorStop(1,'transparent');
+    ctx.fillStyle=glow;ctx.beginPath();ctx.arc(0,0,d.r*2.5,0,Math.PI*2);ctx.fill();
     if(highlighted){ctx.strokeStyle='#ef4444';ctx.lineWidth=3;ctx.setLineDash([]);ctx.beginPath();ctx.arc(0,0,d.r+4,0,Math.PI*2);ctx.stroke();}
     ctx.rotate(angle);
-    if(d.singularity){ctx.fillStyle='black';ctx.beginPath();ctx.arc(0,0,d.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='white';ctx.lineWidth=2;ctx.stroke();ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=6;ctx.beginPath();ctx.arc(0,0,d.r*0.7,0,Math.PI*2);ctx.stroke();}
-    else{const grad=ctx.createRadialGradient(-d.r/3,-d.r/3,0,0,0,d.r);grad.addColorStop(0,(d.sun||d.star)?'#fff':'#ffffffaa');grad.addColorStop(0.3,d.color);grad.addColorStop(1,'#000');ctx.fillStyle=grad;ctx.beginPath();ctx.arc(0,0,d.r,0,Math.PI*2);ctx.fill();}
-    if(d.star){ctx.strokeStyle='rgba(255,255,255,0.6)';ctx.lineWidth=1;for(let i=0;i<5;i++){const a=(Math.PI*2/5)*i;ctx.beginPath();ctx.moveTo(Math.cos(a)*d.r*0.5,Math.sin(a)*d.r*0.5);ctx.lineTo(Math.cos(a)*d.r*1.2,Math.sin(a)*d.r*1.2);ctx.stroke();}}
+    if(d.blackhole){
+        // Vortex: compact black hole — pure black disc with pink event horizon ring + spin lines
+        ctx.fillStyle='#000';ctx.beginPath();ctx.arc(0,0,d.r,0,Math.PI*2);ctx.fill();
+        // Event horizon — bright pink ring
+        ctx.strokeStyle='#f472b6';ctx.lineWidth=3;ctx.setLineDash([]);ctx.beginPath();ctx.arc(0,0,d.r,0,Math.PI*2);ctx.stroke();
+        // Accretion disc lines (rotate with angle param for spin effect)
+        ctx.strokeStyle='rgba(244,114,182,0.5)';ctx.lineWidth=1.5;
+        for(let i=0;i<3;i++){const a=(Math.PI*2/3)*i;ctx.beginPath();ctx.ellipse(0,0,d.r*1.8,d.r*0.4,a,0,Math.PI*2);ctx.stroke();}
+        // Inner singularity dot
+        ctx.fillStyle='rgba(244,114,182,0.8)';ctx.beginPath();ctx.arc(0,0,3,0,Math.PI*2);ctx.fill();
+    } else if(d.singularity){
+        ctx.fillStyle='black';ctx.beginPath();ctx.arc(0,0,d.r,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='white';ctx.lineWidth=2;ctx.setLineDash([]);ctx.stroke();
+        ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=6;ctx.beginPath();ctx.arc(0,0,d.r*0.7,0,Math.PI*2);ctx.stroke();
+    } else {
+        const grad=ctx.createRadialGradient(-d.r/3,-d.r/3,0,0,0,d.r);
+        grad.addColorStop(0,(d.sun||d.star)?'#fff':'#ffffffaa');grad.addColorStop(0.3,d.color);grad.addColorStop(1,'#000');
+        ctx.fillStyle=grad;ctx.beginPath();ctx.arc(0,0,d.r,0,Math.PI*2);ctx.fill();
+    }
+    if(d.star){ctx.strokeStyle='rgba(255,255,255,0.6)';ctx.lineWidth=1;ctx.setLineDash([]);for(let i=0;i<5;i++){const a=(Math.PI*2/5)*i;ctx.beginPath();ctx.moveTo(Math.cos(a)*d.r*0.5,Math.sin(a)*d.r*0.5);ctx.lineTo(Math.cos(a)*d.r*1.2,Math.sin(a)*d.r*1.2);ctx.stroke();}}
     if(d.stripes){ctx.globalAlpha=alpha*0.2;ctx.fillStyle='white';ctx.fillRect(-d.r,-d.r/4,d.r*2,d.r/8);ctx.fillRect(-d.r,d.r/3,d.r*2,d.r/10);ctx.globalAlpha=alpha;}
-    if(d.rings){ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(0,0,d.r*1.6,d.r*0.4,0,0,Math.PI*2);ctx.stroke();}
-    if(happyFacesEnabled()&&!d.singularity&&d.r>=14){
+    if(d.rings){ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=3;ctx.setLineDash([]);ctx.beginPath();ctx.ellipse(0,0,d.r*1.6,d.r*0.4,0,0,Math.PI*2);ctx.stroke();}
+    if(happyFacesEnabled()&&!d.singularity&&!d.blackhole&&d.r>=14){
         ctx.save();ctx.globalAlpha=alpha*0.85;const fs=d.r*0.38;
         ctx.fillStyle='rgba(0,0,0,0.7)';ctx.beginPath();ctx.arc(-fs*0.38,-fs*0.1,fs*0.18,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(fs*0.38,-fs*0.1,fs*0.18,0,Math.PI*2);ctx.fill();
         ctx.strokeStyle='rgba(0,0,0,0.7)';ctx.lineWidth=fs*0.18;ctx.lineCap='round';ctx.beginPath();ctx.arc(0,fs*0.1,fs*0.48,0.15*Math.PI,0.85*Math.PI);ctx.stroke();ctx.restore();
@@ -1167,7 +1244,10 @@ function performMerge(a,b){
     refreshDustHUD();updateSessionBar();
     if(gamesPlayed>1&&score>previousBest&&score>(_statsCache||{best:0}).best){previousBest=score;flashNewBest();}
     const dots=document.querySelectorAll('.evo-dot');if(dots[nl])dots[nl].classList.add('active');
-    Composite.remove(engine.world,[a,b]);if(nl<PLANET_DATA.length)spawn(mid.x,mid.y,nl);
+    Composite.remove(engine.world,[a,b]);
+    // Two Black Holes merging → Wormhole event (no new body spawned)
+    if(nl>=PLANET_DATA.length){performWormhole(mid.x,mid.y);return;}
+    spawn(mid.x,mid.y,nl);
     if(_statsCache&&nl>_statsCache.discovered){_statsCache.discovered=nl;safeSet('sn_v10',_statsCache);}
     _sMerges++;_sMaxCombo=Math.max(_sMaxCombo,comboCount);_sBestPlanet=Math.max(_sBestPlanet,nl);
     trackMission('merges',_sMerges);trackMission('combo',_sMaxCombo);trackMission('score',score);trackMission('dust',sessionDust);
@@ -1329,18 +1409,121 @@ function startAnomaly(){const dir=Math.random()>0.5?1:-1;anomaly={type:'solar_wi
 function stopAnomaly(){anomaly=null;document.getElementById('anomaly-banner').style.display='none';setNebulaMood('normal');scheduleAnomaly();}
 function applyAnomaly(bodies){if(!anomaly)return;if(Date.now()>anomaly.endTime){stopAnomaly();return;}bodies.forEach(b=>{if(!b.isStatic&&b.plugin?.lvl!==undefined)Body.applyForce(b,b.position,{x:anomaly.dir*anomaly.force,y:0});});}
 
-// ── Black hole ────────────────────────────────────────────────────────────────
+// ── Black Hole (Vortex lvl 9) ─────────────────────────────────────────────────
+// The Black Hole actively pulls lvl 0/1/2 planets toward itself every frame
+// (handled in beforeUpdate). Additionally, every 4 seconds it consumes the
+// nearest small planet that is within its capture radius.
+const BH_CAPTURE_R=120; // px — must be within this to get consumed
+const BH_PULL_FORCE=0.0006; // gravitational pull force per frame
+
 function startBlackHole(){
-    if(blackHoleTimer)return;showToast('🕳️ BLACK HOLE ACTIVE!','#f472b6');
+    if(blackHoleTimer)return;
+    showToast('🕳️ BLACK HOLE! Small planets are being pulled in…','#f472b6');
     blackHoleTimer=setInterval(()=>{
         if(!gameStarted||isPaused)return;
-        const nexii=Composite.allBodies(engine.world).filter(b=>!b.isStatic&&b.plugin?.lvl===9);
-        if(!nexii.length){clearInterval(blackHoleTimer);blackHoleTimer=null;return;}
-        const nx=nexii[0];const targets=Composite.allBodies(engine.world).filter(b=>!b.isStatic&&b.plugin?.lvl<=1);if(!targets.length)return;
-        targets.sort((a,b)=>Math.hypot(a.position.x-nx.position.x,a.position.y-nx.position.y)-Math.hypot(b.position.x-nx.position.x,b.position.y-nx.position.y));
-        const v=targets[0];createExplosion(v.position.x,v.position.y,PLANET_DATA[v.plugin.lvl].color);Composite.remove(engine.world,v);
-        score+=50;sessionDust+=1;document.getElementById('score-label').innerText=score.toLocaleString();refreshDustHUD();playSound('blackhole');
+        const holes=Composite.allBodies(engine.world).filter(b=>!b.isStatic&&b.plugin?.lvl===9);
+        if(!holes.length){clearInterval(blackHoleTimer);blackHoleTimer=null;return;}
+        // Consume nearest small planet within capture radius
+        holes.forEach(bh=>{
+            const targets=Composite.allBodies(engine.world).filter(b=>
+                !b.isStatic&&b.plugin?.lvl!==undefined&&b.plugin.lvl<=2&&b!==bh);
+            if(!targets.length)return;
+            targets.sort((a,b)=>
+                Math.hypot(a.position.x-bh.position.x,a.position.y-bh.position.y)-
+                Math.hypot(b.position.x-bh.position.x,b.position.y-bh.position.y));
+            const nearest=targets[0];
+            const dist=Math.hypot(nearest.position.x-bh.position.x,nearest.position.y-bh.position.y);
+            if(dist<BH_CAPTURE_R){
+                createExplosion(nearest.position.x,nearest.position.y,PLANET_DATA[nearest.plugin.lvl].color);
+                Composite.remove(engine.world,nearest);
+                score+=50;sessionDust+=1;
+                document.getElementById('score-label').innerText=score.toLocaleString();
+                refreshDustHUD();playSound('blackhole');
+            }
+        });
     },4000);
+}
+
+// ── Wormhole event ────────────────────────────────────────────────────────────
+// Triggered when two level-9 Black Holes merge. A wormhole tears open at the
+// merge point, pulls nearby planets into it, then collapses. No new body
+// is spawned — both Black Holes are simply consumed by the event.
+const WORMHOLE_RADIUS=200; // px — affected zone
+let _wormholeAnim=null;    // {x,y,t,maxT} — canvas animation state
+
+function performWormhole(x,y){
+    wormholeActive=true;
+    // Freeze physics briefly for dramatic effect
+    if(engine)engine.enabled=false;
+    playSound('blackhole');screenShake(18,500);haptic(80);
+    showToast('🌀 WORMHOLE! Space tears open…','#f472b6');
+
+    // Remove all planets within wormhole radius
+    let consumed=0;
+    Composite.allBodies(engine.world).forEach(b=>{
+        if(b.isStatic||b.plugin?.lvl===undefined)return;
+        const dist=Math.hypot(b.position.x-x,b.position.y-y);
+        if(dist<WORMHOLE_RADIUS){
+            createExplosion(b.position.x,b.position.y,PLANET_DATA[b.plugin.lvl].color);
+            Composite.remove(engine.world,b);
+            consumed++;
+        }
+    });
+
+    score+=consumed*200; // big bonus for wormhole clear
+    sessionDust+=consumed*3;
+    document.getElementById('score-label').innerText=score.toLocaleString();
+    refreshDustHUD();
+
+    // Start canvas animation (drawn in afterRender)
+    _wormholeAnim={x,y,t:0,maxT:90}; // 90 frames ≈ 1.5s at 60fps
+
+    // Resume physics after animation completes
+    setTimeout(()=>{
+        wormholeActive=false;
+        _wormholeAnim=null;
+        if(engine&&gameStarted)engine.enabled=true;
+        if(blackHoleTimer){clearInterval(blackHoleTimer);blackHoleTimer=null;}
+        showToast(`🌀 Wormhole collapsed — ${consumed} planets consumed!`,'var(--gold)');
+    },1500);
+}
+
+function drawWormhole(ctx){
+    if(!_wormholeAnim)return;
+    const {x,y,t,maxT}=_wormholeAnim;
+    _wormholeAnim.t++;
+    const progress=t/maxT; // 0→1
+    const opening=progress<0.4?progress/0.4:1; // expand phase
+    const closing=progress>0.6?(progress-0.6)/0.4:1; // collapse phase (1 → 0)
+    const scale=progress<0.4?opening:(progress>0.6?1-closing:1);
+    const r=WORMHOLE_RADIUS*scale;
+
+    ctx.save();
+    // Outer event ring — bright pink
+    const outerPulse=0.6+0.4*Math.sin(t*0.3);
+    ctx.strokeStyle='#f472b6';ctx.lineWidth=4*scale;ctx.globalAlpha=outerPulse*scale;
+    ctx.setLineDash([]);ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke();
+
+    // Swirl lines
+    ctx.globalAlpha=0.5*scale;
+    for(let i=0;i<8;i++){
+        const a=(Math.PI*2/8)*i+t*0.08;
+        const x1=x+Math.cos(a)*r*0.2,y1=y+Math.sin(a)*r*0.2;
+        const x2=x+Math.cos(a+0.5)*r,y2=y+Math.sin(a+0.5)*r;
+        const grad=ctx.createLinearGradient(x1,y1,x2,y2);
+        grad.addColorStop(0,'#f472b6');grad.addColorStop(1,'transparent');
+        ctx.strokeStyle=grad;ctx.lineWidth=2;
+        ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    }
+
+    // Dark void centre
+    ctx.globalAlpha=0.85*scale;
+    const voidGrad=ctx.createRadialGradient(x,y,0,x,y,r*0.6);
+    voidGrad.addColorStop(0,'rgba(0,0,0,0.95)');
+    voidGrad.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=voidGrad;ctx.beginPath();ctx.arc(x,y,r*0.6,0,Math.PI*2);ctx.fill();
+
+    ctx.restore();
 }
 
 // ── Ghost Y ───────────────────────────────────────────────────────────────────
@@ -1439,6 +1622,7 @@ function gameOver(){
     if(cometTimer)clearTimeout(cometTimer);if(anomalyTimer)clearTimeout(anomalyTimer);
     if(blackHoleTimer){clearInterval(blackHoleTimer);blackHoleTimer=null;}
     anomaly=null;_dismissComet();laserMode=false;laserShip=null;laserTargets=[];
+    wormholeActive=false;_wormholeAnim=null;
     document.getElementById('comet-choice').style.display='none';
     document.getElementById('laser-overlay').classList.remove('active');
     document.getElementById('anomaly-warn').style.display='none';
@@ -1518,10 +1702,11 @@ function startGame(){
 
     score=0;sessionDust=0;isFlipped=false;isPaused=false;
     engine.gravity.y=1;gameStarted=true;comboCount=0;particles=[];
-    gravityCharge=CHARGE_TIME;holdLevel=-1;holdUsedThisDrop=false;
+    gravityCharge=CHARGE_TIME;holdUsedThisDrop=false;
     anomaly=null;document.getElementById('anomaly-banner').style.display='none';
     laserMode=false;laserShip=null;laserTargets=[];laserBeams=[];
     reviveUsed=false;_sessionMilestoneIdx=0;doubleScoreMerges=0;
+    wormholeActive=false;_wormholeAnim=null;
     gamesPlayed++;_sMerges=0;_sMaxCombo=0;_sFlips=0;_sBestPlanet=0;_runStartTime=Date.now();
     previousBest=(_statsCache||loadStats()).best;
 
@@ -1554,6 +1739,20 @@ function initEvents(){
         const gravScale=bodyCount>=16?0:Math.max(0.15, 1 - Math.max(0,bodyCount-6)*0.055);
         for(let i=0;i<bodies.length;i++){const att=bodies[i];if(att.plugin.lvl<MAL)continue;const aD=PLANET_DATA[att.plugin.lvl],inf=aD.r*5;for(let j=0;j<bodies.length;j++){if(i===j)continue;const tgt=bodies[j];const dx=att.position.x-tgt.position.x,dy=att.position.y-tgt.position.y;const distSq=dx*dx+dy*dy,dist=Math.sqrt(distSq);if(dist>inf||dist<aD.r||att.plugin.lvl<=tgt.plugin.lvl)continue;const force=Math.min(GC*(aD.r*aD.r)/distSq, 0.0008)*gravScale;Body.applyForce(tgt,tgt.position,{x:(dx/dist)*force,y:(dy/dist)*force});}}
         applyAnomaly(bodies);
+        // Black hole (lvl 9) pulls lvl 0/1/2 planets toward it each frame
+        const holes=bodies.filter(b=>b.plugin.lvl===9);
+        if(holes.length){
+            const smallBodies=bodies.filter(b=>b.plugin.lvl<=2);
+            holes.forEach(bh=>{
+                smallBodies.forEach(tgt=>{
+                    const dx=bh.position.x-tgt.position.x,dy=bh.position.y-tgt.position.y;
+                    const distSq=dx*dx+dy*dy,dist=Math.sqrt(distSq);
+                    if(dist<1)return;
+                    const force=BH_PULL_FORCE/distSq*dist; // normalised pull
+                    Body.applyForce(tgt,tgt.position,{x:(dx/dist)*force,y:(dy/dist)*force});
+                });
+            });
+        }
         const hasNexus=bodies.some(b=>b.plugin.lvl===9);
         if(hasNexus&&!blackHoleTimer)startBlackHole();
         if(!hasNexus&&blackHoleTimer){clearInterval(blackHoleTimer);blackHoleTimer=null;}
@@ -1582,16 +1781,23 @@ function initEvents(){
         ctx.setLineDash([3,5]);ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(currentX,isFlipped?PLAY_H-100:100);ctx.lineTo(currentX,ghostY);ctx.stroke();
         ctx.setLineDash([10,10]);ctx.strokeStyle='rgba(239,68,68,0.5)';ctx.beginPath();ctx.moveTo(0,limitY);ctx.lineTo(width,limitY);ctx.stroke();ctx.restore();
         if(settings.particles){particles=particles.filter(p=>p.life>0);particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life-=0.02;ctx.save();ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();ctx.restore();});}
-        drawComet(ctx);drawLaserShip(ctx);
+        drawComet(ctx);drawLaserShip(ctx);drawWormhole(ctx);
+        // Compute board density once, outside the per-body loop
+        const boardCount=Composite.allBodies(engine.world).filter(b=>!b.isStatic).length;
         Composite.allBodies(engine.world).forEach(b=>{
             if(b.isStatic||b.plugin?.lvl===undefined)return;
             const lvl=b.plugin.lvl;
             drawPlanet(ctx,b.position.x,b.position.y,lvl,b.angle,1,laserTargets.includes(b));
             if(b.plugin.isGlitter) drawGlitterOverlay(ctx,b.position.x,b.position.y,PLANET_DATA[lvl].r);
-            // Only draw gravity rings when board is sparse — they add too much clutter late game
-            const boardCount=Composite.allBodies(engine.world).filter(x=>!x.isStatic).length;
-            if(lvl>=3&&boardCount<=10){const pd=PLANET_DATA[lvl],inf=pd.r*4,alpha=Math.min(0.03+(lvl-3)*0.01,0.12);ctx.save();ctx.strokeStyle=pd.color;ctx.globalAlpha=alpha;ctx.lineWidth=1;ctx.setLineDash([3,6]);ctx.beginPath();ctx.arc(b.position.x,b.position.y,inf,0,Math.PI*2);ctx.stroke();ctx.restore();}
-            if(lvl===9&&blackHoleTimer){const pulse=0.3+0.2*Math.sin(Date.now()/400);ctx.save();ctx.strokeStyle='#f472b6';ctx.globalAlpha=pulse;ctx.lineWidth=3;ctx.setLineDash([]);ctx.beginPath();ctx.arc(b.position.x,b.position.y,PLANET_DATA[9].r*1.35,0,Math.PI*2);ctx.stroke();ctx.restore();}
+            // Only draw gravity rings when board is sparse — visual clutter at late game
+            if(lvl>=3&&lvl<9&&boardCount<=10){const pd=PLANET_DATA[lvl],inf=pd.r*4,alpha=Math.min(0.03+(lvl-3)*0.01,0.12);ctx.save();ctx.strokeStyle=pd.color;ctx.globalAlpha=alpha;ctx.lineWidth=1;ctx.setLineDash([3,6]);ctx.beginPath();ctx.arc(b.position.x,b.position.y,inf,0,Math.PI*2);ctx.stroke();ctx.restore();}
+            if(lvl===9){
+                // Black hole: animated pink glow halo showing the pull zone
+                const pulse=0.15+0.1*Math.sin(Date.now()/300);
+                ctx.save();ctx.strokeStyle='#f472b6';ctx.globalAlpha=pulse;ctx.lineWidth=1;ctx.setLineDash([2,4]);
+                ctx.beginPath();ctx.arc(b.position.x,b.position.y,BH_CAPTURE_R,0,Math.PI*2);ctx.stroke();
+                ctx.restore();
+            }
             const crossing=isFlipped?b.position.y>limitY:b.position.y<limitY;
             if(crossing&&(Date.now()-b.plugin.timestamp>2000)){
                 danger=true;if(!b.plugin.warn)b.plugin.warn=Date.now();
