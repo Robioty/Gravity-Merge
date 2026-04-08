@@ -242,6 +242,7 @@
         <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="showMissions()">📋 DAILY MISSIONS</button>
         <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="showConstellation()">🌌 CONSTELLATION</button>
         <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="showHowToPlay()">❓ HOW TO PLAY</button>
+        <button class="btn" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.4);color:var(--wind)" onclick="replayTutorial()">🎓 REPLAY TUTORIAL</button>
         <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="showSettings()">⚙️ SETTINGS</button>
         <button id="tip-jar-btn" onclick="openTipJar()">☕ Support the Dev — Tip Jar</button>
     </div>
@@ -258,7 +259,6 @@
             <div class="shop-row"><div><b>SEISMIC PULSE</b><small>Board hop — unsticks planets</small></div><button class="shop-btn" onclick="buySeismic()">✨ 150</button></div>
             <div class="shop-row"><div><b>LASER STRIKE</b><small>Vaporise up to 3 planets (Lvl 0-4)</small></div><button class="shop-btn" onclick="buyLaserStrike()">✨ 400</button></div>
         </div>
-        <div id="newbie-note" style="display:none;font-size:0.75em;opacity:0.5;margin-bottom:8px;padding:8px;background:rgba(255,255,255,0.04);border-radius:10px;">🌱 Power-ups &amp; anomalies unlock after your first 3 games.</div>
         <button class="btn" onclick="togglePause()">▶ RESUME</button>
         <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="restartMission()">🔄 RESTART</button>
         <button class="btn" style="background:rgba(100,100,120,0.4);margin-top:6px;" onclick="reportBug()">🐛 SPACE BUG</button>
@@ -290,7 +290,7 @@
         <div class="toggle-row"><span>Screen Shake</span><button class="toggle on" id="shake-toggle" onclick="toggleSetting('shake')"></button></div>
         <div class="toggle-row"><span>Particles</span><button class="toggle on" id="particles-toggle" onclick="toggleSetting('particles')"></button></div>
         <div class="toggle-row"><span>Haptic Feedback</span><button class="toggle on" id="haptic-toggle" onclick="toggleSetting('haptic')"></button></div>
-        <p style="font-size:0.7em;opacity:0.4;margin:10px 0 2px">Supernova: Infinity v10.0 · Built with ❤️</p>
+        <p style="font-size:0.7em;opacity:0.4;margin:10px 0 2px">Supernova: Infinity v12.0 · Built with ❤️</p>
         <button class="btn" onclick="hideSettings()">CLOSE</button>
     </div>
 </div>
@@ -781,6 +781,7 @@ const CONSTELLATIONS=[
     {id:'danger_time',title:'Crisis Buffer',    desc:'+1s danger grace period',     maxLvl:3,baseCost:800,costMult:2.5},
     {id:'happy_faces',title:'Happy Planets 😊', desc:'Planets show smiley faces — toggle once unlocked', maxLvl:1,baseCost:300,costMult:99},
     {id:'fart_sounds',title:'Planet Gas 💨',    desc:'Planets fart on merge — toggle once unlocked',     maxLvl:1,baseCost:200,costMult:99},
+    {id:'cheeky_bum', title:'Cheeky Planets 🍑',desc:'Planets show a cheeky bum — toggle once unlocked', maxLvl:1,baseCost:250,costMult:99},
 ];
 function getConstLevels(){return safeGet('sn_const')||{};}
 function getConstLevel(id){return(getConstLevels()[id]||0);}
@@ -791,6 +792,7 @@ function dustBonus(){return 1+getConstLevel('dust_bonus')*0.10;}
 function dangerTimeBonus(){return getConstLevel('danger_time')*1000;}
 function happyFacesEnabled(){return getConstLevel('happy_faces')>=1 && (safeGet('sn_cosmetic_toggles')||{}).happy_faces!==false;}
 function fartSoundsEnabled(){return getConstLevel('fart_sounds')>=1 && (safeGet('sn_cosmetic_toggles')||{}).fart_sounds!==false;}
+function cheekyBumEnabled(){return getConstLevel('cheeky_bum')>=1 && (safeGet('sn_cosmetic_toggles')||{}).cheeky_bum!==false;}
 
 function toggleCosmeticSetting(id){
     const t=safeGet('sn_cosmetic_toggles')||{};
@@ -805,7 +807,7 @@ function showConstellation(){
     const cv=document.getElementById('const-dust-val');if(cv)cv.innerText=total.toLocaleString();
     const cosmeticToggles=safeGet('sn_cosmetic_toggles')||{};
     // COSMETIC IDs that get a toggle once purchased
-    const cosmeticIds=['happy_faces','fart_sounds'];
+    const cosmeticIds=['happy_faces','fart_sounds','cheeky_bum'];
     CONSTELLATIONS.forEach(c=>{
         const lvl=levels[c.id]||0,maxed=lvl>=c.maxLvl,cost=constCost(c);
         const isCosmetic=cosmeticIds.includes(c.id);
@@ -1112,6 +1114,20 @@ function drawPlanet(ctx,x,y,lvl,angle,alpha=1,highlighted=false){
         ctx.fillStyle='rgba(0,0,0,0.7)';ctx.beginPath();ctx.arc(-fs*0.38,-fs*0.1,fs*0.18,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(fs*0.38,-fs*0.1,fs*0.18,0,Math.PI*2);ctx.fill();
         ctx.strokeStyle='rgba(0,0,0,0.7)';ctx.lineWidth=fs*0.18;ctx.lineCap='round';ctx.beginPath();ctx.arc(0,fs*0.1,fs*0.48,0.15*Math.PI,0.85*Math.PI);ctx.stroke();ctx.restore();
     }
+    // 🍑 Cheeky bum — two round cheeks with a centre line
+    if(cheekyBumEnabled()&&!d.singularity&&!d.blackhole&&d.r>=14){
+        ctx.save();ctx.globalAlpha=alpha*0.82;
+        const bs=d.r*0.42; // scale relative to planet size
+        // Left cheek
+        ctx.fillStyle='rgba(0,0,0,0.55)';
+        ctx.beginPath();ctx.ellipse(-bs*0.28,bs*0.05,bs*0.36,bs*0.42,0.1,0,Math.PI*2);ctx.fill();
+        // Right cheek
+        ctx.beginPath();ctx.ellipse(bs*0.28,bs*0.05,bs*0.36,bs*0.42,-0.1,0,Math.PI*2);ctx.fill();
+        // Cheeky crack — short curved line between the cheeks
+        ctx.strokeStyle='rgba(0,0,0,0.65)';ctx.lineWidth=Math.max(1.5,bs*0.13);ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(0,-bs*0.28);ctx.quadraticCurveTo(bs*0.08,bs*0.12,0,bs*0.48);ctx.stroke();
+        ctx.restore();
+    }
     ctx.restore();
 }
 
@@ -1282,7 +1298,6 @@ function nearMissSave(){
 
 // ── Power-ups ─────────────────────────────────────────────────────────────────
 function buyPowerUp(cost,maxLvl){
-    if(totalGamesEver()<3){showToast('Power-ups unlock after 3 games!','var(--wind)');return;}
     const stats=loadStats(),total=stats.dust+sessionDust;
     if(total<cost){showToast('Not enough Stardust!','var(--danger)');return;}
     if(sessionDust>=cost)sessionDust-=cost;else{stats.dust-=(cost-sessionDust);sessionDust=0;}
@@ -1291,7 +1306,6 @@ function buyPowerUp(cost,maxLvl){
     refreshDustHUD();showToast('Power-up activated! 💥','var(--success)');togglePause();
 }
 function buySeismic(){
-    if(totalGamesEver()<3){showToast('Power-ups unlock after 3 games!','var(--wind)');return;}
     const cost=150,stats=loadStats(),total=stats.dust+sessionDust;
     if(total<cost){showToast('Not enough Stardust!','var(--danger)');return;}
     if(sessionDust>=cost)sessionDust-=cost;else{stats.dust-=(cost-sessionDust);sessionDust=0;}
@@ -1299,7 +1313,6 @@ function buySeismic(){
     setTimeout(()=>{Composite.allBodies(engine.world).forEach(b=>{if(!b.isStatic&&b.plugin?.lvl!==undefined)Body.applyForce(b,b.position,{x:(Math.random()-0.5)*0.015,y:isFlipped?0.02:-0.02});});screenShake(14,350);playSound('seismic');showToast('🌍 Seismic Pulse!','var(--accent)');},300);
 }
 function buyLaserStrike(){
-    if(totalGamesEver()<3){showToast('Power-ups unlock after 3 games!','var(--wind)');return;}
     const cost=400,stats=loadStats(),total=stats.dust+sessionDust;
     if(total<cost){showToast('Not enough Stardust!','var(--danger)');return;}
     if(sessionDust>=cost)sessionDust-=cost;else{stats.dust-=(cost-sessionDust);sessionDust=0;}
@@ -1320,7 +1333,6 @@ function fireLaser(){
 
 // ── Gravity flip ──────────────────────────────────────────────────────────────
 function flipGravity(){
-    if(totalGamesEver()<3){showToast('Gravity flip unlocks after 3 games!','var(--wind)');return;}
     if(gravityCharge<CHARGE_TIME){showToast('Gravity recharging…','var(--gold)');return;}
     isFlipped=!isFlipped;engine.gravity.y*=-1;gravityCharge=0;
     playSound('flip');screenShake(12,300);haptic(30);setNebulaMood('flipped');
@@ -1401,7 +1413,6 @@ function drawComet(ctx){
 
 // ── Solar wind ────────────────────────────────────────────────────────────────
 function scheduleAnomaly(){
-    if(totalGamesEver()<3){anomalyTimer=setTimeout(scheduleAnomaly,5000);return;}
     if(anomalyTimer)clearTimeout(anomalyTimer);const d=ANOMALY_INTERVAL_MIN+Math.random()*(ANOMALY_INTERVAL_MAX-ANOMALY_INTERVAL_MIN);anomalyTimer=setTimeout(()=>{if(gameStarted&&!isPaused)warnAnomaly();else scheduleAnomaly();},d);
 }
 function warnAnomaly(){const w=document.getElementById('anomaly-warn');w.innerText='⚠️ SOLAR WIND INCOMING!';w.style.display='block';setTimeout(()=>{w.style.display='none';startAnomaly();},3000);}
@@ -1601,11 +1612,6 @@ function togglePause(){
     if(!gameStarted)return;
     isPaused=!isPaused;engine.enabled=!isPaused;
     document.getElementById('pause-menu').style.display=isPaused?'flex':'none';
-    // Show/hide power-ups based on gamesPlayed
-    const ppSection=document.getElementById('power-ups-section');
-    const newbieNote=document.getElementById('newbie-note');
-    if(ppSection)ppSection.style.display=totalGamesEver()<3?'none':'block';
-    if(newbieNote)newbieNote.style.display=totalGamesEver()<3?'block':'none';
     if(isPaused){renderDiscoveryLog();if(cometTimer)clearTimeout(cometTimer);if(anomalyTimer)clearTimeout(anomalyTimer);}
     else{scheduleComet();scheduleAnomaly();}
 }
@@ -1654,21 +1660,77 @@ function renderDiscoveryLog(){
 
 // ── Tutorial ──────────────────────────────────────────────────────────────────
 const TUT_STEPS=[
-    {text:'<b>Drag left and right</b> to aim, then <b>lift your finger</b> to drop a planet.',spotFn:()=>({x:width/2,y:TOP_BAR+80,r:60}),arrowFn:()=>({x:width/2-10,y:TOP_BAR+50}),label:'STEP 1 OF 3'},
-    {text:'Drop planets of the <b>same type</b> on each other to <b>merge</b> them. Chain merges for a <b>COMBO!</b>',spotFn:()=>({x:width/2,y:TOP_BAR+PLAY_H*0.5,r:80}),arrowFn:()=>({x:width/2-10,y:TOP_BAR+PLAY_H*0.3}),label:'STEP 2 OF 3'},
-    {text:'Don\'t let planets cross the <b style="color:var(--danger)">red line</b>. Use the <b style="color:var(--gold)">G button</b> to flip gravity — unlocks after game 3!',spotFn:()=>({x:width-40,y:height-BOT_BAR/2,r:44}),arrowFn:()=>({x:width-80,y:height-BOT_BAR-30}),label:'STEP 3 OF 3'},
+    {
+        text:'Welcome to <b>Supernova: Infinity!</b> 🚀<br><br><b>Drag left and right</b> to aim your planet, then <b>lift your finger</b> to drop it. A ghost preview shows exactly where it will land.',
+        spotFn:()=>({x:width/2,y:TOP_BAR+90,r:65}),
+        arrowFn:()=>({x:width/2-10,y:TOP_BAR+55}),
+        label:'STEP 1 OF 6'
+    },
+    {
+        text:'Drop planets of the <b>same type</b> on top of each other — they <b>merge</b> into a bigger planet and score points!<br><br>Merge quickly to build a <b style="color:var(--gold)">COMBO CHAIN</b> for bonus points!',
+        spotFn:()=>({x:width/2,y:TOP_BAR+PLAY_H*0.5,r:80}),
+        arrowFn:()=>({x:width/2-10,y:TOP_BAR+PLAY_H*0.32}),
+        label:'STEP 2 OF 6'
+    },
+    {
+        text:'⚠️ Don\'t let planets pile up past the <b style="color:var(--danger)">red danger line</b>!<br><br>You\'ll get a 7-second warning. If it\'s your first time, <b style="color:var(--success)">3 planets are automatically cleared</b> to save you!',
+        spotFn:()=>({x:width/2,y:TOP_BAR+85,r:50}),
+        arrowFn:()=>({x:width/2-10,y:TOP_BAR+48}),
+        label:'STEP 3 OF 6'
+    },
+    {
+        text:'Tap <b style="color:var(--gold)">G</b> to <b>flip gravity</b> — all planets fall the other way! Great for clearing space.<br><br>It takes 6 minutes to recharge, but catching a <b>☄️ comet</b> instantly refills it.',
+        spotFn:()=>({x:width-40,y:height-BOT_BAR/2,r:44}),
+        arrowFn:()=>({x:width-84,y:height-BOT_BAR-34}),
+        label:'STEP 4 OF 6'
+    },
+    {
+        text:'Tap <b style="color:var(--accent)">HOLD</b> to bank your current planet and swap it back later — one use per drop.<br><br>The <b>NEXT</b> and <b>AFTER</b> previews show your upcoming two planets.',
+        spotFn:()=>({x:width/2,y:height-BOT_BAR/2,r:90}),
+        arrowFn:()=>({x:width/2-80,y:height-BOT_BAR-34}),
+        label:'STEP 5 OF 6'
+    },
+    {
+        text:'Earn <b style="color:var(--gold)">✨ Stardust</b> on every merge — spend it on <b>power-ups</b> during a game (pause menu) or <b>permanent upgrades</b> in Constellation.<br><br>Play <b>RANKED</b> mode to earn RP and climb the leaderboard. Good luck! 🪐',
+        spotFn:()=>({x:width/2,y:height/2,r:60}),
+        arrowFn:()=>({x:width/2-10,y:height/2-80}),
+        label:'STEP 6 OF 6'
+    },
 ];
-function startTutorial(){tutStep=0;tutActive=true;if(engine)engine.enabled=false;document.getElementById('tutorial-overlay').classList.add('active');showTutStep(0);}
+
+// startTutorial can be called from home screen (no engine running) or mid-game
+function startTutorial(){
+    tutStep=0;tutActive=true;
+    if(engine&&gameStarted)engine.enabled=false;
+    document.getElementById('tutorial-overlay').classList.add('active');
+    showTutStep(0);
+}
 function showTutStep(i){
     const step=TUT_STEPS[i];if(!step){endTutorial();return;}
-    document.getElementById('tut-step-label').innerText=step.label;document.getElementById('tut-text').innerHTML=step.text;
-    const sp=step.spotFn(),spot=document.getElementById('tut-spotlight');spot.style.width=(sp.r*2)+'px';spot.style.height=(sp.r*2)+'px';spot.style.left=(sp.x-sp.r)+'px';spot.style.top=(sp.y-sp.r)+'px';
-    const ap=step.arrowFn(),arrow=document.getElementById('tut-arrow');arrow.style.left=ap.x+'px';arrow.style.top=ap.y+'px';
-    const card=document.getElementById('tut-card'),cardTop=sp.y+sp.r+18;card.style.top=(cardTop+200<height?cardTop:sp.y-sp.r-200)+'px';card.style.left=Math.max(10,Math.min(width-300,sp.x-140))+'px';
+    document.getElementById('tut-step-label').innerText=step.label;
+    document.getElementById('tut-text').innerHTML=step.text;
+    const sp=step.spotFn(),spot=document.getElementById('tut-spotlight');
+    spot.style.width=(sp.r*2)+'px';spot.style.height=(sp.r*2)+'px';
+    spot.style.left=(sp.x-sp.r)+'px';spot.style.top=(sp.y-sp.r)+'px';
+    const ap=step.arrowFn(),arrow=document.getElementById('tut-arrow');
+    arrow.style.left=ap.x+'px';arrow.style.top=ap.y+'px';
+    const card=document.getElementById('tut-card'),cardTop=sp.y+sp.r+18;
+    card.style.top=(cardTop+220<height?cardTop:sp.y-sp.r-220)+'px';
+    card.style.left=Math.max(10,Math.min(width-300,sp.x-140))+'px';
     document.getElementById('tut-btn').innerText=i===TUT_STEPS.length-1?"LET'S GO! 🚀":"GOT IT →";
 }
 function tutNext(){tutStep++;if(tutStep>=TUT_STEPS.length){endTutorial();return;}showTutStep(tutStep);}
-function endTutorial(){tutActive=false;document.getElementById('tutorial-overlay').classList.remove('active');if(engine&&gameStarted)engine.enabled=true;safeSet('sn_tutdone',true);}
+function endTutorial(){
+    tutActive=false;
+    document.getElementById('tutorial-overlay').classList.remove('active');
+    if(engine&&gameStarted)engine.enabled=true;
+    safeSet('sn_tutdone',true);
+}
+// Replay tutorial from home screen — clears tutdone so it shows next game too
+function replayTutorial(){
+    safeSet('sn_tutdone',false);
+    startTutorial();
+}
 
 // ── Start game ────────────────────────────────────────────────────────────────
 function startGame(){
@@ -1722,7 +1784,7 @@ function startGame(){
     holdLevel=-1;holdIsGlitter=false;
     updatePreview();loadStats();initEvents();setNebulaMood('normal');
     comet=null;cometTail=[];if(cometTimer)clearTimeout(cometTimer);_dismissComet();scheduleComet();scheduleAnomaly();
-    if(!gravityTooltipShown&&gamesPlayed>=3){gravityTooltipShown=true;const tip=document.getElementById('g-tooltip');tip.classList.add('show');setTimeout(()=>tip.classList.remove('show'),3500);}
+    if(!gravityTooltipShown){gravityTooltipShown=true;const tip=document.getElementById('g-tooltip');tip.classList.add('show');setTimeout(()=>tip.classList.remove('show'),3500);}
     if(gamesPlayed===1&&!safeGet('sn_tutdone'))setTimeout(startTutorial,800);
 }
 
