@@ -1,28 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    
-    <link rel="manifest" href="manifest.json">
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#010206">
-
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('Supernova Service Worker Active!', reg.scope))
-        .catch(err => console.log('Service Worker failed:', err));
-    });
-  }
-</script>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <!-- PWA manifest + theme -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#010206">
+
+    <!-- iOS home screen support (Safari ignores the manifest for icons) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Supernova">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+
+    <!-- Android / Chrome home screen -->
+    <meta name="mobile-web-app-capable" content="yes">
+
     <title>Supernova: Infinity v12.0</title>
+
+    <!-- Service worker registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('[SW] Supernova service worker registered, scope:', reg.scope))
+            .catch(err => console.warn('[SW] Registration failed:', err));
+        });
+      }
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         :root{--accent:#38bdf8;--gold:#fbbf24;--danger:#ef4444;--glass:rgba(255,255,255,0.08);--success:#4ade80;--wind:#a78bfa;}
