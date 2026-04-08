@@ -1,4 +1,9 @@
-const CACHE_NAME = 'supernova-cache-v1';
+// ── Supernova: Infinity — Service Worker ──────────────────────────────────────
+// Strategy: Cache-first for all listed assets (offline play after first load).
+// Bump CACHE_NAME whenever you deploy a new version of the game so players
+// get fresh files rather than a stale cached copy.
+const CACHE_NAME = 'supernova-v12';
+
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -8,32 +13,63 @@ const ASSETS_TO_CACHE = [
   'https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js'
 ];
 
-// Install Event: Saves the files to the phone's "Warehouse"
-self.addEventListener('install', (event) => {
+// ── Install: pre-cache all assets ─────────────────────────────────────────────
+self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('Supernova is caching your assets...');
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log('[SW] Caching Supernova assets…');
+        return cache.addAll(ASSETS_TO_CACHE);
+      })
+      .then(() => self.skipWaiting()) // activate immediately, don't wait for old SW to die
   );
 });
 
-// Activate Event: Cleans up old versions of the game
-self.addEventListener('activate', (event) => {
+// ── Activate: delete any old cache versions ───────────────────────────────────
+self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
-      );
-    })
+    caches.keys()
+      .then(keys => Promise.all(
+        keys
+          .filter(key => key !== CACHE_NAME)
+          .map(key => {
+            console.log('[SW] Deleting old cache:', key);
+            return caches.delete(key);
+          })
+      ))
+      .then(() => self.clients.claim()) // take control of open pages immediately
   );
 });
 
-// Fetch Event: Loads the game from the cache if offline
-self.addEventListener('fetch', (event) => {
+// ── Fetch: serve from cache, fall back to network ─────────────────────────────
+self.addEventListener('fetch', event => {
+  // Only handle GET requests — skip POST etc.
+  if (event.request.method !== 'GET') return;
+
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
-    })
+    caches.match(event.request)
+      .then(cached => {
+        if (cached) {
+          return cached; // serve from cache (works offline)
+        }
+        // Not in cache — fetch from network and cache the response
+        return fetch(event.request)
+          .then(networkResponse => {
+            // Only cache valid responses (not errors, not opaque cross-origin)
+            if (
+              networkResponse &&
+              networkResponse.status === 200 &&
+              networkResponse.type !== 'opaque'
+            ) {
+              const toCache = networkResponse.clone();
+              caches.open(CACHE_NAME).then(cache => cache.put(event.request, toCache));
+            }
+            return networkResponse;
+          })
+          .catch(() => {
+            // Network failed and nothing in cache — nothing we can do
+            console.warn('[SW] Fetch failed, no cache available for:', event.request.url);
+          });
+      })
   );
 });
