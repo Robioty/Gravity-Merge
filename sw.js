@@ -1,8 +1,9 @@
 // ── Supernova: Infinity — Service Worker ──────────────────────────────────────
 // Strategy: Cache-first for all listed assets (offline play after first load).
-// Bump CACHE_NAME whenever you deploy a new version of the game so players
-// get fresh files rather than a stale cached copy.
-const CACHE_NAME = 'supernova-v12';
+// ★ IMPORTANT: Bump CACHE_NAME every time you deploy a new version of the game.
+// The activate event deletes all caches that don't match CACHE_NAME, forcing
+// players to get fresh files on their next visit.
+const CACHE_NAME = 'supernova-v13';
 
 const ASSETS_TO_CACHE = [
   './',
@@ -41,35 +42,52 @@ self.addEventListener('activate', event => {
   );
 });
 
-// ── Fetch: serve from cache, fall back to network ─────────────────────────────
+// ── Fetch: network-first for HTML, cache-first for everything else ────────────
 self.addEventListener('fetch', event => {
   // Only handle GET requests — skip POST etc.
   if (event.request.method !== 'GET') return;
 
-  event.respondWith(
-    caches.match(event.request)
-      .then(cached => {
-        if (cached) {
-          return cached; // serve from cache (works offline)
-        }
-        // Not in cache — fetch from network and cache the response
-        return fetch(event.request)
-          .then(networkResponse => {
-            // Only cache valid responses (not errors, not opaque cross-origin)
-            if (
-              networkResponse &&
-              networkResponse.status === 200 &&
-              networkResponse.type !== 'opaque'
-            ) {
-              const toCache = networkResponse.clone();
-              caches.open(CACHE_NAME).then(cache => cache.put(event.request, toCache));
-            }
-            return networkResponse;
-          })
-          .catch(() => {
-            // Network failed and nothing in cache — nothing we can do
-            console.warn('[SW] Fetch failed, no cache available for:', event.request.url);
-          });
-      })
-  );
+  const url = new URL(event.request.url);
+  const isHTML = url.pathname.endsWith('.html') || url.pathname.endsWith('/');
+
+  if (isHTML) {
+    // Network-first for HTML: always try to get the latest index.html.
+    // Falls back to cache only if completely offline.
+    event.respondWith(
+      fetch(event.request)
+        .then(networkResponse => {
+          if (networkResponse && networkResponse.status === 200) {
+            const toCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, toCache));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request))
+    );
+  } else {
+    // Cache-first for all other assets (JS libs, icons, manifest).
+    event.respondWith(
+      caches.match(event.request)
+        .then(cached => {
+          if (cached) {
+            return cached;
+          }
+          return fetch(event.request)
+            .then(networkResponse => {
+              if (
+                networkResponse &&
+                networkResponse.status === 200 &&
+                networkResponse.type !== 'opaque'
+              ) {
+                const toCache = networkResponse.clone();
+                caches.open(CACHE_NAME).then(cache => cache.put(event.request, toCache));
+              }
+              return networkResponse;
+            })
+            .catch(() => {
+              console.warn('[SW] Fetch failed, no cache available for:', event.request.url);
+            });
+        })
+    );
+  }
 });
