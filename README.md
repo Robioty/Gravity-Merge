@@ -55,11 +55,12 @@ Drop probability is **weighted by score**: early game drops are mostly Mote/Verd
 |---|---|
 | **HOLD** | Bank your current planet — swap it back any time, one use per drop |
 | **Gravity Flip (G)** | Flips physics direction, 6-minute recharge |
-| **Comet** | Flies across periodically — tap it to open the Choice Chest (Vacuum / Gravity Surge / Double Score) |
-| **Solar Wind** | Pushes all planets sideways for 30 seconds — unlocks after 3 games |
+| **Comet** | Flies across periodically — tap it to open the Choice Chest (Vacuum / Gravity Surge / Double Score). The comet's trail colour changes based on your last choice (red = Vacuum, gold = Gravity Surge, cyan = Double Score) |
+| **Solar Wind** | Pushes all planets sideways for 30 seconds |
 | **Black Hole** | Vortex (level 9) is a compact black hole (r:31). Every frame it pulls level 0/1/2 planets toward it. Every 4 seconds it consumes the nearest small planet within 120px. A faint pink dashed ring shows the capture zone. |
-| **Wormhole** | Merge **two** level-9 Black Holes together and a wormhole event fires. Physics pauses briefly, all planets within 200px are consumed (200pts each), a swirling void animation plays, then it collapses and the game continues. Neither Black Hole is replaced by a new body. |
+| **Wormhole** | Merge **two** level-9 Black Holes together and a wormhole event fires. Physics pauses briefly, all planets within 200px are consumed (200pts each), a swirling void animation plays, then it collapses and the game continues. |
 | **Glitter Planet** | Rare wildcard (2% chance, unlocks at Captain rank) — upgrades whatever planet it touches by +1 level regardless of their types |
+| **Accurate Drop Streak** | Drop 5 planets accurately on the ghost landing marker in a row to trigger a green particle burst and a streak counter |
 
 ### Stardust (✨)
 Earned on every merge. Spend it in **Constellation** (permanent upgrades) or **Armory** (in-run power-ups).
@@ -97,7 +98,32 @@ A 6-step interactive tutorial runs automatically on your very first game. It cov
 
 The tutorial can be replayed at any time via the **🎓 REPLAY TUTORIAL** button on the home screen.
 
-### Daily features
+### Achievements 🏅
+12 one-time badges earned through gameplay milestones, accessible from the home screen via **🏅 ACHIEVEMENTS**. Stored in `sn_achievements`. They are:
+
+| Badge | Title | Condition |
+|---|---|---|
+| 💥 | First Contact | Perform your first merge |
+| 🌟 | Golden Orbit | Reach Auroris (level 3) |
+| 💫 | Into the Deep | Reach Orrath (level 5) |
+| 🕳️ | Event Horizon | Reach Nullar (level 8) |
+| 🌀 | Singularity | Create a Vortex Black Hole |
+| 🌌 | Wormhole Pioneer | Trigger a Wormhole event |
+| ⛓️ | Chain Reaction | Reach a ×5 combo chain |
+| 🚀 | Deep Space Explorer | Score 50,000 in one run |
+| 👑 | Cosmic Legend | Score 100,000 in one run |
+| 📅 | Creature of Habit | Play 3 days in a row |
+| 🔄 | Gravity Master | Flip gravity 5 times in one run |
+| ✨ | Star Dust | Use a Glitter planet wildcard |
+
+### End-of-run stats
+After every game, the **Mission Report** shows:
+- Score, merges, best planet, stardust earned, best combo, run time
+- A **merge chart** — horizontal bar chart showing how many merges produced each planet level, so you can see which planets dominated your run
+- Ranked games also show THE CAREER card with RP change and progress to next rank
+
+### Personal best indicator
+While in-game, a faint **PB: X** label appears below the score counter showing your personal best from previous runs. It disappears once you've beaten it.
 - **Daily Bonus**: +100✨ stardust each new day
 - **Daily Streak**: consecutive day bonus; 7-day streak = +300✨ extra
 - **Idle Stardust**: away for 2+ hours? Earn 8✨/hour (cap 150) on return
@@ -113,8 +139,9 @@ All data is stored in the browser's `localStorage`. Nothing is sent to a server.
 |---|---|
 | `sn_v10` | Main save: best score, stardust, discovered planets, RP, total games played |
 | `sn_const` | Constellation upgrade levels |
-| `sn_cosmetic_toggles` | Happy Planets / Planet Gas on/off state |
+| `sn_cosmetic_toggles` | Happy Planets / Planet Gas / Cheeky Planets on/off state |
 | `sn_settings` | Sound, shake, particles, haptic toggles |
+| `sn_achievements` | Earned achievement IDs with timestamps |
 | `sn_streak` | Daily streak count and last-played date |
 | `sn_daily` | Last date daily bonus was claimed |
 | `sn_daily_run` | Today's Daily Run best score |
@@ -139,6 +166,7 @@ Game state                All let variables — reset in startGame()
 Planet data               PLANET_DATA — 10 entries, r = radius in px
 Safe storage              safeGet / safeSet — localStorage with fallback
 Stats                     loadStats, saveStats, totalGamesEver
+Achievements              ACHIEVEMENTS array, earnAchievement, checkAchievements, showAchievements
 RP logic                  calcRPChange, applyRPChange (with rank floor)
 Seeded RNG                seedRNG, rng, getDailySeed (mulberry32)
 Glitter planet            shouldBeGlitter, performGlitterMerge
@@ -147,19 +175,19 @@ Constellation             CONSTELLATIONS array, show/buy/toggle functions
 Daily missions            MISSION_DEFS, initMissions, trackMission
 Audio                     playSound (all SFX), ensureAudioCtx, playFart
 Planet drawing            drawPlanet (handles blackhole/singularity flags), drawGlitterOverlay, drawPreviewCanvas
-Spawn / merge             spawn, performMerge, performGlitterMerge
+Spawn / merge             spawn, performMerge (with flashPlanetName + merge chart tracking), performGlitterMerge
 Near Miss Save            nearMissSave (one per run)
 Power-ups                 buyPowerUp, buySeismic, buyLaserStrike, fireLaser
 Gravity flip              flipGravity
-Comet                     scheduleComet, trySpawnComet, catchComet, cometChoice
+Comet                     scheduleComet, trySpawnComet, catchComet, cometChoice (sets trail hue)
 Solar wind                scheduleAnomaly, startAnomaly, applyAnomaly
 Black hole + Wormhole     startBlackHole, performWormhole, drawWormhole
-End screen                showEndScreen (two-card: THE RUN + THE CAREER)
-Pause / game over         togglePause, confirmAbandon, gameOver
-Tutorial                  TUT_STEPS, startTutorial, showTutStep, endTutorial
-Start game                startGame — full engine teardown and rebuild
-Events                    initEvents — physics hooks, render loop, danger check
-Input                     pointermove, pointerup handlers
+End screen                showEndScreen (two-card: THE RUN with merge chart + THE CAREER)
+Pause / game over         togglePause, confirmAbandon, gameOver (calls checkAchievements)
+Tutorial                  TUT_STEPS (6 steps), startTutorial, replayTutorial
+Start game                startGame — full engine teardown and rebuild, resets all session state
+Events                    initEvents — physics hooks, render loop, danger check, BH pull
+Input                     pointermove, pointerup (with accurate drop streak tracking)
 Boot                      loadSettings, checkDailyBonus, checkIdleDust, loadStats
 ```
 
@@ -183,20 +211,28 @@ Boot                      loadSettings, checkDailyBonus, checkIdleDust, loadStat
 
 **Power-up unlocks**: Gated on `totalGamesEver()` (persisted in `sn_v10.totalGames`) rather than the session `gamesPlayed` counter. This means they stay unlocked after page reload once the threshold is crossed.
 
+**Achievements**: Stored as an object in `sn_achievements` mapping achievement ID to earned timestamp. `earnAchievement(id)` is idempotent — calling it on an already-earned badge is a no-op. `checkAchievements()` is called at the end of every run via `gameOver()` and evaluates all run-based conditions at once. Some achievements (glitter merge, wormhole) are earned at the moment they happen rather than waiting for end-of-run.
+
+**Merge chart**: `_sMergesByLevel` is a 10-element array reset at the start of each game. Both `performMerge` and `performGlitterMerge` increment `_sMergesByLevel[nl]`. At end-of-run, `showEndScreen` uses the array to build a normalised bar chart where the widest bar = 100% and other bars are proportional. Planets with zero merges are omitted.
+
+**Accurate drop streak**: On every drop, the pointerup handler records `dropX` and calls `calcGhostY(dropX, isFlipped)` to get the predicted landing Y. 400ms later (after the planet has started falling), a `setTimeout` checks if any body of the dropped level is within 2× the planet's radius of the predicted landing position. This is a loose check — it rewards intent without requiring pixel-perfect precision.
+
+**Personal best indicator**: The `pb-label` div sits inside the top bar score wrapper and shows the stored `sn_v10.best` on game start. It's hidden when the game is not in progress and auto-hides when the player beats their best (the `flashNewBest` animation serves as the signal).
+
 ---
 
 ## Version history
 
-See the comment block at the top of the `<script>` tag in `index.html` for the full changelog (v7.0 → v12.0).
+See the comment block at the top of the `<script>` tag in `index.html` for the full changelog (v7.0 → v13.0).
 
-**Recent changes (v12.0):**
-- **Removed 3-game easy mode** — all features (gravity flip, power-ups, solar wind) available from game 1
-- **Tutorial expanded** from 3 steps to 6, covering all core mechanics clearly
-- **🎓 Replay Tutorial** button added to home screen
-- **Cheeky Planets 🍑** constellation upgrade — two round cheeks and a crack drawn on every planet
-- Bug fix: `CHARGE_TIME is not defined` crash on load
-- Zephyra (lvl 7) −10%, Nullar (lvl 8) −10%, Vortex (lvl 9) redesigned as compact Black Hole
-- Wormhole event when two Black Holes merge
+**Recent changes (v13.0):**
+- **Achievements system** — 12 badges, earned through gameplay, persistent across sessions, viewable from home screen
+- **Merge chart** on the end screen — bar chart showing merges by planet level for every run
+- **Planet name flash** — the name of the newly created planet briefly appears on merge (Krath and above)
+- **Accurate drop streak** — 5 accurate drops in a row triggers a green particle burst and streak counter
+- **Personal best indicator** — faint "PB: X" label below the in-game score shows your previous best while you play
+- **Comet trail colour** — the comet tail changes colour based on your last choice (red/gold/cyan)
+- **Leaderboard scores raised** — top player now ~418k, scaling the whole board up to be more challenging
 
 ---
 
