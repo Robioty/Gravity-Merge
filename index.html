@@ -212,6 +212,15 @@
         #pwa-banner{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,rgba(56,189,248,0.2),rgba(167,139,250,0.2));border:1px solid rgba(56,189,248,0.4);border-radius:20px;padding:12px 20px;z-index:1500;display:none;text-align:center;max-width:320px;backdrop-filter:blur(10px);}
         /* Skin preview row */
         .skin-preview{width:36px;height:36px;border-radius:50%;flex-shrink:0;}
+        /* Analytics dashboard */
+        #analytics-screen{position:fixed;inset:0;background:rgba(1,4,9,0.98);z-index:3000;display:none;flex-direction:column;align-items:center;padding:20px;overflow-y:auto;}
+        .analytics-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:14px;margin-bottom:10px;width:100%;max-width:420px;}
+        .analytics-title{font-size:0.65em;font-weight:900;color:var(--accent);letter-spacing:1px;margin-bottom:10px;text-transform:uppercase;}
+        .analytics-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.8em;}
+        .analytics-row:last-child{border-bottom:none;}
+        .analytics-val{font-weight:900;color:var(--gold);}
+        .analytics-bar-wrap{width:100%;height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;margin-top:4px;}
+        .analytics-bar{height:100%;border-radius:4px;background:var(--accent);transition:width 0.6s;}
     </style>
 </head>
 <body>
@@ -274,7 +283,7 @@
 
 <!-- HOME -->
 <div id="home-screen" class="overlay">
-    <h1 style="font-size:2.8em;color:var(--accent);margin-bottom:14px;text-shadow:0 0 30px var(--accent)">SUPERNOVA</h1>
+    <h1 id="home-title" style="font-size:2.8em;color:var(--accent);margin-bottom:14px;text-shadow:0 0 30px var(--accent)" onclick="handleTitleTap()">SUPERNOVA</h1>
     <div class="menu-card scroll">
         <div id="daily-banner">🎁 Daily Bonus! <b>+100 ✨ Stardust</b> claimed!</div>
         <div id="pilot-name-display" style="text-align:center;font-size:0.78em;opacity:0.5;margin-bottom:6px;cursor:pointer" onclick="showSettings()">✏️ Pilot: <span id="pilot-name-val">—</span></div>
@@ -485,6 +494,20 @@
     <div style="display:flex;gap:8px;justify-content:center">
         <button onclick="pwaBannerInstall()" style="background:var(--accent);color:#000;border:none;padding:8px 18px;border-radius:10px;font-weight:900;cursor:pointer;font-size:0.85em">INSTALL</button>
         <button onclick="pwaBannerDismiss()" style="background:rgba(255,255,255,0.1);color:white;border:none;padding:8px 14px;border-radius:10px;font-weight:700;cursor:pointer;font-size:0.85em">Later</button>
+    </div>
+</div>
+
+<!-- ANALYTICS DASHBOARD -->
+<div id="analytics-screen">
+    <div style="width:100%;max-width:420px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <h2 style="color:var(--accent);margin:0;font-size:1.4em">📊 Game Analytics</h2>
+            <button onclick="hideAnalytics()" style="background:rgba(255,255,255,0.1);border:none;color:white;padding:8px 16px;border-radius:10px;font-weight:900;cursor:pointer">CLOSE</button>
+        </div>
+        <p style="font-size:0.68em;opacity:0.4;margin:0 0 14px">All data stored locally on this device only. Nothing is sent anywhere.</p>
+        <div id="analytics-content"></div>
+        <button onclick="analyticsExport()" style="background:rgba(56,189,248,0.15);border:1px solid rgba(56,189,248,0.3);color:var(--accent);padding:12px;border-radius:14px;font-weight:900;cursor:pointer;width:100%;margin-top:4px;font-size:0.9em">📤 Share Summary</button>
+        <button onclick="analyticsReset()" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:var(--danger);padding:10px;border-radius:14px;font-weight:700;cursor:pointer;width:100%;margin-top:8px;font-size:0.8em">🗑 Reset Analytics Data</button>
     </div>
 </div>
 
@@ -816,6 +839,7 @@ function applyRPChange(delta){
 // ── Mode ──────────────────────────────────────────────────────────────────────
 function setMode(mode){
     isRankedMode=(mode==='ranked');
+    if(isRankedMode)anTrack('button','ranked');
     document.getElementById('mode-free-btn').className='mode-btn'+(isRankedMode?'':' active');
     document.getElementById('mode-ranked-btn').className='mode-btn'+(isRankedMode?' ranked-active':'');
 }
@@ -837,6 +861,7 @@ function getDailySeed(){
 
 // ── Daily Run ─────────────────────────────────────────────────────────────────
 function startDailyRun(){
+    anTrack('button','daily');
     isDailyRun=true;
     isRankedMode=false;
     setMode('free');
@@ -1049,6 +1074,7 @@ function buyConst(id){
     if(sessionDust>=cost)sessionDust-=cost;else{stats.dust-=(cost-sessionDust);sessionDust=0;}
     _statsCache=stats;safeSet('sn_v10',stats);
     const levels=getConstLevels();levels[id]=lvl+1;safeSet('sn_const',levels);
+    anTrack('const_buy',id);
     refreshDustHUD();showToast(`${c.title} → Level ${lvl+1}!`,'var(--success)');showConstellation();
 }
 
@@ -1481,7 +1507,7 @@ function activateHold(){
         holdLevel=nextLevel;holdIsGlitter=nextIsGlitter;
         nextLevel=tmp;nextIsGlitter=tmpG;
     }
-    holdUsedThisDrop=true;playSound('hold');haptic(12);
+    holdUsedThisDrop=true;anTrack('button','hold');playSound('hold');haptic(12);
     const box=document.getElementById('hold-box');box.classList.remove('flash');void box.offsetWidth;box.classList.add('flash');
     updatePreview();
 }
@@ -1512,6 +1538,7 @@ function performGlitterMerge(glitterBody, targetBody){
     spawn(mid.x,mid.y,nl);
     _sMerges++;_sBestPlanet=Math.max(_sBestPlanet,nl);
     _sMergesByLevel[Math.min(nl,9)]++;
+    anTrack('merge');anTrack('glitter');
     earnAchievement('first_merge');
     earnAchievement('glitter_merge');
     if(nl>=3) earnAchievement('reach_auroris');
@@ -1571,7 +1598,8 @@ function performMerge(a,b){
     spawn(mid.x,mid.y,nl);
     if(_statsCache&&nl>_statsCache.discovered){_statsCache.discovered=nl;safeSet('sn_v10',_statsCache);}
     _sMerges++;_sMaxCombo=Math.max(_sMaxCombo,comboCount);_sBestPlanet=Math.max(_sBestPlanet,nl);
-    _sMergesByLevel[Math.min(nl,9)]++;   // track for end-of-run chart
+    _sMergesByLevel[Math.min(nl,9)]++;
+    anTrack('merge');
     flashPlanetName(nl);                  // flash the new planet name
     earnAchievement('first_merge');
     if(nl>=3) earnAchievement('reach_auroris');
@@ -1612,6 +1640,7 @@ function nearMissSave(){
     const toRemove=sorted.slice(0,3);
     toRemove.forEach(b=>{createExplosion(b.position.x,b.position.y,PLANET_DATA[b.plugin.lvl].color);Composite.remove(engine.world,b);});
     reviveUsed=true;
+    anTrack('near_miss');anTrack('game_over_cause','nearMiss');
     playSound('save');screenShake(10,200);haptic(50);
     const banner=document.getElementById('near-miss-banner');
     banner.style.opacity='1';banner.style.transition='opacity 0.3s';
@@ -1628,6 +1657,7 @@ function buyPowerUp(cost,maxLvl){
     if(sessionDust>=cost)sessionDust-=cost;else{stats.dust-=(cost-sessionDust);sessionDust=0;}
     _statsCache=stats;safeSet('sn_v10',stats);
     Composite.allBodies(engine.world).forEach(b=>{if(b.plugin?.lvl<=maxLvl){createExplosion(b.position.x,b.position.y,PLANET_DATA[b.plugin.lvl].color);Composite.remove(engine.world,b);}});
+    anTrack('button',maxLvl<=1?'nuke':'collapse');
     refreshDustHUD();showToast('Power-up activated! 💥','var(--success)');togglePause();
 }
 function buySeismic(){
@@ -1635,6 +1665,7 @@ function buySeismic(){
     if(total<cost){showToast('Not enough Stardust!','var(--danger)');return;}
     if(sessionDust>=cost)sessionDust-=cost;else{stats.dust-=(cost-sessionDust);sessionDust=0;}
     _statsCache=stats;safeSet('sn_v10',stats);refreshDustHUD();togglePause();
+    anTrack('button','seismic');
     setTimeout(()=>{Composite.allBodies(engine.world).forEach(b=>{if(!b.isStatic&&b.plugin?.lvl!==undefined)Body.applyForce(b,b.position,{x:(Math.random()-0.5)*0.015,y:isFlipped?0.02:-0.02});});screenShake(14,350);playSound('seismic');showToast('🌍 Seismic Pulse!','var(--accent)');},300);
 }
 function buyLaserStrike(){
@@ -1642,6 +1673,7 @@ function buyLaserStrike(){
     if(total<cost){showToast('Not enough Stardust!','var(--danger)');return;}
     if(sessionDust>=cost)sessionDust-=cost;else{stats.dust-=(cost-sessionDust);sessionDust=0;}
     _statsCache=stats;safeSet('sn_v10',stats);refreshDustHUD();
+    anTrack('button','laser');
     isPaused=false;engine.enabled=true;document.getElementById('pause-menu').style.display='none';
     laserMode=true;laserTargets=[];laserShip=null;laserBeams=[];
     document.getElementById('laser-overlay').classList.add('active');
@@ -1660,6 +1692,7 @@ function fireLaser(){
 function flipGravity(){
     if(gravityCharge<CHARGE_TIME){showToast('Gravity recharging…','var(--gold)');return;}
     isFlipped=!isFlipped;engine.gravity.y*=-1;gravityCharge=0;
+    anTrack('button','gravity');
     playSound('flip');screenShake(12,300);haptic(30);setNebulaMood('flipped');
     _sFlips++;trackMission('flips',_sFlips);
 }
@@ -1701,6 +1734,7 @@ function catchComet(){
     const cx=comet.x,cy=comet.y;
     for(let i=0;i<40;i++){const a=(Math.PI*2/40)*i,sp=4+Math.random()*8;particles.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1.0,color:i%3===0?'#fbbf24':i%3===1?'#38bdf8':'#ffffff'});}
     playSound('comet');screenShake(10,250);haptic(40);
+    anTrack('button','comet');
     _dismissComet();
     document.getElementById('comet-choice').style.display='flex';
 }
@@ -1795,7 +1829,7 @@ function performWormhole(x,y){
     playSound('blackhole');screenShake(18,500);
     if(settings.haptic&&navigator.vibrate)navigator.vibrate([80,60,80,60,120]);
     showToast('🌀 WORMHOLE! Space tears open…','#f472b6');
-    earnAchievement('wormhole');
+    earnAchievement('wormhole');anTrack('wormhole');
 
     // Remove all planets within wormhole radius
     let consumed=0;
@@ -1960,12 +1994,13 @@ function togglePause(){
     if(isPaused){renderDiscoveryLog();if(cometTimer)clearTimeout(cometTimer);if(anomalyTimer)clearTimeout(anomalyTimer);}
     else{scheduleComet();scheduleAnomaly();}
 }
-function confirmAbandon(){isPaused=false;document.getElementById('pause-menu').style.display='none';gameOver();}
+function confirmAbandon(){anTrack('game_over_cause','abandon');isPaused=false;document.getElementById('pause-menu').style.display='none';gameOver();}
 function restartMission(){saveStats(false);isPaused=false;document.getElementById('pause-menu').style.display='none';isDailyRun=false;startGame();}
 
 function gameOver(){
     const dustEarned=sessionDust;
     const wasNewBest=gamesPlayed>1&&score>(_statsCache?_statsCache.best:0);
+    anTrack('session_end',{score});
     saveStats(true);gameStarted=false;
     if(runner){Runner.stop(runner);runner=null;}
     if(render){Render.stop(render);if(render.canvas)render.canvas.remove();render=null;}
@@ -2077,10 +2112,13 @@ function endTutorial(){
     tutActive=false;
     document.getElementById('tutorial-overlay').classList.remove('active');
     if(engine&&gameStarted)engine.enabled=true;
+    const wasFirstTime=!safeGet('sn_tutdone');
     safeSet('sn_tutdone',true);
+    anTrack(wasFirstTime?'tut_done':'tut_skip');
 }
 // Replay tutorial from home screen — clears tutdone so it shows next game too
 function replayTutorial(){
+    anTrack('button','replay');
     safeSet('sn_tutdone',false);
     startTutorial();
 }
@@ -2126,6 +2164,9 @@ function startGame(){
     _sMergesByLevel=new Array(10).fill(0);
     _cometTrailHue=190; // reset to default cyan/blue
     gamesPlayed++;_sMerges=0;_sMaxCombo=0;_sFlips=0;_sBestPlanet=0;_runStartTime=Date.now();
+    _anSessionStart=Date.now();
+    const _anMode=isDailyRun?'daily':isRankedMode?'ranked':'free';
+    anTrack('session_start',_anMode);
     previousBest=(_statsCache||loadStats()).best;
     // Show personal best indicator if player has a previous score to chase
     const pbEl=document.getElementById('pb-label'),pbVal=document.getElementById('pb-val');
@@ -2229,7 +2270,7 @@ function initEvents(){
                 if(Date.now()-b.plugin.warn>graceMs){
                     // Near miss save intercept
                     if(!reviveUsed){nearMissSave();}
-                    else{gameOver();}
+                    else{anTrack('game_over_cause','danger');gameOver();}
                 }
             }else{b.plugin.warn=0;}
         });
@@ -2276,7 +2317,7 @@ window.addEventListener('pointerup',e=>{
         if(nearby.length>0){
             _dropStreakCount++;
             if(_dropStreakCount>=5){
-                // Burst of green particles and brief indicator
+                anTrack('accuracy_streak',_dropStreakCount);
                 for(let i=0;i<20;i++) particles.push({x:dropX,y:TOP_BAR+40,vx:(Math.random()-0.5)*10,vy:Math.random()*6+2,life:1.0,color:'#4ade80'});
                 const ds=document.getElementById('drop-streak');
                 ds.innerText=`🎯 ${_dropStreakCount} ACCURATE DROPS!`;
@@ -2414,7 +2455,188 @@ function pwaBannerDismiss(){
     safeSet('sn_pwa_dismissed',true);
 }
 
-// ── Boot ──────────────────────────────────────────────────────────────────────
+// ── Analytics (local only — nothing sent off-device) ─────────────────────────
+// Storage key: sn_analytics — all data stays in localStorage
+// Dashboard accessible by tapping the SUPERNOVA title 5 times
+const AN_KEY = 'sn_analytics';
+let _anTitleTaps = 0, _anTitleTimer = null;
+let _anSessionStart = 0; // ms timestamp when current game started
+
+function anGet() {
+    return safeGet(AN_KEY) || {
+        totalSessions: 0,
+        uniqueDays: [],          // array of date strings
+        sessionsByDay: {},       // {dateStr: count}
+        scoresByDay: {},         // {dateStr: [scores]}
+        gameDurations: [],       // seconds, last 50
+        gameOverCauses: {},      // {danger,nearMiss,abandon,wormhole}
+        buttonPresses: {},       // {gravity,hold,comet,nuke,collapse,seismic,laser,ranked,daily,replay}
+        mergesTotal: 0,
+        wormholes: 0,
+        glitterMerges: 0,
+        nearMissSaves: 0,
+        tutorialCompleted: 0,
+        tutorialSkipped: 0,
+        constPurchases: {},      // {id: count}
+        modeUsage: {free:0, ranked:0, daily:0},
+        avgAccuracyStreak: 0,    // running average peak accuracy streak
+        topStreaks: [],           // last 20 peak streaks
+    };
+}
+function anSave(data) { safeSet(AN_KEY, data); }
+
+// Core tracker — call anTrack(event, value?) throughout the game
+function anTrack(event, value) {
+    try {
+        const d = anGet();
+        const today = new Date().toDateString();
+        switch(event) {
+            case 'session_start':
+                d.totalSessions++;
+                d.sessionsByDay[today] = (d.sessionsByDay[today]||0) + 1;
+                if(!d.uniqueDays.includes(today)) d.uniqueDays.push(today);
+                // Keep only last 90 days of day-keyed data to cap storage
+                const cutoff = new Date(Date.now()-90*86400000).toDateString();
+                Object.keys(d.sessionsByDay).forEach(k=>{ if(k<cutoff) delete d.sessionsByDay[k]; });
+                Object.keys(d.scoresByDay).forEach(k=>{ if(k<cutoff) delete d.scoresByDay[k]; });
+                d.modeUsage[value] = (d.modeUsage[value]||0) + 1;
+                break;
+            case 'session_end':
+                if(!d.scoresByDay[today]) d.scoresByDay[today] = [];
+                d.scoresByDay[today].push(value.score);
+                if(d.scoresByDay[today].length > 50) d.scoresByDay[today] = d.scoresByDay[today].slice(-50);
+                const dur = Math.round((Date.now()-_anSessionStart)/1000);
+                d.gameDurations.push(dur);
+                if(d.gameDurations.length > 50) d.gameDurations = d.gameDurations.slice(-50);
+                break;
+            case 'game_over_cause':
+                d.gameOverCauses[value] = (d.gameOverCauses[value]||0) + 1;
+                break;
+            case 'button':
+                d.buttonPresses[value] = (d.buttonPresses[value]||0) + 1;
+                break;
+            case 'merge':       d.mergesTotal++; break;
+            case 'wormhole':    d.wormholes++; break;
+            case 'glitter':     d.glitterMerges++; break;
+            case 'near_miss':   d.nearMissSaves++; break;
+            case 'tut_done':    d.tutorialCompleted++; break;
+            case 'tut_skip':    d.tutorialSkipped++; break;
+            case 'const_buy':   d.constPurchases[value]=(d.constPurchases[value]||0)+1; break;
+            case 'accuracy_streak':
+                d.topStreaks.push(value);
+                if(d.topStreaks.length>20) d.topStreaks=d.topStreaks.slice(-20);
+                d.avgAccuracyStreak = Math.round(d.topStreaks.reduce((a,b)=>a+b,0)/d.topStreaks.length);
+                break;
+        }
+        anSave(d);
+    } catch(e) {} // analytics must never crash the game
+}
+
+// Dashboard
+let _anTitleTapCount = 0, _anTitleTapTimer = null;
+function handleTitleTap() {
+    _anTitleTapCount++;
+    clearTimeout(_anTitleTapTimer);
+    if(_anTitleTapCount >= 5) { _anTitleTapCount=0; showAnalytics(); return; }
+    _anTitleTapTimer = setTimeout(()=>{ _anTitleTapCount=0; }, 1500);
+}
+function showAnalytics() {
+    const d = anGet();
+    const today = new Date().toDateString();
+    const todaySessions = d.sessionsByDay[today] || 0;
+    const todayScores = d.scoresByDay[today] || [];
+    const todayBest = todayScores.length ? Math.max(...todayScores) : 0;
+    const todayAvg = todayScores.length ? Math.round(todayScores.reduce((a,b)=>a+b,0)/todayScores.length) : 0;
+    const allScores = Object.values(d.scoresByDay).flat();
+    const allTimeBest = allScores.length ? Math.max(...allScores) : 0;
+    const avgDur = d.gameDurations.length ? Math.round(d.gameDurations.reduce((a,b)=>a+b,0)/d.gameDurations.length) : 0;
+    const totalMins = Math.round(d.gameDurations.reduce((a,b)=>a+b,0)/60);
+
+    // Button press totals for heatmap
+    const bp = d.buttonPresses;
+    const maxPress = Math.max(1,...Object.values(bp));
+    const btnNames = {gravity:'G Flip',hold:'Hold',comet:'Comet',nuke:'Nuke',collapse:'Collapse',seismic:'Seismic',laser:'Laser',ranked:'Ranked',daily:'Daily Run',replay:'Tutorial'};
+
+    // Game over causes
+    const goc = d.gameOverCauses;
+    const totalGO = Math.max(1, Object.values(goc).reduce((a,b)=>a+b,0));
+
+    // Busiest day
+    const dayEntries = Object.entries(d.sessionsByDay).sort((a,b)=>b[1]-a[1]);
+    const busiestDay = dayEntries[0] ? `${dayEntries[0][0]} (${dayEntries[0][1]} games)` : '—';
+
+    document.getElementById('analytics-content').innerHTML = `
+    <div class="analytics-card">
+        <div class="analytics-title">📅 Today</div>
+        <div class="analytics-row"><span>Games played today</span><span class="analytics-val">${todaySessions}</span></div>
+        <div class="analytics-row"><span>Today's best score</span><span class="analytics-val">${todayBest.toLocaleString()}</span></div>
+        <div class="analytics-row"><span>Today's avg score</span><span class="analytics-val">${todayAvg.toLocaleString()}</span></div>
+    </div>
+    <div class="analytics-card">
+        <div class="analytics-title">🚀 All Time</div>
+        <div class="analytics-row"><span>Total sessions</span><span class="analytics-val">${d.totalSessions}</span></div>
+        <div class="analytics-row"><span>Days played</span><span class="analytics-val">${d.uniqueDays.length}</span></div>
+        <div class="analytics-row"><span>All-time best</span><span class="analytics-val">${allTimeBest.toLocaleString()}</span></div>
+        <div class="analytics-row"><span>Avg game duration</span><span class="analytics-val">${avgDur}s</span></div>
+        <div class="analytics-row"><span>Total playtime</span><span class="analytics-val">${totalMins} min</span></div>
+        <div class="analytics-row"><span>Busiest day</span><span class="analytics-val" style="font-size:0.75em">${busiestDay}</span></div>
+    </div>
+    <div class="analytics-card">
+        <div class="analytics-title">🎮 Gameplay Events</div>
+        <div class="analytics-row"><span>Total merges</span><span class="analytics-val">${d.mergesTotal.toLocaleString()}</span></div>
+        <div class="analytics-row"><span>Near miss saves</span><span class="analytics-val">${d.nearMissSaves}</span></div>
+        <div class="analytics-row"><span>Wormholes triggered</span><span class="analytics-val">${d.wormholes}</span></div>
+        <div class="analytics-row"><span>Glitter merges</span><span class="analytics-val">${d.glitterMerges}</span></div>
+        <div class="analytics-row"><span>Avg accuracy streak</span><span class="analytics-val">${d.avgAccuracyStreak}</span></div>
+    </div>
+    <div class="analytics-card">
+        <div class="analytics-title">💀 Why Games End</div>
+        ${['danger','nearMiss','abandon'].map(k=>{
+            const count=goc[k]||0, pct=Math.round(count/totalGO*100);
+            const label={danger:'Danger line',nearMiss:'Near miss (saved)',abandon:'Abandoned'}[k];
+            return `<div style="margin-bottom:8px"><div class="analytics-row" style="border:none;padding:2px 0"><span>${label}</span><span class="analytics-val">${count} (${pct}%)</span></div><div class="analytics-bar-wrap"><div class="analytics-bar" style="width:${pct}%"></div></div></div>`;
+        }).join('')}
+    </div>
+    <div class="analytics-card">
+        <div class="analytics-title">🔘 Button Heatmap</div>
+        ${Object.entries(btnNames).map(([k,label])=>{
+            const count=bp[k]||0, pct=Math.round(count/maxPress*100);
+            return `<div style="margin-bottom:6px"><div class="analytics-row" style="border:none;padding:1px 0"><span style="font-size:0.78em">${label}</span><span class="analytics-val">${count}</span></div><div class="analytics-bar-wrap"><div class="analytics-bar" style="width:${pct}%;background:${pct>60?'var(--gold)':pct>30?'var(--accent)':'var(--wind)'}"></div></div></div>`;
+        }).join('')}
+    </div>
+    <div class="analytics-card">
+        <div class="analytics-title">🕹️ Mode Usage</div>
+        ${Object.entries(d.modeUsage).map(([k,v])=>{
+            const label={free:'Free Play',ranked:'Ranked',daily:'Daily Run'}[k]||k;
+            const pct=Math.round(v/Math.max(1,d.totalSessions)*100);
+            return `<div class="analytics-row"><span>${label}</span><span class="analytics-val">${v} (${pct}%)</span></div>`;
+        }).join('')}
+    </div>
+    <div class="analytics-card">
+        <div class="analytics-title">🌌 Constellation Purchases</div>
+        ${Object.keys(d.constPurchases).length ? Object.entries(d.constPurchases).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="analytics-row"><span style="font-size:0.8em">${k}</span><span class="analytics-val">${v}×</span></div>`).join('') : '<div style="font-size:0.75em;opacity:0.4">No purchases yet</div>'}
+    </div>`;
+    document.getElementById('analytics-screen').style.display='flex';
+}
+function hideAnalytics(){document.getElementById('analytics-screen').style.display='none';}
+function analyticsExport(){
+    const d=anGet();
+    const allScores=Object.values(d.scoresByDay).flat();
+    const text=`📊 Supernova: Infinity — My Stats\n`+
+        `Total games: ${d.totalSessions} · Days played: ${d.uniqueDays.length}\n`+
+        `All-time best: ${allScores.length?Math.max(...allScores).toLocaleString():'0'}\n`+
+        `Merges: ${d.mergesTotal} · Wormholes: ${d.wormholes}\n`+
+        `Avg accuracy streak: ${d.avgAccuracyStreak}\n`+
+        `#SupernovaInfinity`;
+    if(navigator.share)navigator.share({title:'My Supernova Stats',text}).catch(()=>{});
+    else navigator.clipboard.writeText(text).then(()=>showToast('Stats copied!','var(--success)')).catch(()=>{});
+}
+function analyticsReset(){
+    if(!confirm('Reset all analytics data? This cannot be undone.'))return;
+    safeSet(AN_KEY,null);
+    showAnalytics(); // re-render empty
+    showToast('Analytics data reset.','var(--accent)');
+}
 loadSettings();checkDailyBonus();checkIdleDust();initMissions();loadStats();
 updateDailyRunUI();
 const _ss=safeGet('sn_streak')||{count:0};updateStreakDisplay(_ss.count,false);
