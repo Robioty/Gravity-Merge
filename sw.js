@@ -3,7 +3,7 @@
 // ★ IMPORTANT: Bump CACHE_NAME every time you deploy a new version of the game.
 // The activate event deletes all caches that don't match CACHE_NAME, forcing
 // players to get fresh files on their next visit.
-const CACHE_NAME = 'supernova-v13';
+const CACHE_NAME = 'supernova-v14';
 
 const ASSETS_TO_CACHE = [
   './',
