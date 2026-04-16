@@ -212,6 +212,18 @@
         #pwa-banner{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,rgba(56,189,248,0.2),rgba(167,139,250,0.2));border:1px solid rgba(56,189,248,0.4);border-radius:20px;padding:12px 20px;z-index:1500;display:none;text-align:center;max-width:320px;backdrop-filter:blur(10px);}
         /* Skin preview row */
         .skin-preview{width:36px;height:36px;border-radius:50%;flex-shrink:0;}
+        /* Galaxy Builds — run modifier selection */
+        #mod-picker{position:fixed;inset:0;background:rgba(1,4,9,0.95);z-index:2900;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(10px);}
+        #mod-picker.active{display:flex;}
+        .mod-card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:16px;margin-bottom:10px;width:100%;max-width:360px;cursor:pointer;pointer-events:auto;transition:border-color 0.15s,background 0.15s;}
+        .mod-card:active{background:rgba(255,255,255,0.1);border-color:var(--accent);}
+        .mod-card-icon{font-size:1.8em;margin-bottom:4px;}
+        .mod-card-title{font-weight:900;font-size:0.95em;color:var(--accent);}
+        .mod-card-desc{font-size:0.74em;opacity:0.6;margin-top:3px;line-height:1.4;}
+        .mod-card-type{font-size:0.58em;font-weight:900;padding:2px 8px;border-radius:6px;display:inline-block;margin-top:5px;}
+        /* Active mods HUD pill strip */
+        #active-mods-hud{position:fixed;top:86px;right:10px;display:flex;flex-direction:column;gap:3px;z-index:996;pointer-events:none;}
+        .mod-pip{font-size:0.6em;font-weight:900;padding:2px 7px;border-radius:8px;background:rgba(0,0,0,0.7);border:1px solid rgba(255,255,255,0.15);white-space:nowrap;}
         /* Reduced motion — disable all animations for accessibility */
         @media(prefers-reduced-motion:reduce){
             *{animation-duration:0.01ms!important;transition-duration:0.01ms!important;}
@@ -434,6 +446,11 @@
             <div style="font-size:0.65em;font-weight:900;color:var(--accent);letter-spacing:1px;margin-bottom:8px">📊 MERGES BY PLANET</div>
             <div id="merge-chart"></div>
         </div>
+        <!-- Build used this run -->
+        <div id="run-build-card" style="display:none;background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.2);border-radius:16px;padding:12px;margin:8px 0;">
+            <div style="font-size:0.65em;font-weight:900;color:var(--wind);letter-spacing:1px;margin-bottom:8px">🌌 GALAXY BUILD</div>
+            <div id="run-build-list"></div>
+        </div>
         <!-- Card B: The Career -->
         <div id="career-card" style="background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.2);border-radius:16px;padding:12px;margin:8px 0;display:none;">
             <div style="font-size:0.65em;font-weight:900;color:var(--accent);letter-spacing:1px;margin-bottom:8px">🏆 THE CAREER</div>
@@ -445,6 +462,19 @@
         <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="endScreenHome()">🏠 HOME</button>
     </div>
 </div>
+
+<!-- GALAXY BUILDS — MOD PICKER -->
+<div id="mod-picker">
+    <div style="text-align:center;margin-bottom:16px;max-width:360px">
+        <div style="font-size:0.65em;font-weight:900;color:var(--accent);letter-spacing:2px;margin-bottom:4px" id="mod-picker-milestone">MILESTONE REACHED</div>
+        <div style="font-size:1.4em;font-weight:900">🌌 Choose Your Build</div>
+        <div style="font-size:0.75em;opacity:0.5;margin-top:4px">Pick one upgrade for this run</div>
+    </div>
+    <div id="mod-picker-choices" style="width:100%;max-width:360px"></div>
+</div>
+
+<!-- ACTIVE MODS HUD (shown during game) -->
+<div id="active-mods-hud"></div>
 
 <!-- ACHIEVEMENTS -->
 <div id="achievements-screen">
@@ -1372,6 +1402,7 @@ function updateSessionBar(){
         _sessionMilestoneIdx++;
         playSound('milestone');
         showToast(`🎯 Milestone: ${target.toLocaleString()} reached!`,'var(--success)');
+        checkModMilestone();
     }
 }
 
@@ -1561,7 +1592,8 @@ function activateHold(){
 
 // ── Spawn / merge ─────────────────────────────────────────────────────────────
 function spawn(x,y,lvl,isGlitter=false){
-    const b=Bodies.circle(x,y,PLANET_DATA[lvl].r,{restitution:0.3,friction:0.1,plugin:{lvl,merged:false,warn:0,timestamp:Date.now(),isGlitter}});
+    const restitution=_modState.softLanding?0.08:0.3;
+    const b=Bodies.circle(x,y,PLANET_DATA[lvl].r,{restitution,friction:0.1,plugin:{lvl,merged:false,warn:0,timestamp:Date.now(),isGlitter}});
     Composite.add(engine.world,b);
 }
 function createExplosion(x,y,color){if(!settings.particles)return;for(let i=0;i<15;i++)particles.push({x,y,vx:(Math.random()-0.5)*12,vy:(Math.random()-0.5)*12,life:1.0,color});}
@@ -1632,7 +1664,9 @@ function performMerge(a,b){
     }
     if(nl>=6){screenShake(nl*1.5,180+nl*10);haptic(Math.min(nl*8,60));}
     createExplosion(mid.x,mid.y,PLANET_DATA[Math.min(nl,9)].color);
-    score+=nl*100*comboCount*(doubleScoreMerges>0?2:1);
+    const modMult=_modState.scoreSurge*_modState.riskBonus;
+    score+=Math.round(nl*100*comboCount*(doubleScoreMerges>0?2:1)*modMult);
+    applyModsOnMerge(nl,mid.x,mid.y);
     if(doubleScoreMerges>0){doubleScoreMerges--;if(doubleScoreMerges===0)showToast('Double score finished!','var(--accent)');}
     const dustEarned=Math.ceil(nl*dustBonus());sessionDust+=dustEarned;
     const scoreEl=document.getElementById('score-label');scoreEl.innerText=score.toLocaleString();scoreEl.classList.remove('pop');void scoreEl.offsetWidth;scoreEl.classList.add('pop');
@@ -1825,7 +1859,9 @@ function scheduleAnomaly(){
 function warnAnomaly(){const w=document.getElementById('anomaly-warn');w.innerText='⚠️ SOLAR WIND INCOMING!';w.style.display='block';setTimeout(()=>{w.style.display='none';startAnomaly();},3000);}
 function startAnomaly(){const dir=Math.random()>0.5?1:-1;anomaly={type:'solar_wind',dir,force:0.0003,endTime:Date.now()+ANOMALY_DURATION};const b=document.getElementById('anomaly-banner');b.innerText=`🌬️ SOLAR WIND — pushing ${dir>0?'RIGHT':'LEFT'}`;b.style.display='block';setNebulaMood('wind');}
 function stopAnomaly(){anomaly=null;document.getElementById('anomaly-banner').style.display='none';setNebulaMood('normal');scheduleAnomaly();}
-function applyAnomaly(bodies){if(!anomaly)return;if(Date.now()>anomaly.endTime){stopAnomaly();return;}bodies.forEach(b=>{if(!b.isStatic&&b.plugin?.lvl!==undefined)Body.applyForce(b,b.position,{x:anomaly.dir*anomaly.force,y:0});});}
+function applyAnomaly(bodies){if(!anomaly)return;if(Date.now()>anomaly.endTime){stopAnomaly();return;}
+    const fMult=_modState.volatileStars?1.8:1;
+    bodies.forEach(b=>{if(!b.isStatic&&b.plugin?.lvl!==undefined)Body.applyForce(b,b.position,{x:anomaly.dir*anomaly.force*fMult,y:0});});}
 
 // ── Black Hole (Vortex lvl 9) ─────────────────────────────────────────────────
 // The Black Hole actively pulls lvl 0/1/2 planets toward itself every frame
@@ -2028,6 +2064,22 @@ function showEndScreen(dustEarned,wasNewBest){
     }).filter(Boolean).join('');
     chartEl.innerHTML=chartHtml||'<div style="font-size:0.7em;opacity:0.4;text-align:center">No merges this run</div>';
 
+    // Galaxy Build — show mods picked this run
+    const buildCard=document.getElementById('run-build-card');
+    const buildList=document.getElementById('run-build-list');
+    if(_runMods.length>0){
+        buildList.innerHTML=_runMods.map(id=>{
+            const mod=MOD_DEFS.find(m=>m.id===id);
+            return mod?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:0.82em">
+                <span style="font-size:1.2em">${mod.icon}</span>
+                <div><b style="color:var(--wind)">${mod.title}</b><div style="font-size:0.8em;opacity:0.5">${mod.desc}</div></div>
+            </div>`:'';
+        }).join('');
+        buildCard.style.display='block';
+    } else {
+        buildCard.style.display='none';
+    }
+
     document.getElementById('end-screen').style.display='flex';
 }
 function endScreenPlay(){document.getElementById('end-screen').style.display='none';isDailyRun=false;startGame();}
@@ -2057,6 +2109,8 @@ function gameOver(){
     anomaly=null;_dismissComet();laserMode=false;laserShip=null;laserTargets=[];
     wormholeActive=false;_wormholeAnim=null;
     document.getElementById('comet-choice').style.display='none';
+    document.getElementById('mod-picker').classList.remove('active');
+    document.getElementById('active-mods-hud').innerHTML='';
     document.getElementById('laser-overlay').classList.remove('active');
     document.getElementById('anomaly-warn').style.display='none';
     document.getElementById('ranked-badge').style.display='none';
@@ -2212,7 +2266,8 @@ function startGame(){
     _cometTrailHue=190;
     if(_slowMoTimer)clearTimeout(_slowMoTimer);
     _slowMoActive=false;
-    if(engine)engine.timing.timeScale=1; // always reset on new game
+    if(engine)engine.timing.timeScale=1;
+    resetMods(); // clear all run modifiers
     gamesPlayed++;_sMerges=0;_sMaxCombo=0;_sFlips=0;_sBestPlanet=0;_runStartTime=Date.now();
     _anSessionStart=Date.now();
     const _anMode=isDailyRun?'daily':isRankedMode?'ranked':'free';
@@ -2252,7 +2307,9 @@ function initEvents(){
         const bodyCount=bodies.length;
         // Disable planetary gravity entirely above 15 bodies — at that density it just squeezes everything
         const gravScale=bodyCount>=16?0:Math.max(0.15, 1 - Math.max(0,bodyCount-6)*0.055);
-        for(let i=0;i<bodies.length;i++){const att=bodies[i];if(att.plugin.lvl<MAL)continue;const aD=PLANET_DATA[att.plugin.lvl],inf=aD.r*5;for(let j=0;j<bodies.length;j++){if(i===j)continue;const tgt=bodies[j];const dx=att.position.x-tgt.position.x,dy=att.position.y-tgt.position.y;const distSq=dx*dx+dy*dy,dist=Math.sqrt(distSq);if(dist>inf||dist<aD.r||att.plugin.lvl<=tgt.plugin.lvl)continue;const force=Math.min(GC*(aD.r*aD.r)/distSq, 0.0008)*gravScale;Body.applyForce(tgt,tgt.position,{x:(dx/dist)*force,y:(dy/dist)*force});}}
+        const gravMod=_modState.gravMult*((_modState.precisionField)?1.2:1);
+        const infMod=_modState.precisionField?0.7:1; // smaller range for precision field
+        for(let i=0;i<bodies.length;i++){const att=bodies[i];if(att.plugin.lvl<MAL)continue;const aD=PLANET_DATA[att.plugin.lvl],inf=aD.r*5*infMod;for(let j=0;j<bodies.length;j++){if(i===j)continue;const tgt=bodies[j];const dx=att.position.x-tgt.position.x,dy=att.position.y-tgt.position.y;const distSq=dx*dx+dy*dy,dist=Math.sqrt(distSq);if(dist>inf||dist<aD.r||att.plugin.lvl<=tgt.plugin.lvl)continue;const force=Math.min(GC*(aD.r*aD.r)/distSq, 0.0008)*gravScale*gravMod;Body.applyForce(tgt,tgt.position,{x:(dx/dist)*force,y:(dy/dist)*force});}}
         applyAnomaly(bodies);
         // Black hole (lvl 9) pulls lvl 0/1/2 planets toward it each frame
         const holes=bodies.filter(b=>b.plugin.lvl===9);
@@ -2292,7 +2349,10 @@ function initEvents(){
         const ctx=render.context,limitY=isFlipped?PLAY_H-80:80;let danger=false;
         ctx.save();
         ctx.setLineDash([5,8]);ctx.strokeStyle='rgba(56,189,248,0.4)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(currentX,isFlipped?PLAY_H:0);ctx.lineTo(currentX,isFlipped?PLAY_H-100:100);ctx.stroke();
-        const ghostY=calcGhostY(currentX,isFlipped);drawPlanet(ctx,currentX,ghostY,nextLevel,0,0.18);
+        const ghostY=calcGhostY(currentX,isFlipped);
+        // Magnetic aim mod — snap ghost X toward nearest planet
+        const displayX=modSnapX(currentX);
+        drawPlanet(ctx,displayX,ghostY,nextLevel,0,0.18);
         ctx.setLineDash([3,5]);ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(currentX,isFlipped?PLAY_H-100:100);ctx.lineTo(currentX,ghostY);ctx.stroke();
         ctx.setLineDash([10,10]);ctx.strokeStyle='rgba(239,68,68,0.5)';ctx.beginPath();ctx.moveTo(0,limitY);ctx.lineTo(width,limitY);ctx.stroke();ctx.restore();
         if(settings.particles&&!PERF_LOW){particles=particles.filter(p=>p.life>0);particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life-=0.02;ctx.save();ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();ctx.restore();});}
@@ -2322,7 +2382,7 @@ function initEvents(){
             const crossing=isFlipped?b.position.y>limitY:b.position.y<limitY;
             if(crossing&&(Date.now()-b.plugin.timestamp>2000)){
                 danger=true;if(!b.plugin.warn)b.plugin.warn=Date.now();
-                const graceMs=7000+dangerTimeBonus();
+                const graceMs=7000+dangerTimeBonus()+_modState.dangerPenalty;
                 if(Date.now()-b.plugin.warn>graceMs){
                     // Near miss save intercept
                     if(!reviveUsed){nearMissSave();}
@@ -2417,6 +2477,229 @@ window.addEventListener('pointerup',e=>{
     holdUsedThisDrop=false;updatePreview();lastDropTime=Date.now();
 });
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&gameStarted&&!isPaused)togglePause();});
+
+// ── Galaxy Builds (run modifiers) ────────────────────────────────────────────
+// Lightweight roguelike layer: players pick 1 of 3 upgrades at score milestones.
+// Mods are active for the current run only — reset on new game.
+// Score milestones that trigger a pick:
+const MOD_MILESTONES=[5000,15000,30000]; // up to 3 picks per run
+
+const MOD_DEFS=[
+    // ── Gravity mods ──
+    {id:'heavy_core',   icon:'🪨', title:'Heavy Core',
+     desc:'Planetary gravity is 40% stronger — planets cluster faster.',
+     type:'gravity', typeColor:'#38bdf8',
+     apply:()=>{ _modState.gravMult=1.4; },
+    },
+    {id:'echo_pull',    icon:'🔁', title:'Echo Pull',
+     desc:'Gravity pulses in waves — every 3s a brief surge pulls everything inward.',
+     type:'gravity', typeColor:'#38bdf8',
+     apply:()=>{ _modState.echoPull=true; },
+    },
+    {id:'precision_field',icon:'🎯',title:'Precision Field',
+     desc:'Gravity range is 30% smaller but +20% stronger — rewards accurate drops.',
+     type:'gravity', typeColor:'#38bdf8',
+     apply:()=>{ _modState.precisionField=true; },
+    },
+    // ── Merge mods ──
+    {id:'chain_reaction',icon:'⛓️',title:'Chain Reaction',
+     desc:'5% chance any merge triggers a second free merge nearby.',
+     type:'merge', typeColor:'#f472b6',
+     apply:()=>{ _modState.chainReaction=true; },
+    },
+    {id:'overcharge',   icon:'⚡', title:'Overcharge',
+     desc:'Every 5th merge creates a shockwave that pushes nearby planets apart.',
+     type:'merge', typeColor:'#f472b6',
+     apply:()=>{ _modState.overcharge=true; },
+    },
+    {id:'double_score', icon:'💰', title:'Score Surge',
+     desc:'All merge scores are +25% for this run.',
+     type:'merge', typeColor:'#f472b6',
+     apply:()=>{ _modState.scoreSurge=1.25; },
+    },
+    // ── Risk/Reward mods ──
+    {id:'unstable_orbit',icon:'🌀',title:'Unstable Orbit',
+     desc:'Danger grace period −2s, but all scores +40%. High risk, high reward.',
+     type:'risk', typeColor:'#ef4444',
+     apply:()=>{ _modState.dangerPenalty=-2000; _modState.riskBonus=1.4; },
+    },
+    {id:'volatile_stars',icon:'💥',title:'Volatile Stars',
+     desc:'Solar wind anomalies are 50% more frequent and stronger.',
+     type:'risk', typeColor:'#ef4444',
+     apply:()=>{ _modState.volatileStars=true; },
+    },
+    // ── Control mods ──
+    {id:'magnetic_aim', icon:'🧲', title:'Magnetic Aim',
+     desc:'Ghost snaps gently toward the nearest planet — easier precise drops.',
+     type:'control', typeColor:'#4ade80',
+     apply:()=>{ _modState.magneticAim=true; },
+    },
+    {id:'soft_landing', icon:'🪶', title:'Soft Landing',
+     desc:'Dropped planets have 60% less bounce — stack more precisely.',
+     type:'control', typeColor:'#4ade80',
+     apply:()=>{ _modState.softLanding=true; },
+    },
+];
+
+// Active mod state for this run — read throughout gameplay
+let _runMods=[];   // array of picked mod IDs
+let _modState={    // flat state read by gameplay code — reset in startGame
+    gravMult:1,         // gravity force multiplier
+    echoPull:false,     // gravity surge every 3s
+    precisionField:false,// smaller but stronger gravity
+    chainReaction:false, // 5% chance second merge
+    overcharge:false,    // shockwave every 5th merge
+    scoreSurge:1,        // merge score multiplier
+    dangerPenalty:0,     // ms added to danger grace (negative = less time)
+    riskBonus:1,         // score multiplier from risk mods
+    volatileStars:false, // stronger anomalies
+    magneticAim:false,   // ghost snaps toward nearest planet
+    softLanding:false,   // low restitution drops
+};
+let _modMergeCount=0;   // counts merges for overcharge
+let _echoPullTimer=null; // interval for echo pull
+let _nextModMilestoneIdx=0; // which milestone we're waiting for
+
+function resetMods(){
+    _runMods=[];
+    _modMergeCount=0;
+    _nextModMilestoneIdx=0;
+    if(_echoPullTimer){clearInterval(_echoPullTimer);_echoPullTimer=null;}
+    _modState={gravMult:1,echoPull:false,precisionField:false,
+        chainReaction:false,overcharge:false,scoreSurge:1,
+        dangerPenalty:0,riskBonus:1,volatileStars:false,
+        magneticAim:false,softLanding:false};
+    updateModsHUD();
+}
+
+function checkModMilestone(){
+    if(_nextModMilestoneIdx>=MOD_MILESTONES.length)return;
+    if(score>=MOD_MILESTONES[_nextModMilestoneIdx]){
+        _nextModMilestoneIdx++;
+        setTimeout(()=>offerMods(),400); // slight delay so score pop settles
+    }
+}
+
+function offerMods(){
+    if(!gameStarted||isPaused)return;
+    // Pause physics while choosing
+    isPaused=true;if(engine)engine.enabled=false;
+    // Pick 3 random mods not already taken
+    const available=MOD_DEFS.filter(m=>!_runMods.includes(m.id));
+    const shuffled=available.sort(()=>Math.random()-0.5).slice(0,3);
+    const milestone=MOD_MILESTONES[_nextModMilestoneIdx-1];
+    document.getElementById('mod-picker-milestone').innerText=
+        `🎯 ${milestone.toLocaleString()} REACHED`;
+    const container=document.getElementById('mod-picker-choices');
+    container.innerHTML='';
+    shuffled.forEach(mod=>{
+        const card=document.createElement('div');
+        card.className='mod-card';
+        card.innerHTML=`<div class="mod-card-icon">${mod.icon}</div>
+            <div class="mod-card-title">${mod.title}</div>
+            <div class="mod-card-desc">${mod.desc}</div>
+            <span class="mod-card-type" style="color:${mod.typeColor};border:1px solid ${mod.typeColor}33;background:${mod.typeColor}15">${mod.type.toUpperCase()}</span>`;
+        card.onclick=()=>pickMod(mod.id);
+        container.appendChild(card);
+    });
+    document.getElementById('mod-picker').classList.add('active');
+    haptic(20);
+}
+
+function pickMod(id){
+    const mod=MOD_DEFS.find(m=>m.id===id);
+    if(!mod)return;
+    _runMods.push(id);
+    mod.apply();
+    // Start echo pull interval if chosen
+    if(id==='echo_pull'&&!_echoPullTimer){
+        _echoPullTimer=setInterval(()=>{
+            if(!gameStarted||isPaused)return;
+            Composite.allBodies(engine.world).forEach(b=>{
+                if(b.isStatic||b.plugin?.lvl===undefined)return;
+                const cx=width/2,cy=PLAY_H/2;
+                const dx=cx-b.position.x,dy=cy-b.position.y;
+                const dist=Math.sqrt(dx*dx+dy*dy)||1;
+                Body.applyForce(b,b.position,{x:(dx/dist)*0.0012,y:(dy/dist)*0.0012});
+            });
+            screenShake(3,150);
+        },3000);
+    }
+    // Apply soft landing to already-spawned bodies
+    if(id==='soft_landing'){
+        Composite.allBodies(engine.world).forEach(b=>{
+            if(!b.isStatic)b.restitution=0.08;
+        });
+    }
+    document.getElementById('mod-picker').classList.remove('active');
+    isPaused=false;if(engine)engine.enabled=true;
+    showToast(`${mod.icon} ${mod.title} active!`,'var(--wind)');
+    updateModsHUD();
+    anTrack('button','mod_pick');
+}
+
+function updateModsHUD(){
+    const hud=document.getElementById('active-mods-hud');
+    if(!hud)return;
+    if(!_runMods.length){hud.innerHTML='';return;}
+    hud.innerHTML=_runMods.map(id=>{
+        const mod=MOD_DEFS.find(m=>m.id===id);
+        return mod?`<div class="mod-pip" style="color:${mod.typeColor}">${mod.icon} ${mod.title}</div>`:'';
+    }).join('');
+}
+
+// Called from performMerge to handle chain reaction and overcharge
+function applyModsOnMerge(lvl, midX, midY){
+    _modMergeCount++;
+    // Overcharge: every 5th merge → shockwave
+    if(_modState.overcharge&&_modMergeCount%5===0){
+        Composite.allBodies(engine.world).forEach(b=>{
+            if(b.isStatic||b.plugin?.lvl===undefined)return;
+            const dx=b.position.x-midX,dy=b.position.y-midY;
+            const dist=Math.sqrt(dx*dx+dy*dy)||1;
+            if(dist<120){
+                const force=0.008*(1-dist/120);
+                Body.applyForce(b,b.position,{x:(dx/dist)*force,y:(dy/dist)*force});
+            }
+        });
+        screenShake(6,150);
+        showToast('⚡ Overcharge!','var(--wind)');
+    }
+    // Chain reaction: 5% chance auto-merge a random matching pair nearby
+    if(_modState.chainReaction&&Math.random()<0.05){
+        const bodies=Composite.allBodies(engine.world).filter(b=>!b.isStatic&&b.plugin?.lvl!==undefined&&!b.plugin.merged);
+        for(let i=0;i<bodies.length-1;i++){
+            for(let j=i+1;j<bodies.length;j++){
+                const a=bodies[i],b2=bodies[j];
+                if(a.plugin.lvl===b2.plugin.lvl&&a.plugin.lvl<8){
+                    const dist=Math.hypot(a.position.x-b2.position.x,a.position.y-b2.position.y);
+                    if(dist<PLANET_DATA[a.plugin.lvl].r*4){
+                        setTimeout(()=>performMerge(a,b2),100);
+                        showToast('⛓️ Chain Reaction!','#f472b6');
+                        return; // only one chain per merge
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Magnetic aim: snap ghost X toward nearest planet when enabled
+function modSnapX(x){
+    if(!_modState.magneticAim||!engine)return x;
+    const bodies=Composite.allBodies(engine.world).filter(b=>!b.isStatic&&b.plugin?.lvl!==undefined);
+    if(!bodies.length)return x;
+    let nearest=null,nearDist=Infinity;
+    bodies.forEach(b=>{
+        const d=Math.abs(b.position.x-x);
+        if(d<nearDist){nearDist=d;nearest=b;}
+    });
+    if(nearest&&nearDist<80){
+        // Lerp 20% toward nearest planet X
+        return x+(nearest.position.x-x)*0.2;
+    }
+    return x;
+}
 
 // ── Pilot name ────────────────────────────────────────────────────────────────
 function getPilotName(){return safeGet('sn_pilot_name')||'';}
