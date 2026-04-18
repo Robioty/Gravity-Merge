@@ -3,32 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-
-    <!-- PWA manifest + theme -->
-    <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#010206">
-
-    <!-- iOS home screen support (Safari ignores the manifest for icons) -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Supernova">
-    <link rel="apple-touch-icon" href="./icon-192.png">
-
-    <!-- Android / Chrome home screen -->
-    <meta name="mobile-web-app-capable" content="yes">
-
-    <title>Supernova: Infinity v14.0</title>
-
-    <!-- Service worker registration -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js')
-            .then(reg => console.log('[SW] Supernova service worker registered, scope:', reg.scope))
-            .catch(err => console.warn('[SW] Registration failed:', err));
-        });
-      }
-    </script>
+    <title>Supernova: Infinity v10.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         :root{--accent:#38bdf8;--gold:#fbbf24;--danger:#ef4444;--glass:rgba(255,255,255,0.08);--success:#4ade80;--wind:#a78bfa;}
@@ -87,7 +62,7 @@
         #combo-popup{position:fixed;top:38%;left:50%;transform:translateX(-50%);font-size:2.2em;color:var(--gold);font-weight:900;opacity:0;pointer-events:none;transition:opacity 0.3s;z-index:1100;text-shadow:0 0 20px var(--gold);}
         #combo-popup.mega{font-size:3em;color:#f472b6;text-shadow:0 0 30px #f472b6;}
         #screen-flash{position:fixed;inset:0;background:white;pointer-events:none;opacity:0;z-index:1050;transition:opacity 0.1s;}
-        #toast{position:fixed;top:88px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);color:white;padding:10px 22px;border-radius:20px;font-weight:900;z-index:3000;opacity:0;transition:opacity 0.4s;pointer-events:none;border:1px solid rgba(255,255,255,0.1);max-width:80%;text-align:center;}
+        #toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);color:white;padding:10px 22px;border-radius:20px;font-weight:900;z-index:3000;opacity:0;transition:opacity 0.4s;pointer-events:none;border:1px solid rgba(255,255,255,0.1);max-width:90%;text-align:center;}
         #new-best{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2em;font-weight:900;color:var(--gold);text-shadow:0 0 30px var(--gold);pointer-events:none;opacity:0;z-index:1200;text-align:center;}
         #near-miss-banner{position:fixed;top:45%;left:50%;transform:translate(-50%,-50%);font-size:1.6em;font-weight:900;color:var(--success);text-shadow:0 0 20px var(--success);pointer-events:none;opacity:0;z-index:1200;text-align:center;transition:opacity 0.3s;}
         #daily-run-badge{position:fixed;top:84px;left:12px;background:rgba(251,191,36,0.2);border:1px solid rgba(251,191,36,0.5);color:var(--gold);font-size:0.6em;font-weight:900;padding:3px 10px;border-radius:10px;z-index:998;display:none;pointer-events:none;letter-spacing:1px;}
@@ -156,15 +131,13 @@
         .const-level{font-size:0.68em;color:var(--accent);font-weight:900;margin-top:2px;}
         #daily-banner{background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(56,189,248,0.1));border:1px solid rgba(251,191,36,0.4);border-radius:14px;padding:10px;margin-bottom:10px;font-size:0.82em;display:none;}
         #const-dust-display{background:var(--glass);border:1px solid rgba(251,191,36,0.3);border-radius:12px;padding:8px 14px;color:var(--gold);font-weight:900;margin-bottom:12px;font-size:0.9em;}
-        #leaderboard-screen{position:fixed;inset:0;background:rgba(1,4,9,0.98);z-index:2500;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
-        .lb-row{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.05);border-radius:14px;padding:10px 12px;margin-bottom:7px;}
+        #leaderboard-screen{position:fixed;inset:0;background:rgba(1,4,9,0.98);z-index:2500;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+        .lb-row{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.05);border-radius:14px;padding:11px 14px;margin-bottom:8px;}
         .lb-row.lb-you{background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.3);}
-        .lb-pos{font-size:0.9em;font-weight:900;min-width:26px;text-align:center;color:var(--gold);flex-shrink:0;}
-        .lb-body{flex:1;min-width:0;}
-        .lb-name{font-weight:700;font-size:0.86em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-        .lb-meta{display:flex;align-items:center;justify-content:space-between;margin-top:3px;}
-        .lb-score{font-weight:900;color:var(--accent);font-size:0.82em;white-space:nowrap;}
-        .lb-rank-tag{font-size:0.58em;font-weight:900;padding:2px 7px;border-radius:6px;border:1px solid;white-space:nowrap;}
+        .lb-pos{font-size:1em;font-weight:900;min-width:28px;text-align:center;color:var(--gold);}
+        .lb-name{flex:1;font-weight:700;font-size:0.88em;}
+        .lb-score{font-weight:900;color:var(--accent);font-size:0.88em;}
+        .lb-rank-tag{font-size:0.62em;font-weight:900;padding:2px 8px;border-radius:6px;border:1px solid;white-space:nowrap;}
         #rank-screen{position:fixed;inset:0;background:rgba(1,4,9,0.98);z-index:2500;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
         .rank-row{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border-radius:14px;padding:11px 14px;margin-bottom:6px;}
         .rank-row.rank-current{border:1px solid var(--accent);background:rgba(56,189,248,0.08);}
@@ -188,63 +161,11 @@
         /* Streak pulse when incremented */
         #streak-val.new{animation:streakPop 0.5s ease;}
         @keyframes streakPop{0%{transform:scale(1)}50%{transform:scale(1.5);color:#fff}100%{transform:scale(1)}}
-        /* Planet name flash on merge */
-        #planet-name-flash{position:fixed;top:32%;left:50%;transform:translateX(-50%);font-size:1.1em;font-weight:900;pointer-events:none;opacity:0;z-index:1099;text-align:center;white-space:nowrap;transition:opacity 0.15s;text-shadow:0 0 12px currentColor;}
-        /* Accurate drop streak indicator */
-        #drop-streak{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);font-size:0.7em;font-weight:900;color:var(--success);pointer-events:none;opacity:0;z-index:1099;transition:opacity 0.3s;text-shadow:0 0 8px var(--success);}
-        /* Achievement badge */
-        .ach-row{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border-radius:14px;padding:10px 14px;margin-bottom:6px;}
-        .ach-row.earned{background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);}
-        .ach-icon{font-size:1.5em;width:32px;text-align:center;flex-shrink:0;}
-        .ach-info{flex:1;text-align:left;}
-        .ach-title{font-weight:900;font-size:0.85em;}
-        .ach-desc{font-size:0.68em;opacity:0.5;margin-top:2px;}
-        .ach-locked{opacity:0.3;}
-        #achievements-screen{position:fixed;inset:0;background:rgba(1,4,9,0.98);z-index:2500;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
-        /* Pilot name entry */
-        #pilot-name-overlay{position:fixed;inset:0;background:rgba(1,4,9,0.98);z-index:4000;display:none;flex-direction:column;align-items:center;justify-content:center;padding:30px;}
-        #pilot-name-overlay.active{display:flex;}
-        #pilot-input{background:rgba(255,255,255,0.08);border:2px solid var(--accent);color:white;font-size:1.4em;font-weight:900;text-align:center;padding:14px;border-radius:16px;width:100%;max-width:320px;outline:none;margin:16px 0;}
-        /* Pass and play */
-        #passplay-screen{position:fixed;inset:0;background:rgba(1,4,9,0.98);z-index:2500;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
-        #passplay-turn-banner{position:fixed;inset:0;z-index:3800;background:rgba(1,4,9,0.96);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
-        /* PWA install banner */
-        #pwa-banner{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,rgba(56,189,248,0.2),rgba(167,139,250,0.2));border:1px solid rgba(56,189,248,0.4);border-radius:20px;padding:12px 20px;z-index:1500;display:none;text-align:center;max-width:320px;backdrop-filter:blur(10px);}
-        /* Skin preview row */
-        .skin-preview{width:36px;height:36px;border-radius:50%;flex-shrink:0;}
-        /* Galaxy Builds — run modifier selection */
-        #mod-picker{position:fixed;inset:0;background:rgba(1,4,9,0.95);z-index:2900;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(10px);}
-        #mod-picker.active{display:flex;}
-        .mod-card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:16px;margin-bottom:10px;width:100%;max-width:360px;cursor:pointer;pointer-events:auto;transition:border-color 0.15s,background 0.15s;}
-        .mod-card:active{background:rgba(255,255,255,0.1);border-color:var(--accent);}
-        .mod-card-icon{font-size:1.8em;margin-bottom:4px;}
-        .mod-card-title{font-weight:900;font-size:0.95em;color:var(--accent);}
-        .mod-card-desc{font-size:0.74em;opacity:0.6;margin-top:3px;line-height:1.4;}
-        .mod-card-type{font-size:0.58em;font-weight:900;padding:2px 8px;border-radius:6px;display:inline-block;margin-top:5px;}
-        /* Active mods HUD pill strip */
-        #active-mods-hud{position:fixed;top:114px;right:8px;display:flex;flex-direction:column;gap:3px;z-index:996;pointer-events:none;max-width:130px;}
-        .mod-pip{font-size:0.58em;font-weight:900;padding:2px 6px;border-radius:8px;background:rgba(0,0,0,0.82);border:1px solid rgba(255,255,255,0.15);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-        /* Reduced motion — disable all animations for accessibility */
-        @media(prefers-reduced-motion:reduce){
-            *{animation-duration:0.01ms!important;transition-duration:0.01ms!important;}
-            #nebula{transition:none!important;}
-        }
-        /* Analytics dashboard */
-        #analytics-screen{position:fixed;inset:0;background:rgba(1,4,9,0.98);z-index:3000;display:none;flex-direction:column;align-items:center;padding:20px;overflow-y:auto;}
-        .analytics-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:14px;margin-bottom:10px;width:100%;max-width:420px;}
-        .analytics-title{font-size:0.65em;font-weight:900;color:var(--accent);letter-spacing:1px;margin-bottom:10px;text-transform:uppercase;}
-        .analytics-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.8em;}
-        .analytics-row:last-child{border-bottom:none;}
-        .analytics-val{font-weight:900;color:var(--gold);}
-        .analytics-bar-wrap{width:100%;height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;margin-top:4px;}
-        .analytics-bar{height:100%;border-radius:4px;background:var(--accent);transition:width 0.6s;}
     </style>
 </head>
 <body>
 <div id="nebula"></div>
 <div id="screen-flash"></div>
-<div id="planet-name-flash"></div>
-<div id="drop-streak">🎯 ACCURATE DROP STREAK!</div>
 <div id="combo-popup">CHAIN x2</div>
 <div id="new-best">🏆 NEW BEST!</div>
 <div id="near-miss-banner">🛡️ NEAR MISS SAVE!</div>
@@ -264,10 +185,7 @@
 <!-- TOP BAR -->
 <div id="top-bar">
     <button class="icon-btn" onclick="togglePause()">⚙️</button>
-    <div style="flex:1;text-align:center;">
-        <div id="score-label">0</div>
-        <div id="pb-label" style="font-size:0.42em;font-weight:700;opacity:0.35;color:var(--accent);margin-top:-4px;display:none">PB: <span id="pb-val">0</span></div>
-    </div>
+    <div id="score-label">0</div>
     <button class="icon-btn" onclick="quickRestart()" id="quick-restart-btn" style="display:none" title="Quick Restart">🔄</button>
     <div id="stardust-hud" style="display:none">✨ <span id="dust-val">0</span></div>
 </div>
@@ -300,10 +218,9 @@
 
 <!-- HOME -->
 <div id="home-screen" class="overlay">
-    <h1 id="home-title" style="font-size:2.8em;color:var(--accent);margin-bottom:14px;text-shadow:0 0 30px var(--accent)" onclick="handleTitleTap()">SUPERNOVA</h1>
+    <h1 style="font-size:2.8em;color:var(--accent);margin-bottom:14px;text-shadow:0 0 30px var(--accent)">SUPERNOVA</h1>
     <div class="menu-card scroll">
         <div id="daily-banner">🎁 Daily Bonus! <b>+100 ✨ Stardust</b> claimed!</div>
-        <div id="pilot-name-display" style="text-align:center;font-size:0.78em;opacity:0.5;margin-bottom:6px;cursor:pointer" onclick="showSettings()">✏️ Pilot: <span id="pilot-name-val">—</span></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
             <div style="background:rgba(255,255,255,0.03);padding:10px;border-radius:12px;">BEST<br><b id="best-score-val" style="color:var(--accent)">0</b></div>
             <div id="rank-cell" style="background:rgba(255,255,255,0.03);padding:10px;border-radius:12px;cursor:pointer;" onclick="showRankScreen()">
@@ -320,14 +237,11 @@
             <button class="mode-btn" id="mode-ranked-btn" onclick="setMode('ranked')">⚔️ RANKED</button>
         </div>
         <button class="btn btn-cta" onclick="startGame()">🚀 LAUNCH MISSION</button>
-        <button class="btn" style="background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);color:var(--gold)" onclick="showPassPlay()">👥 PASS &amp; PLAY</button>
         <button class="btn" style="background:linear-gradient(135deg,rgba(251,191,36,0.3),rgba(56,189,248,0.2));border:1px solid rgba(251,191,36,0.4)" onclick="startDailyRun()">🌅 DAILY RUN <span id="daily-run-status" style="font-size:0.7em;opacity:0.7"></span></button>
         <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="showLeaderboard()">🏆 LEADERBOARD</button>
         <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="showMissions()">📋 DAILY MISSIONS</button>
         <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="showConstellation()">🌌 CONSTELLATION</button>
         <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="showHowToPlay()">❓ HOW TO PLAY</button>
-        <button class="btn" style="background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3);color:var(--gold)" onclick="showAchievements()">🏅 ACHIEVEMENTS</button>
-        <button class="btn" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.4);color:var(--wind)" onclick="replayTutorial()">🎓 REPLAY TUTORIAL</button>
         <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="showSettings()">⚙️ SETTINGS</button>
         <button id="tip-jar-btn" onclick="openTipJar()">☕ Support the Dev — Tip Jar</button>
     </div>
@@ -344,6 +258,7 @@
             <div class="shop-row"><div><b>SEISMIC PULSE</b><small>Board hop — unsticks planets</small></div><button class="shop-btn" onclick="buySeismic()">✨ 150</button></div>
             <div class="shop-row"><div><b>LASER STRIKE</b><small>Vaporise up to 3 planets (Lvl 0-4)</small></div><button class="shop-btn" onclick="buyLaserStrike()">✨ 400</button></div>
         </div>
+        <div id="newbie-note" style="display:none;font-size:0.75em;opacity:0.5;margin-bottom:8px;padding:8px;background:rgba(255,255,255,0.04);border-radius:10px;">🌱 Power-ups &amp; anomalies unlock after your first 3 games.</div>
         <button class="btn" onclick="togglePause()">▶ RESUME</button>
         <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="restartMission()">🔄 RESTART</button>
         <button class="btn" style="background:rgba(100,100,120,0.4);margin-top:6px;" onclick="reportBug()">🐛 SPACE BUG</button>
@@ -371,18 +286,11 @@
 <div id="settings-menu">
     <div class="menu-card">
         <h3>SETTINGS</h3>
-        <div class="toggle-row" style="flex-direction:column;align-items:flex-start;gap:6px">
-            <span style="font-size:0.85em">Pilot Name</span>
-            <div style="display:flex;gap:8px;width:100%;pointer-events:auto">
-                <input id="settings-pilot-input" type="text" maxlength="16" style="flex:1;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:white;padding:8px;border-radius:10px;font-size:0.9em;outline:none"/>
-                <button onclick="saveSettingsPilotName()" style="background:var(--accent);color:#000;border:none;padding:8px 14px;border-radius:10px;font-weight:900;cursor:pointer;font-size:0.85em;pointer-events:auto">SAVE</button>
-            </div>
-        </div>
         <div class="toggle-row"><span>Sound Effects</span><button class="toggle on" id="sfx-toggle" onclick="toggleSetting('sfx')"></button></div>
         <div class="toggle-row"><span>Screen Shake</span><button class="toggle on" id="shake-toggle" onclick="toggleSetting('shake')"></button></div>
         <div class="toggle-row"><span>Particles</span><button class="toggle on" id="particles-toggle" onclick="toggleSetting('particles')"></button></div>
         <div class="toggle-row"><span>Haptic Feedback</span><button class="toggle on" id="haptic-toggle" onclick="toggleSetting('haptic')"></button></div>
-        <p style="font-size:0.7em;opacity:0.4;margin:10px 0 2px">Supernova: Infinity v14.0 · Built with ❤️</p>
+        <p style="font-size:0.7em;opacity:0.4;margin:10px 0 2px">Supernova: Infinity v10.0 · Built with ❤️</p>
         <button class="btn" onclick="hideSettings()">CLOSE</button>
     </div>
 </div>
@@ -426,143 +334,22 @@
 <!-- END SCREEN -->
 <div id="end-screen">
     <div class="menu-card scroll">
+        <h3 style="color:var(--gold);margin-bottom:4px">MISSION REPORT</h3>
         <div id="run-highlight"></div>
-        <!-- Card A: The Run -->
-        <div style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.2);border-radius:16px;padding:12px;margin:8px 0;">
-            <div style="font-size:0.65em;font-weight:900;color:var(--gold);letter-spacing:1px;margin-bottom:8px">📊 THE RUN</div>
-            <div class="stat-grid" style="margin:0">
-                <div class="stat-cell"><div class="stat-val" id="end-score">0</div><div class="stat-lbl">SCORE</div></div>
-                <div class="stat-cell"><div class="stat-val" id="end-merges">0</div><div class="stat-lbl">MERGES</div></div>
-                <div class="stat-cell"><div class="stat-val" id="end-best-planet">—</div><div class="stat-lbl">BEST PLANET</div></div>
-                <div class="stat-cell"><div class="stat-val" id="end-dust">0</div><div class="stat-lbl">STARDUST EARNED</div></div>
-                <div class="stat-cell"><div class="stat-val" id="end-combo">x1</div><div class="stat-lbl">BEST COMBO</div></div>
-                <div class="stat-cell"><div class="stat-val" id="end-time">0:00</div><div class="stat-lbl">RUN TIME</div></div>
-            </div>
-            <div id="end-new-best-banner" style="display:none;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);border-radius:12px;padding:6px;margin-top:8px;color:var(--gold);font-weight:900;text-align:center;">🏆 NEW PERSONAL BEST!</div>
-            <div id="daily-run-result" style="display:none;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:12px;padding:6px;margin-top:8px;color:var(--gold);font-size:0.82em;font-weight:700;text-align:center;"></div>
+        <div class="stat-grid">
+            <div class="stat-cell"><div class="stat-val" id="end-score">0</div><div class="stat-lbl">SCORE</div></div>
+            <div class="stat-cell"><div class="stat-val" id="end-merges">0</div><div class="stat-lbl">MERGES</div></div>
+            <div class="stat-cell"><div class="stat-val" id="end-best-planet">—</div><div class="stat-lbl">BEST PLANET</div></div>
+            <div class="stat-cell"><div class="stat-val" id="end-dust">0</div><div class="stat-lbl">STARDUST EARNED</div></div>
+            <div class="stat-cell"><div class="stat-val" id="end-combo">x1</div><div class="stat-lbl">BEST COMBO</div></div>
+            <div class="stat-cell"><div class="stat-val" id="end-time">0:00</div><div class="stat-lbl">RUN TIME</div></div>
         </div>
-        <!-- Merge chart -->
-        <div id="merge-chart-section" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:12px;margin:8px 0;">
-            <div style="font-size:0.65em;font-weight:900;color:var(--accent);letter-spacing:1px;margin-bottom:8px">📊 MERGES BY PLANET</div>
-            <div id="merge-chart"></div>
-        </div>
-        <!-- Build used this run -->
-        <div id="run-build-card" style="display:none;background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.2);border-radius:16px;padding:12px;margin:8px 0;">
-            <div style="font-size:0.65em;font-weight:900;color:var(--wind);letter-spacing:1px;margin-bottom:8px">🌌 GALAXY BUILD</div>
-            <div id="run-build-list"></div>
-        </div>
-        <!-- Card B: The Career -->
-        <div id="career-card" style="background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.2);border-radius:16px;padding:12px;margin:8px 0;display:none;">
-            <div style="font-size:0.65em;font-weight:900;color:var(--accent);letter-spacing:1px;margin-bottom:8px">🏆 THE CAREER</div>
-            <div id="rp-change-card"></div>
-            <div id="career-rank-progress" style="margin-top:8px;font-size:0.78em;"></div>
-        </div>
+        <div id="rp-change-card" style="display:none"></div>
+        <div id="end-new-best-banner" style="display:none;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);border-radius:12px;padding:8px;margin-bottom:6px;color:var(--gold);font-weight:900;">🏆 NEW PERSONAL BEST!</div>
+        <div id="daily-run-result" style="display:none;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:12px;padding:8px;margin-bottom:6px;color:var(--gold);font-size:0.85em;font-weight:700;"></div>
         <button class="btn btn-cta" onclick="endScreenPlay()">🚀 PLAY AGAIN</button>
         <button class="btn" style="background:rgba(56,189,248,0.25);border:1px solid rgba(56,189,248,0.4)" onclick="shareScore()">📤 SHARE SCORE</button>
         <button class="btn" style="background:rgba(255,255,255,0.1)" onclick="endScreenHome()">🏠 HOME</button>
-    </div>
-</div>
-
-<!-- GALAXY BUILDS — MOD PICKER -->
-<div id="mod-picker">
-    <div style="text-align:center;margin-bottom:16px;max-width:360px">
-        <div style="font-size:0.65em;font-weight:900;color:var(--accent);letter-spacing:2px;margin-bottom:4px" id="mod-picker-milestone">MILESTONE REACHED</div>
-        <div style="font-size:1.4em;font-weight:900">🌌 Choose Your Build</div>
-        <div style="font-size:0.75em;opacity:0.5;margin-top:4px">Pick one upgrade for this run</div>
-    </div>
-    <div id="mod-picker-choices" style="width:100%;max-width:360px"></div>
-</div>
-
-<!-- ACTIVE MODS HUD (shown during game) -->
-<div id="active-mods-hud"></div>
-
-<!-- ACHIEVEMENTS -->
-<div id="achievements-screen">
-    <div class="menu-card scroll">
-        <h3 style="color:var(--gold)">🏅 ACHIEVEMENTS</h3>
-        <p style="font-size:0.72em;opacity:0.45;margin:0 0 12px">Milestones from your journey through the cosmos.</p>
-        <div id="achievements-list"></div>
-        <button class="btn" onclick="hideAchievements()">CLOSE</button>
-    </div>
-</div>
-
-<!-- PILOT NAME ENTRY -->
-<div id="pilot-name-overlay">
-    <div style="font-size:3em">🚀</div>
-    <h2 style="color:var(--accent);margin:8px 0">Welcome, Pilot!</h2>
-    <p style="opacity:0.6;text-align:center;font-size:0.9em;margin:0 0 4px">Enter your pilot name to appear on the leaderboard.</p>
-    <input id="pilot-input" type="text" maxlength="16" placeholder="YourName" autocomplete="off" spellcheck="false"/>
-    <button class="btn" style="max-width:320px;width:100%" onclick="savePilotName()">🚀 LAUNCH INTO SPACE</button>
-    <p style="font-size:0.68em;opacity:0.3;margin-top:12px">You can change this in Settings.</p>
-</div>
-
-<!-- PASS AND PLAY -->
-<div id="passplay-screen">
-    <div class="menu-card scroll">
-        <h3 style="color:var(--gold)">👥 PASS & PLAY</h3>
-        <p style="font-size:0.8em;opacity:0.55;margin:0 0 14px">Two players — take turns, pass the phone. Best score wins!</p>
-        <div style="margin-bottom:12px">
-            <div style="font-size:0.72em;opacity:0.6;margin-bottom:4px">PLAYER 1 NAME</div>
-            <input id="pp-p1-name" type="text" maxlength="12" placeholder="Player 1" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:white;padding:10px;border-radius:12px;width:100%;font-size:1em;outline:none;"/>
-        </div>
-        <div style="margin-bottom:16px">
-            <div style="font-size:0.72em;opacity:0.6;margin-bottom:4px">PLAYER 2 NAME</div>
-            <input id="pp-p2-name" type="text" maxlength="12" placeholder="Player 2" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:white;padding:10px;border-radius:12px;width:100%;font-size:1em;outline:none;"/>
-        </div>
-        <button class="btn" onclick="startPassPlay()">🎮 START GAME</button>
-        <button class="btn" style="background:rgba(255,255,255,0.08)" onclick="hidePassPlay()">BACK</button>
-    </div>
-</div>
-
-<!-- PASS AND PLAY TURN BANNER -->
-<div id="passplay-turn-banner">
-    <div style="font-size:3em" id="pp-turn-icon">👤</div>
-    <div id="pp-turn-name" style="font-size:2em;font-weight:900;color:var(--gold)">Player 1</div>
-    <div id="pp-turn-msg" style="font-size:0.9em;opacity:0.65">Get ready — pass the phone!</div>
-    <button class="btn" style="max-width:260px;width:100%;margin-top:8px" id="pp-turn-btn" onclick="ppTurnGo()">▶ START MY TURN</button>
-</div>
-
-<!-- PWA INSTALL BANNER -->
-<div id="pwa-banner">
-    <div style="font-size:0.85em;font-weight:900;color:var(--accent);margin-bottom:4px">📲 Add to Home Screen</div>
-    <div style="font-size:0.72em;opacity:0.65;margin-bottom:10px">Play offline, full screen, like an app!</div>
-    <div style="display:flex;gap:8px;justify-content:center">
-        <button onclick="pwaBannerInstall()" style="background:var(--accent);color:#000;border:none;padding:8px 18px;border-radius:10px;font-weight:900;cursor:pointer;font-size:0.85em">INSTALL</button>
-        <button onclick="pwaBannerDismiss()" style="background:rgba(255,255,255,0.1);color:white;border:none;padding:8px 14px;border-radius:10px;font-weight:700;cursor:pointer;font-size:0.85em">Later</button>
-    </div>
-</div>
-
-<!-- ANALYTICS DASHBOARD -->
-<div id="analytics-screen">
-    <div style="width:100%;max-width:420px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-            <h2 style="color:var(--accent);margin:0;font-size:1.4em">📊 Game Analytics</h2>
-            <button onclick="hideAnalytics()" style="background:rgba(255,255,255,0.1);border:none;color:white;padding:8px 16px;border-radius:10px;font-weight:900;cursor:pointer">CLOSE</button>
-        </div>
-        <p style="font-size:0.68em;opacity:0.4;margin:0 0 14px">All data stored locally on this device only. Nothing is sent anywhere.</p>
-        <div id="analytics-content"></div>
-        <button onclick="analyticsExport()" style="background:rgba(56,189,248,0.15);border:1px solid rgba(56,189,248,0.3);color:var(--accent);padding:12px;border-radius:14px;font-weight:900;cursor:pointer;width:100%;margin-top:4px;font-size:0.9em">📤 Share Summary</button>
-        <button onclick="analyticsReset()" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:var(--danger);padding:10px;border-radius:14px;font-weight:700;cursor:pointer;width:100%;margin-top:8px;font-size:0.8em">🗑 Reset Analytics Data</button>
-    </div>
-</div>
-
-<!-- COMET CHOICE CHEST -->
-<div id="comet-choice" style="display:none;position:fixed;inset:0;background:rgba(1,4,9,0.92);z-index:2800;flex-direction:column;align-items:center;justify-content:center;padding:20px;">
-    <div style="text-align:center;margin-bottom:18px;">
-        <div style="font-size:2.5em">☄️</div>
-        <div style="font-size:1.4em;font-weight:900;color:var(--accent)">COMET CAUGHT!</div>
-        <div style="font-size:0.8em;opacity:0.6;margin-top:4px">Choose your cosmic reward:</div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:10px;width:90%;max-width:340px;">
-        <button onclick="cometChoice('vacuum')" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.5);color:white;padding:16px;border-radius:16px;font-weight:900;font-size:0.95em;cursor:pointer;text-align:left;">
-            🌀 <b>VACUUM</b><br><span style="font-size:0.75em;opacity:0.6;font-weight:400">Delete all Level 0 planets on the board</span>
-        </button>
-        <button onclick="cometChoice('gravity')" style="background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.5);color:white;padding:16px;border-radius:16px;font-weight:900;font-size:0.95em;cursor:pointer;text-align:left;">
-            🌀 <b>GRAVITY SURGE</b><br><span style="font-size:0.75em;opacity:0.6;font-weight:400">Instantly recharge gravity flip</span>
-        </button>
-        <button onclick="cometChoice('double')" style="background:rgba(56,189,248,0.15);border:1px solid rgba(56,189,248,0.5);color:white;padding:16px;border-radius:16px;font-weight:900;font-size:0.95em;cursor:pointer;text-align:left;">
-            ✨ <b>DOUBLE SCORE</b><br><span style="font-size:0.75em;opacity:0.6;font-weight:400">Next 3 merges worth ×2 points</span>
-        </button>
     </div>
 </div>
 
@@ -580,124 +367,22 @@
 
 <script>
 "use strict";
-/* =============================================================
-   SUPERNOVA: INFINITY  —  Single-file HTML5 mobile game
-   Physics: Matter.js 0.19  |  Audio: Web Audio API (synthesised)
-   Storage: localStorage (keys: sn_v10, sn_const, sn_settings,
-            sn_streak, sn_daily, sn_daily_run, sn_missions,
-            sn_cosmetic_toggles, sn_last_played, sn_tutdone)
-   Deploy:  drop index.html anywhere — no build step, no server
-
-   ★★ BEFORE PUBLISHING — update the two constants below ★★
-   ============================================================= */
-// ── ★ Publisher config — change these before going live ★ ──────────────────
-const TIP_JAR_URL      = 'https://ko-fi.com/YOUR_NAME_HERE'; // donation link
-const BUG_REPORT_EMAIL = 'your@email.com';                   // support email
-
-/* -------------------------------------------------------------
-   VERSION HISTORY
-   v14.0  Achievements (12 badges, sn_achievements storage),
-          Merge chart on end screen, planet name flash on merge,
-          Accurate drop streak bonus, personal best top-bar label,
-          Comet trail colour tied to last choice made,
-          Leaderboard scores raised (top ~418k)
-   v12.0  Bug fix: CHARGE_TIME/COMET_INTERVAL/ANOMALY_INTERVAL
-          constants were lost in header restructure, causing
-          ReferenceError on load — all restored to constants block.
-          Zephyra (lvl 7): r:108 → r:97 (−10%),
-          Nullar (lvl 8): r:131 → r:118 (−10%),
-          Vortex (lvl 9): r:162 → r:31 — compact Black Hole with
-          per-frame gravitational pull on small planets + 4s consume
-          timer + capture zone ring. Wormhole event: two lvl-9 Black
-          Holes merging triggers performWormhole() — clears 200px
-          radius, animated void canvas, 200pts per planet consumed.
-   v11.0  Weighted drops (60/30/10 → 40/30/20/10 by score),
-          Glitter planet wildcard (Captain+ rank, 2% chance),
-          Comet Choice Chest (3 power options on catch),
-          Rank floor safety net (can't drop below earned rank),
-          Two-card end screen (THE RUN / THE CAREER),
-          Boosted fart synthesis with compressor + 4 layers,
-          Power-up unlock now persists across sessions,
-          boardCount perf fix (moved out of per-body loop),
-          Duplicate holdLevel reset removed
-   v10.0  Daily Run (seeded PRNG, same sequence all players),
-          Near Miss Save (auto-remove 3 planets once per run),
-          Combo celebration tiers (x3/x5/x8),
-          Quick Restart button in top bar,
-          Haptic feedback with settings toggle,
-          Lucky Drop (3% chance +1 level),
-          Idle Stardust (8/hr while away, cap 150),
-          Session progress bar with milestones,
-          Next planet unlock hint on home screen,
-          Play Again CTA pulse animation
-   v9.0   Ranked mode + RP system, 10-rank ladder,
-          Community leaderboard (20 simulated players + you),
-          Free Play vs Ranked toggle
-   v8.0   Run timer, daily streak counter, share score button,
-          3-step tutorial overlay (pauses physics),
-          Laser ship sequential firing with cooldown
-   v7.0   Fictional planet names (Mote→Vortex), radii −10%,
-          Laser Strike power-up, Space Bug mailto reporter,
-          Tip Jar button, comet clear-corridor check,
-          End-game stats screen, Happy Planets constellation
-   ------------------------------------------------------------- */
-
 const { Engine, Render, Runner, Bodies, Body, Composite, Events } = Matter;
 
-// ── Layout (fixed — derived from screen size at load time) ───────────────────
+// ── Layout ────────────────────────────────────────────────────────────────────
 const width=window.innerWidth, height=window.innerHeight;
 const TOP_BAR=80, BOT_BAR=90, PLAY_H=height-TOP_BAR-BOT_BAR;
 
-// ── Game constants ────────────────────────────────────────────────────────────
-const CHARGE_TIME=360000;                                    // gravity flip recharge ms
-const COMET_INTERVAL_MIN=25000, COMET_INTERVAL_MAX=45000;   // ms between comets
-const COMET_SPEED=4.5;                                       // px/frame
+// ── Config ────────────────────────────────────────────────────────────────────
+const CHARGE_TIME=360000;
+const COMET_INTERVAL_MIN=25000, COMET_INTERVAL_MAX=45000, COMET_SPEED=4.5;
 const ANOMALY_INTERVAL_MIN=40000, ANOMALY_INTERVAL_MAX=80000, ANOMALY_DURATION=30000;
+const TIP_JAR_URL='https://ko-fi.com/YOUR_NAME_HERE';
+const BUG_REPORT_EMAIL='your@email.com';
+// Session progress milestones
 const SESSION_MILESTONES=[5000,10000,20000,35000,50000,75000,100000,150000];
-const LUCKY_DROP_CHANCE=0.03;   // 3% chance to bump drop level +1
-const GLITTER_CHANCE=0.02;      // 2% chance of glitter planet (Captain+ only)
-
-// ── Performance mode ──────────────────────────────────────────────────────────
-// Detect low-end devices and reduce visual load automatically
-const PERF_LOW = navigator.hardwareConcurrency <= 2 ||
-                 /Android [4-6]\./.test(navigator.userAgent);
-const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-
-// ── Difficulty director ───────────────────────────────────────────────────────
-// Returns tier 1-4 based on score. Drives comet/anomaly frequency and drop weights.
-function diffTier(){
-    if(score < 8000)  return 1;
-    if(score < 25000) return 2;
-    if(score < 60000) return 3;
-    return 4;
-}
-// Comet interval shrinks as difficulty rises: tier1=35-55s, tier4=15-28s
-function cometInterval(){
-    const t=diffTier();
-    const ranges=[[35000,55000],[28000,44000],[20000,34000],[15000,28000]];
-    const [mn,mx]=ranges[t-1];
-    return mn+Math.random()*(mx-mn);
-}
-// Anomaly interval shrinks: tier1=60-90s, tier4=30-50s
-function anomalyInterval(){
-    const t=diffTier();
-    const ranges=[[60000,90000],[50000,75000],[40000,62000],[30000,50000]];
-    const [mn,mx]=ranges[t-1];
-    return mn+Math.random()*(mx-mn);
-}
-
-// ── Slow-motion state (clutch moments) ───────────────────────────────────────
-let _slowMoActive=false, _slowMoTimer=null;
-function triggerSlowMo(durationMs=1200){
-    if(_slowMoActive||REDUCED_MOTION)return;
-    _slowMoActive=true;
-    if(engine)engine.timing.timeScale=0.35;
-    clearTimeout(_slowMoTimer);
-    _slowMoTimer=setTimeout(()=>{
-        if(engine)engine.timing.timeScale=1;
-        _slowMoActive=false;
-    },durationMs);
-}
+// Lucky drop chance
+const LUCKY_DROP_CHANCE=0.03;
 
 // ── Engine globals ────────────────────────────────────────────────────────────
 let engine, render, runner, audioCtx;
@@ -725,16 +410,16 @@ function getRankIndex(rp){let idx=0;for(let i=0;i<RANKS.length;i++){if(rp>=RANKS
 
 // ── Community leaderboard data ────────────────────────────────────────────────
 const COMMUNITY_PLAYERS=[
-    {name:'Robioty',     score:418500,rp:6800},{name:'xX_nova_Xx',  score:387200,rp:6200},
-    {name:'jake2009',    score:344600,rp:5800},{name:'GravQueen',   score:312900,rp:5400},
-    {name:'tomtom77',    score:289400,rp:5100},{name:'spacecadet1', score:261700,rp:4700},
-    {name:'PlanetMunky', score:238300,rp:4400},{name:'zara_plays',  score:214800,rp:4000},
-    {name:'liam_k',      score:193500,rp:3700},{name:'CosmicMeg',   score:171200,rp:3400},
-    {name:'dr_dropz',    score:152600,rp:3100},{name:'finn2012',    score:134900,rp:2800},
-    {name:'vortex_viv',  score:118300,rp:2500},{name:'SuperSam99',  score:103700,rp:2200},
-    {name:'ellie_m',     score:89400, rp:1900},{name:'bigbadmote',  score:76100, rp:1600},
-    {name:'matticus',    score:63800, rp:1300},{name:'just_here4fun',score:51200, rp:1000},
-    {name:'rookie_ron',  score:39600, rp:700 },{name:'newbie2024',  score:28300, rp:400 },
+    {name:'StarPilot_99',  score:142800,rp:6800},{name:'NebulaCrusher',score:128500,rp:6200},
+    {name:'VoidHunter',    score:115400,rp:5800},{name:'GravSurfer',   score:104200,rp:5400},
+    {name:'CometRider',    score:98700, rp:5100},{name:'OrbitalAce',   score:89300, rp:4700},
+    {name:'PlanetSmash',   score:81600, rp:4400},{name:'ZephyrKnight', score:74100, rp:4000},
+    {name:'NullarBreaker', score:67800, rp:3700},{name:'AuroraDrifter',score:61500, rp:3400},
+    {name:'KrathMaster',   score:54200, rp:3100},{name:'Phaedrax',     score:47900, rp:2800},
+    {name:'VortexStar',    score:42300, rp:2500},{name:'SoluxPilot',   score:37100, rp:2200},
+    {name:'OrrathFlyer',   score:31800, rp:1900},{name:'MoteHunter',   score:26400, rp:1600},
+    {name:'VerdisAce',     score:21700, rp:1300},{name:'GravityFlip',  score:17200, rp:1000},
+    {name:'NebulaDancer',  score:13100, rp:700 },{name:'StarSeeker',   score:8900,  rp:400 },
 ];
 
 // ── Game state ────────────────────────────────────────────────────────────────
@@ -747,40 +432,25 @@ let previousBest=0, gamesPlayed=0, gravityTooltipShown=false;
 let comet=null, cometTail=[], cometTimer=null;
 let anomaly=null, anomalyTimer=null;
 let blackHoleTimer=null;
-let wormholeActive=false; // true while wormhole animation is playing
 let _sMerges=0, _sMaxCombo=0, _sFlips=0, _sBestPlanet=0, _runStartTime=0;
 let laserMode=false, laserTargets=[], laserShip=null, laserBeams=[];
 let tutStep=0, tutActive=false;
 let reviveUsed=false; // near miss save
-let doubleScoreMerges=0; // comet double-score power: merges remaining at ×2
 let settings={sfx:true,shake:true,particles:true,haptic:true};
 let _sessionMilestoneIdx=0; // index into SESSION_MILESTONES
-// Feature: accurate drop streak
-let _dropStreakCount=0;       // consecutive accurate drops
-let _lastDropGhostY=0;        // ghost Y at time of drop (set on pointerup)
-// Feature: merge chart
-let _sMergesByLevel=new Array(10).fill(0); // count of merges producing each planet level
-// Feature: comet trail colour
-let _cometTrailHue=190;       // HSL hue — changes with comet choice
-// Feature: personal best score line
-// (uses _statsCache.best — no extra var needed)
 
 // ── Planet data ───────────────────────────────────────────────────────────────
-// Levels 0-8 scale gradually. Level 9 (Vortex) is a compact Black Hole —
-// physically small (same radius as Krath) but mechanically deadly: it
-// actively sucks in nearby small planets. Two Black Holes merging triggers
-// a Wormhole event that clears the board locally and then disappears.
 const PLANET_DATA=[
-    {name:"Mote",    r:14,  color:'#ffffff',glow:'rgba(255,255,255,0.4)',star:true},
-    {name:"Verdis",  r:22,  color:'#4ade80',glow:'rgba(74,222,128,0.2)'},
-    {name:"Krath",   r:31,  color:'#f87171',glow:'rgba(248,113,113,0.2)'},
-    {name:"Auroris", r:41,  color:'#fbbf24',stripes:true,glow:'rgba(251,191,36,0.3)'},
-    {name:"Phaedra", r:53,  color:'#818cf8',stripes:true,glow:'rgba(129,140,248,0.3)'},
-    {name:"Orrath",  r:70,  color:'#38bdf8',rings:true,  glow:'rgba(56,189,248,0.4)'},
-    {name:"Solux",   r:89,  color:'#ffcc33',sun:true,    glow:'rgba(255,165,0,0.6)'},
-    {name:"Zephyra", r:97,  color:'#e879f9',stripes:true,glow:'rgba(232,121,249,0.5)'},  // was 108 (−10%)
-    {name:"Nullar",  r:118, color:'#000000',glow:'rgba(255,255,255,0.3)',singularity:true}, // was 131 (−10%)
-    {name:"Vortex",  r:31,  color:'#000000',glow:'rgba(244,114,182,0.9)',blackhole:true}    // compact Black Hole
+    {name:"Mote",    r:14, color:'#ffffff',glow:'rgba(255,255,255,0.4)',star:true},
+    {name:"Verdis",  r:22, color:'#4ade80',glow:'rgba(74,222,128,0.2)'},
+    {name:"Krath",   r:31, color:'#f87171',glow:'rgba(248,113,113,0.2)'},
+    {name:"Auroris", r:41, color:'#fbbf24',stripes:true,glow:'rgba(251,191,36,0.3)'},
+    {name:"Phaedra", r:53, color:'#818cf8',stripes:true,glow:'rgba(129,140,248,0.3)'},
+    {name:"Orrath",  r:70, color:'#38bdf8',rings:true,  glow:'rgba(56,189,248,0.4)'},
+    {name:"Solux",   r:89, color:'#ffcc33',sun:true,    glow:'rgba(255,165,0,0.6)'},
+    {name:"Zephyra", r:108,color:'#e879f9',stripes:true,glow:'rgba(232,121,249,0.5)'},
+    {name:"Nullar",  r:131,color:'#000000',glow:'rgba(255,255,255,0.3)',singularity:true},
+    {name:"Vortex",  r:162,color:'#f472b6',sun:true,    glow:'rgba(244,114,182,0.8)'}
 ];
 
 // ── Safe storage ──────────────────────────────────────────────────────────────
@@ -791,23 +461,15 @@ function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){_m
 // ── Stats ─────────────────────────────────────────────────────────────────────
 let _statsCache=null;
 function loadStats(){
-    _statsCache=safeGet('sn_v10')||{best:0,dust:0,discovered:2,rp:0,totalGames:0};
+    _statsCache=safeGet('sn_v10')||{best:0,dust:0,discovered:2,rp:0};
     if(_statsCache.rp===undefined)_statsCache.rp=0;
-    if(_statsCache.totalGames===undefined)_statsCache.totalGames=0;
-    // gamesPlayed tracks session games, but for unlock gates we use totalGames
     document.getElementById('best-score-val').innerText=_statsCache.best.toLocaleString();
     document.getElementById('dust-val').innerText=(_statsCache.dust+sessionDust).toLocaleString();
     updateRankHUD(_statsCache.rp);
     updateNextUnlockHint();
     return _statsCache;
 }
-function totalGamesEver(){return(_statsCache||{totalGames:0}).totalGames||0;}
-function saveStats(fin=false){
-    let d=loadStats();
-    d.best=Math.max(d.best,score);
-    if(fin){d.dust+=sessionDust;sessionDust=0;d.totalGames=(d.totalGames||0)+1;}
-    safeSet('sn_v10',d);loadStats();
-}
+function saveStats(fin=false){let d=loadStats();d.best=Math.max(d.best,score);if(fin){d.dust+=sessionDust;sessionDust=0;}safeSet('sn_v10',d);loadStats();}
 function refreshDustHUD(){const base=_statsCache?_statsCache.dust:0;const total=(base+sessionDust).toLocaleString();document.getElementById('dust-val').innerText=total;const cv=document.getElementById('const-dust-val');if(cv)cv.innerText=total;}
 function updateRankHUD(rp){
     const rank=getRankFromRP(rp);
@@ -828,58 +490,7 @@ function updateNextUnlockHint(){
     }
 }
 
-// ── Achievements ──────────────────────────────────────────────────────────────
-const ACHIEVEMENTS=[
-    {id:'first_merge',   icon:'💥', title:'First Contact',      desc:'Perform your first merge'},
-    {id:'reach_auroris', icon:'🌟', title:'Golden Orbit',        desc:'Merge up to Auroris (level 3)'},
-    {id:'reach_orrath',  icon:'💫', title:'Into the Deep',        desc:'Merge up to Orrath (level 5)'},
-    {id:'reach_nullar',  icon:'🕳️', title:'Event Horizon',       desc:'Merge up to Nullar (level 8)'},
-    {id:'reach_vortex',  icon:'🌀', title:'Singularity',          desc:'Create a Vortex Black Hole'},
-    {id:'wormhole',      icon:'🌌', title:'Wormhole Pioneer',     desc:'Trigger a Wormhole event'},
-    {id:'combo_5',       icon:'⛓️', title:'Chain Reaction',       desc:'Reach a x5 combo chain'},
-    {id:'score_50k',     icon:'🚀', title:'Deep Space Explorer',  desc:'Score 50,000 in one run'},
-    {id:'score_100k',    icon:'👑', title:'Cosmic Legend',        desc:'Score 100,000 in one run'},
-    {id:'daily_3',       icon:'📅', title:'Creature of Habit',    desc:'Play 3 days in a row'},
-    {id:'flip_5',        icon:'🔄', title:'Gravity Master',       desc:'Flip gravity 5 times in one run'},
-    {id:'glitter_merge', icon:'✨', title:'Star Dust',            desc:'Use a Glitter planet wildcard'},
-];
-
-function getAchievements(){return safeGet('sn_achievements')||{};}
-function earnAchievement(id){
-    const earned=getAchievements();
-    if(earned[id])return; // already have it
-    earned[id]=Date.now();
-    safeSet('sn_achievements',earned);
-    const ach=ACHIEVEMENTS.find(a=>a.id===id);
-    if(ach){showToast(`🏅 Achievement: ${ach.title}!`,'var(--gold)');playSound('achieve');}
-}
-function checkAchievements(){
-    // Called at end of run and at key moments — checks run stats
-    if(_sMerges>=1)                              earnAchievement('first_merge');
-    if(_sBestPlanet>=3)                          earnAchievement('reach_auroris');
-    if(_sBestPlanet>=5)                          earnAchievement('reach_orrath');
-    if(_sBestPlanet>=8)                          earnAchievement('reach_nullar');
-    if(_sBestPlanet>=9)                          earnAchievement('reach_vortex');
-    if(_sMaxCombo>=5)                            earnAchievement('combo_5');
-    if(score>=50000)                             earnAchievement('score_50k');
-    if(score>=100000)                            earnAchievement('score_100k');
-    if(_sFlips>=5)                               earnAchievement('flip_5');
-    const streak=safeGet('sn_streak')||{count:0};
-    if(streak.count>=3)                          earnAchievement('daily_3');
-}
-function showAchievements(){
-    const list=document.getElementById('achievements-list');list.innerHTML='';
-    const earned=getAchievements();
-    ACHIEVEMENTS.forEach(a=>{
-        const has=!!earned[a.id];
-        const row=document.createElement('div');
-        row.className='ach-row'+(has?' earned':'');
-        row.innerHTML=`<div class="ach-icon ${has?'':'ach-locked'}">${has?a.icon:'🔒'}</div><div class="ach-info"><div class="ach-title ${has?'':'ach-locked'}">${a.title}</div><div class="ach-desc">${a.desc}${has?' ✓':''}</div></div>`;
-        list.appendChild(row);
-    });
-    document.getElementById('achievements-screen').style.display='flex';
-}
-function hideAchievements(){document.getElementById('achievements-screen').style.display='none';}
+// ── Idle Stardust ─────────────────────────────────────────────────────────────
 function checkIdleDust(){
     const last=safeGet('sn_last_played');
     const now=Date.now();
@@ -902,21 +513,11 @@ function calcRPChange(finalScore){
     else if(finalScore<target*0.5){const ratio=finalScore/target,loss=Math.round((1-ratio*2)*25);return -Math.min(loss,rp>0?loss:0);}
     else{return Math.round((finalScore/target)*12);}
 }
-function applyRPChange(delta){
-    const stats=safeGet('sn_v10')||{best:0,dust:0,discovered:2,rp:0};
-    const oldRP=stats.rp||0;
-    // Rank floor: track the highest rank ever achieved, RP can't drop below its min
-    const highWaterIdx=getRankIndex(oldRP);
-    const floorRP=RANKS[highWaterIdx].min; // e.g. Captain = 1400 RP floor
-    stats.rp=Math.max(floorRP, oldRP+delta);
-    safeSet('sn_v10',stats);_statsCache=stats;
-    return{oldRP,newRP:stats.rp};
-}
+function applyRPChange(delta){const stats=safeGet('sn_v10')||{best:0,dust:0,discovered:2,rp:0};const oldRP=stats.rp||0;stats.rp=Math.max(0,oldRP+delta);safeSet('sn_v10',stats);_statsCache=stats;return{oldRP,newRP:stats.rp};}
 
 // ── Mode ──────────────────────────────────────────────────────────────────────
 function setMode(mode){
     isRankedMode=(mode==='ranked');
-    if(isRankedMode)anTrack('button','ranked');
     document.getElementById('mode-free-btn').className='mode-btn'+(isRankedMode?'':' active');
     document.getElementById('mode-ranked-btn').className='mode-btn'+(isRankedMode?' ranked-active':'');
 }
@@ -938,7 +539,6 @@ function getDailySeed(){
 
 // ── Daily Run ─────────────────────────────────────────────────────────────────
 function startDailyRun(){
-    anTrack('button','daily');
     isDailyRun=true;
     isRankedMode=false;
     setMode('free');
@@ -955,38 +555,19 @@ function updateDailyRunUI(){
     const el=document.getElementById('daily-run-status');
     if(el){el.innerText=status!==null?` — Best: ${status.toLocaleString()}`:'— Play today!';}
 }
-// glitter state — separate from level so preview rendering knows
-let nextIsGlitter=false, afterNextIsGlitter=false, holdIsGlitter=false;
-
-// ── Glitter Planet ────────────────────────────────────────────────────────────
-// Rare wildcard planet: upgrades whatever it collides with by +1 level.
-// Unlocks once player reaches Captain rank (index 4). Spawn chance: GLITTER_CHANCE
-function glitterUnlocked(){return getRankIndex((_statsCache||{rp:0}).rp)>=4;}
-
-function shouldBeGlitter(){
-    if(!glitterUnlocked())return false;
-    return (isDailyRun?rng():Math.random())<GLITTER_CHANCE;
-}
-
 function getNextPlanetLevel(){
-    // Weighted drop system: early game heavy on small planets, late game allows mid-tier
-    // Weights: [Lvl0, Lvl1, Lvl2, Lvl3] — higher score unlocks higher weights
-    let weights;
-    if(score < 5000)       weights=[60,30,10,0];   // Early: 60/30/10
-    else if(score < 20000) weights=[50,30,15,5];   // Mid-early
-    else if(score < 50000) weights=[45,30,18,7];   // Mid
-    else if(score < 100000)weights=[42,30,20,8];   // Late
-    else                   weights=[40,30,20,10];  // End-game: 40/30/20/10
-
-    const roll=(isDailyRun?rng():Math.random())*100;
-    let cumulative=0, base=0;
-    for(let i=0;i<weights.length;i++){
-        cumulative+=weights[i];
-        if(roll<cumulative){base=i;break;}
+    if(isDailyRun){
+        const base=Math.floor(rng()*3);
+        // lucky drop via seeded rng too
+        return (rng()<LUCKY_DROP_CHANCE&&base<PLANET_DATA.length-1)?base+1:base;
     }
-    // Lucky drop: small chance to bump +1 level (uses seeded RNG for daily run)
-    const luckyRoll=isDailyRun?rng():Math.random();
-    return (luckyRoll<LUCKY_DROP_CHANCE&&base<PLANET_DATA.length-1)?base+1:base;
+    // Soft difficulty scaling: early games favour low-level planets
+    const scaledGames=Math.min(gamesPlayed,20);
+    const maxTier=score<5000?2:score<20000?3:score<50000?4:score<100000?5:score<150000?6:7;
+    const cappedMax=Math.min(maxTier,PLANET_DATA.length-1);
+    const base=Math.floor(Math.random()*(cappedMax+1));
+    // Lucky drop
+    return (Math.random()<LUCKY_DROP_CHANCE&&base<PLANET_DATA.length-1)?base+1:base;
 }
 
 // ── Leaderboard ───────────────────────────────────────────────────────────────
@@ -999,8 +580,7 @@ function showLeaderboard(){
         const rank=getRankFromRP(p.rp);
         const row=document.createElement('div');row.className='lb-row'+(p.isYou?' lb-you':'');
         const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
-        const displayName=p.isYou?(getPilotName()||'YOU'):'';
-        row.innerHTML=`<div class="lb-pos">${medal}</div><div class="lb-body"><div class="lb-name">${p.isYou?`<b>${displayName}</b>`:p.name}</div><div class="lb-meta"><span class="lb-rank-tag" style="color:${rank.color};border-color:${rank.border}">${rank.icon} ${rank.name}</span><span class="lb-score">${p.score.toLocaleString()}</span></div></div>`;
+        row.innerHTML=`<div class="lb-pos">${medal}</div><div class="lb-name">${p.isYou?'<b>YOU</b>':p.name}</div><span class="lb-rank-tag" style="color:${rank.color};border-color:${rank.border}">${rank.icon} ${rank.name}</span><div class="lb-score">${p.score.toLocaleString()}</div>`;
         list.appendChild(row);
     });
     document.getElementById('leaderboard-screen').style.display='flex';
@@ -1074,16 +654,7 @@ const CONSTELLATIONS=[
     {id:'combo_grace',title:'Combo Flow',       desc:'+0.2s combo grace window',    maxLvl:5,baseCost:400,costMult:1.7},
     {id:'dust_bonus', title:'Stardust Magnet',  desc:'+10% Stardust per merge',     maxLvl:5,baseCost:600,costMult:2.0},
     {id:'danger_time',title:'Crisis Buffer',    desc:'+1s danger grace period',     maxLvl:3,baseCost:800,costMult:2.5},
-    {id:'happy_faces',title:'Happy Planets 😊', desc:'Planets show smiley faces — toggle once unlocked', maxLvl:1,baseCost:300,costMult:99},
-    {id:'fart_sounds',title:'Planet Gas 💨',    desc:'Planets fart on merge — toggle once unlocked',     maxLvl:1,baseCost:200,costMult:99},
-    {id:'cheeky_bum', title:'Cheeky Planets 🍑',desc:'Planets show a cheeky bum — toggle once unlocked', maxLvl:1,baseCost:250,costMult:99},
-    // ── Planet skins — purchasable cosmetic overlays ──
-    {id:'skin_rainbow',title:'Rainbow Skin 🌈',   desc:'Planets cycle through rainbow colours',     maxLvl:1,baseCost:800, costMult:99},
-    {id:'skin_fire',   title:'Fire Skin 🔥',      desc:'Planets flicker with animated flames',      maxLvl:1,baseCost:1200,costMult:99},
-    {id:'skin_ice',    title:'Ice Skin ❄️',       desc:'Planets shimmer with a frozen crystal sheen',maxLvl:1,baseCost:1000,costMult:99},
-    {id:'skin_neon',   title:'Neon Skin 💜',      desc:'Planets pulse with electric neon glow',     maxLvl:1,baseCost:900, costMult:99},
-    {id:'skin_galaxy', title:'Galaxy Skin 🌌',    desc:'Planets swirl with a cosmic nebula pattern',maxLvl:1,baseCost:1500,costMult:99},
-    {id:'skin_gold',   title:'Gold Foil Skin ✨',  desc:'Planets gleam with a premium gold sheen',   maxLvl:1,baseCost:600, costMult:99},
+    {id:'happy_faces',title:'Happy Planets 😊', desc:'Planets show smiley faces!', maxLvl:1,baseCost:300,costMult:99},
 ];
 function getConstLevels(){return safeGet('sn_const')||{};}
 function getConstLevel(id){return(getConstLevels()[id]||0);}
@@ -1092,52 +663,15 @@ function gravSpeedBonus(){return 1+getConstLevel('grav_speed')*0.10;}
 function comboGraceBonus(){return getConstLevel('combo_grace')*200;}
 function dustBonus(){return 1+getConstLevel('dust_bonus')*0.10;}
 function dangerTimeBonus(){return getConstLevel('danger_time')*1000;}
-function happyFacesEnabled(){return getConstLevel('happy_faces')>=1 && (safeGet('sn_cosmetic_toggles')||{}).happy_faces!==false;}
-function fartSoundsEnabled(){return getConstLevel('fart_sounds')>=1 && (safeGet('sn_cosmetic_toggles')||{}).fart_sounds!==false;}
-function cheekyBumEnabled(){return getConstLevel('cheeky_bum')>=1 && (safeGet('sn_cosmetic_toggles')||{}).cheeky_bum!==false;}
-// Planet skin helpers — only one skin active at a time (highest-cost purchased wins, or last toggled on)
-const SKIN_IDS=['skin_rainbow','skin_fire','skin_ice','skin_neon','skin_galaxy','skin_gold'];
-function activeSkin(){
-    const t=safeGet('sn_cosmetic_toggles')||{};
-    // Return the first toggled-on purchased skin
-    for(const id of SKIN_IDS){
-        if(getConstLevel(id)>=1 && t[id]!==false) return id;
-    }
-    return null;
-}
-
-function toggleCosmeticSetting(id){
-    const t=safeGet('sn_cosmetic_toggles')||{};
-    t[id]=!( t[id]!==false ); // flip (default is true if unlocked)
-    safeSet('sn_cosmetic_toggles',t);
-    showConstellation(); // re-render to show updated toggle state
-}
-
+function happyFacesEnabled(){return getConstLevel('happy_faces')>=1;}
 function showConstellation(){
     const list=document.getElementById('constellation-list');list.innerHTML='';
     const levels=getConstLevels(),total=(_statsCache?_statsCache.dust:0)+sessionDust;
     const cv=document.getElementById('const-dust-val');if(cv)cv.innerText=total.toLocaleString();
-    const cosmeticToggles=safeGet('sn_cosmetic_toggles')||{};
-    // COSMETIC IDs that get a toggle once purchased
-    const cosmeticIds=['happy_faces','fart_sounds','cheeky_bum','skin_rainbow','skin_fire','skin_ice','skin_neon','skin_galaxy','skin_gold'];
     CONSTELLATIONS.forEach(c=>{
         const lvl=levels[c.id]||0,maxed=lvl>=c.maxLvl,cost=constCost(c);
-        const isCosmetic=cosmeticIds.includes(c.id);
         const row=document.createElement('div');row.className='const-row';
-        let rightSide;
-        if(maxed&&isCosmetic){
-            // Unlocked cosmetic — show toggle
-            const on=cosmeticToggles[c.id]!==false;
-            rightSide=`<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-                <span style="font-size:0.6em;font-weight:900;color:var(--gold)">UNLOCKED</span>
-                <button class="toggle ${on?'on':''}" onclick="toggleCosmeticSetting('${c.id}')"></button>
-            </div>`;
-        } else if(maxed){
-            rightSide='<span style="color:var(--gold);font-weight:900">MAX ✓</span>';
-        } else {
-            rightSide=`<button class="shop-btn" onclick="buyConst('${c.id}')" ${total<cost?'disabled style="opacity:0.4"':''}>✨${cost.toLocaleString()}</button>`;
-        }
-        row.innerHTML=`<div class="const-info"><div class="const-title">${c.title}</div><div class="const-desc">${c.desc}</div><div class="const-level">Level ${lvl}/${c.maxLvl}</div></div>${rightSide}`;
+        row.innerHTML=`<div class="const-info"><div class="const-title">${c.title}</div><div class="const-desc">${c.desc}</div><div class="const-level">Level ${lvl}/${c.maxLvl}</div></div>${maxed?'<span style="color:var(--gold);font-weight:900">MAX ✓</span>':`<button class="shop-btn" onclick="buyConst('${c.id}')" ${total<cost?'disabled style="opacity:0.4"':''}>✨${cost.toLocaleString()}</button>`}`;
         list.appendChild(row);
     });
     document.getElementById('constellation-screen').style.display='flex';
@@ -1151,7 +685,6 @@ function buyConst(id){
     if(sessionDust>=cost)sessionDust-=cost;else{stats.dust-=(cost-sessionDust);sessionDust=0;}
     _statsCache=stats;safeSet('sn_v10',stats);
     const levels=getConstLevels();levels[id]=lvl+1;safeSet('sn_const',levels);
-    anTrack('const_buy',id);
     refreshDustHUD();showToast(`${c.title} → Level ${lvl+1}!`,'var(--success)');showConstellation();
 }
 
@@ -1202,10 +735,7 @@ function hideMissions(){document.getElementById('missions-screen').style.display
 // ── Settings ──────────────────────────────────────────────────────────────────
 function loadSettings(){const s=safeGet('sn_settings');if(s)settings={...settings,...s};['sfx','shake','particles','haptic'].forEach(k=>{const el=document.getElementById(k+'-toggle');if(el)el.className='toggle'+(settings[k]?' on':'');});}
 function toggleSetting(key){settings[key]=!settings[key];safeSet('sn_settings',settings);const el=document.getElementById(key+'-toggle');if(el)el.className='toggle'+(settings[key]?' on':'');}
-function showSettings(){
-    document.getElementById('settings-menu').style.display='flex';
-    updatePilotNameDisplay();
-}
+function showSettings(){document.getElementById('settings-menu').style.display='flex';}
 function hideSettings(){document.getElementById('settings-menu').style.display='none';}
 function showHowToPlay(){document.getElementById('how-to-play').style.display='flex';}
 function hideHowToPlay(){document.getElementById('how-to-play').style.display='none';}
@@ -1218,7 +748,7 @@ function haptic(ms=10){if(settings.haptic&&navigator.vibrate)navigator.vibrate(m
 function reportBug(){
     const bc=engine?Composite.allBodies(engine.world).filter(b=>!b.isStatic).length:0;
     const state={version:'v10.0',timestamp:new Date().toISOString(),score,sessionDust,gamesPlayed,isFlipped,isRankedMode,isDailyRun,bc,anomaly:anomaly?anomaly.type:'none',userAgent:navigator.userAgent,screenSize:`${width}x${height}`};
-    window.location.href=`mailto:${BUG_REPORT_EMAIL}?subject=${encodeURIComponent('Supernova Bug v14.0')}&body=${encodeURIComponent('Describe bug:\n\n'+JSON.stringify(state,null,2))}`;
+    window.location.href=`mailto:${BUG_REPORT_EMAIL}?subject=${encodeURIComponent('Supernova Bug v10.0')}&body=${encodeURIComponent('Describe bug:\n\n'+JSON.stringify(state,null,2))}`;
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
@@ -1229,7 +759,7 @@ function showToast(msg,color='var(--danger)'){const t=document.getElementById('t
 function playSound(type){
     if(!settings.sfx)return;
     try{
-        const audioCtx=ensureAudioCtx();
+        if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
         const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
         osc.connect(gain);gain.connect(audioCtx.destination);const now=audioCtx.currentTime;
         if(type==='drop'){osc.frequency.setValueAtTime(440,now);osc.frequency.exponentialRampToValueAtTime(110,now+0.1);gain.gain.setValueAtTime(0.1,now);osc.start();osc.stop(now+0.1);}
@@ -1245,129 +775,6 @@ function playSound(type){
         if(type==='rank_down'){osc.type='sine';osc.frequency.setValueAtTime(400,now);osc.frequency.setValueAtTime(280,now+0.2);osc.frequency.setValueAtTime(180,now+0.4);gain.gain.setValueAtTime(0.12,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.5);osc.start();osc.stop(now+0.5);}
         if(type==='save'){osc.type='sine';osc.frequency.setValueAtTime(300,now);osc.frequency.exponentialRampToValueAtTime(900,now+0.3);gain.gain.setValueAtTime(0.18,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.4);osc.start();osc.stop(now+0.4);}
         if(type==='milestone'){osc.type='square';osc.frequency.setValueAtTime(500,now);osc.frequency.exponentialRampToValueAtTime(700,now+0.2);gain.gain.setValueAtTime(0.08,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.3);osc.start();osc.stop(now+0.3);}
-        if(type==='achieve'){
-            // 3-note ascending chime — C E G
-            [523,659,784].forEach((freq,i)=>{
-                const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-                o.type='sine';o.frequency.value=freq;o.connect(g);g.connect(audioCtx.destination);
-                const st=now+i*0.18;
-                g.gain.setValueAtTime(0,st);g.gain.linearRampToValueAtTime(0.18,st+0.04);
-                g.gain.exponentialRampToValueAtTime(0.001,st+0.35);
-                o.start(st);o.stop(st+0.36);
-            });
-        }
-    }catch(e){}
-}
-
-// ── Audio context resume helper (mobile Chrome requires this) ────────────────
-function ensureAudioCtx(){
-    if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-    // Resume if suspended — Chrome auto-suspends until user gesture
-    if(audioCtx.state==='suspended') audioCtx.resume();
-    return audioCtx;
-}
-
-// ── Fart sound — fully synthesised, convincing, kid-approved 💨 ───────────────
-function playFart(lvl=0){
-    if(!settings.sfx)return;
-    try{
-        const ctx=ensureAudioCtx();
-        const now=ctx.currentTime;
-
-        // Master compressor to make everything loud and present
-        const comp=ctx.createDynamicsCompressor();
-        comp.threshold.value=-6;comp.knee.value=3;
-        comp.ratio.value=8;comp.attack.value=0.001;comp.release.value=0.05;
-        comp.connect(ctx.destination);
-
-        // Master gain — significantly boosted
-        const masterGain=ctx.createGain();
-        masterGain.gain.value=3.5 + lvl*0.3; // loud! bigger planets = louder
-        masterGain.connect(comp);
-
-        const dur = 0.35 + lvl * 0.1;   // 0.35s (Mote) → 1.25s (Vortex)
-        const baseHz = 90 - lvl * 3;    // deeper for bigger planets
-
-        // ── Layer 1: Brown noise burst ────────────────────────────────────
-        const bufSamples = Math.ceil(ctx.sampleRate * dur);
-        const buf = ctx.createBuffer(1, bufSamples, ctx.sampleRate);
-        const data = buf.getChannelData(0);
-        let last=0;
-        for(let i=0;i<bufSamples;i++){
-            const white=Math.random()*2-1;
-            data[i]=(last+0.1*white)/1.1;
-            last=data[i];
-            data[i]*=3.5;
-        }
-        const noiseSrc=ctx.createBufferSource();
-        noiseSrc.buffer=buf;
-
-        // Two bandpass filters in series — the resonance creates the wet "splat"
-        const bp1=ctx.createBiquadFilter();
-        bp1.type='bandpass';
-        bp1.frequency.setValueAtTime(baseHz*2.5,now);
-        bp1.frequency.exponentialRampToValueAtTime(baseHz*0.7,now+dur*0.65);
-        bp1.Q.value=22+lvl*2;
-
-        const bp2=ctx.createBiquadFilter();
-        bp2.type='bandpass';
-        bp2.frequency.setValueAtTime(baseHz*4,now);
-        bp2.frequency.exponentialRampToValueAtTime(baseHz*1.5,now+dur*0.4);
-        bp2.Q.value=14;
-
-        const noiseEnv=ctx.createGain();
-        noiseEnv.gain.setValueAtTime(0,now);
-        noiseEnv.gain.linearRampToValueAtTime(1.2,now+0.018); // very fast attack — punchy
-        noiseEnv.gain.setValueAtTime(1.2,now+dur*0.12);
-        noiseEnv.gain.exponentialRampToValueAtTime(0.001,now+dur);
-
-        noiseSrc.connect(bp1);bp1.connect(bp2);bp2.connect(noiseEnv);noiseEnv.connect(masterGain);
-        noiseSrc.start(now);noiseSrc.stop(now+dur+0.05);
-
-        // ── Layer 2: Sawtooth "raspberry" with pitch drop ─────────────────
-        const osc=ctx.createOscillator();
-        osc.type='sawtooth';
-        osc.frequency.setValueAtTime(baseHz*2.2,now);
-        osc.frequency.exponentialRampToValueAtTime(baseHz*0.55,now+dur*0.75);
-        osc.frequency.exponentialRampToValueAtTime(baseHz*0.3,now+dur);
-
-        const lp=ctx.createBiquadFilter();
-        lp.type='lowpass';lp.frequency.value=800;
-
-        const oscEnv=ctx.createGain();
-        oscEnv.gain.setValueAtTime(0,now);
-        oscEnv.gain.linearRampToValueAtTime(0.7,now+0.02);
-        oscEnv.gain.exponentialRampToValueAtTime(0.001,now+dur*0.9);
-
-        osc.connect(lp);lp.connect(oscEnv);oscEnv.connect(masterGain);
-        osc.start(now);osc.stop(now+dur);
-
-        // ── Layer 3: Sub-bass punch for bigger planets ────────────────────
-        if(lvl>=2){
-            const sub=ctx.createOscillator();
-            sub.type='sine';
-            sub.frequency.setValueAtTime(baseHz*0.6,now);
-            sub.frequency.exponentialRampToValueAtTime(baseHz*0.2,now+dur*0.55);
-            const subEnv=ctx.createGain();
-            subEnv.gain.setValueAtTime(0.8,now);
-            subEnv.gain.exponentialRampToValueAtTime(0.001,now+dur*0.6);
-            sub.connect(subEnv);subEnv.connect(masterGain);
-            sub.start(now);sub.stop(now+dur*0.6);
-        }
-
-        // ── Layer 4: Wet "blap" transient at attack (makes it sound real) ─
-        const blap=ctx.createOscillator();
-        blap.type='square';
-        blap.frequency.setValueAtTime(baseHz*3,now);
-        blap.frequency.exponentialRampToValueAtTime(baseHz*0.8,now+0.06);
-        const blapEnv=ctx.createGain();
-        blapEnv.gain.setValueAtTime(0.5,now);
-        blapEnv.gain.exponentialRampToValueAtTime(0.001,now+0.08);
-        const blapLp=ctx.createBiquadFilter();
-        blapLp.type='lowpass';blapLp.frequency.value=400;
-        blap.connect(blapLp);blapLp.connect(blapEnv);blapEnv.connect(masterGain);
-        blap.start(now);blap.stop(now+0.09);
-
     }catch(e){}
 }
 
@@ -1402,7 +809,6 @@ function updateSessionBar(){
         _sessionMilestoneIdx++;
         playSound('milestone');
         showToast(`🎯 Milestone: ${target.toLocaleString()} reached!`,'var(--success)');
-        checkModMilestone();
     }
 }
 
@@ -1410,218 +816,48 @@ function updateSessionBar(){
 function drawPlanet(ctx,x,y,lvl,angle,alpha=1,highlighted=false){
     const d=PLANET_DATA[lvl];
     ctx.save();ctx.globalAlpha=alpha;ctx.translate(x,y);
-    // Glow halo
-    const glow=ctx.createRadialGradient(0,0,d.r,0,0,d.r*2.5);glow.addColorStop(0,d.glow);glow.addColorStop(1,'transparent');
-    ctx.fillStyle=glow;ctx.beginPath();ctx.arc(0,0,d.r*2.5,0,Math.PI*2);ctx.fill();
+    const glow=ctx.createRadialGradient(0,0,d.r,0,0,d.r*1.5);glow.addColorStop(0,d.glow);glow.addColorStop(1,'transparent');
+    ctx.fillStyle=glow;ctx.beginPath();ctx.arc(0,0,d.r*1.5,0,Math.PI*2);ctx.fill();
     if(highlighted){ctx.strokeStyle='#ef4444';ctx.lineWidth=3;ctx.setLineDash([]);ctx.beginPath();ctx.arc(0,0,d.r+4,0,Math.PI*2);ctx.stroke();}
     ctx.rotate(angle);
-    if(d.blackhole){
-        // Vortex: compact black hole — pure black disc with pink event horizon ring + spin lines
-        ctx.fillStyle='#000';ctx.beginPath();ctx.arc(0,0,d.r,0,Math.PI*2);ctx.fill();
-        // Event horizon — bright pink ring
-        ctx.strokeStyle='#f472b6';ctx.lineWidth=3;ctx.setLineDash([]);ctx.beginPath();ctx.arc(0,0,d.r,0,Math.PI*2);ctx.stroke();
-        // Accretion disc lines (rotate with angle param for spin effect)
-        ctx.strokeStyle='rgba(244,114,182,0.5)';ctx.lineWidth=1.5;
-        for(let i=0;i<3;i++){const a=(Math.PI*2/3)*i;ctx.beginPath();ctx.ellipse(0,0,d.r*1.8,d.r*0.4,a,0,Math.PI*2);ctx.stroke();}
-        // Inner singularity dot
-        ctx.fillStyle='rgba(244,114,182,0.8)';ctx.beginPath();ctx.arc(0,0,3,0,Math.PI*2);ctx.fill();
-    } else if(d.singularity){
-        ctx.fillStyle='black';ctx.beginPath();ctx.arc(0,0,d.r,0,Math.PI*2);ctx.fill();
-        ctx.strokeStyle='white';ctx.lineWidth=2;ctx.setLineDash([]);ctx.stroke();
-        ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=6;ctx.beginPath();ctx.arc(0,0,d.r*0.7,0,Math.PI*2);ctx.stroke();
-    } else {
-        const grad=ctx.createRadialGradient(-d.r/3,-d.r/3,0,0,0,d.r);
-        grad.addColorStop(0,(d.sun||d.star)?'#fff':'#ffffffaa');grad.addColorStop(0.3,d.color);grad.addColorStop(1,'#000');
-        ctx.fillStyle=grad;ctx.beginPath();ctx.arc(0,0,d.r,0,Math.PI*2);ctx.fill();
-    }
-    if(d.star){ctx.strokeStyle='rgba(255,255,255,0.6)';ctx.lineWidth=1;ctx.setLineDash([]);for(let i=0;i<5;i++){const a=(Math.PI*2/5)*i;ctx.beginPath();ctx.moveTo(Math.cos(a)*d.r*0.5,Math.sin(a)*d.r*0.5);ctx.lineTo(Math.cos(a)*d.r*1.2,Math.sin(a)*d.r*1.2);ctx.stroke();}}
+    if(d.singularity){ctx.fillStyle='black';ctx.beginPath();ctx.arc(0,0,d.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='white';ctx.lineWidth=2;ctx.stroke();ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=6;ctx.beginPath();ctx.arc(0,0,d.r*0.7,0,Math.PI*2);ctx.stroke();}
+    else{const grad=ctx.createRadialGradient(-d.r/3,-d.r/3,0,0,0,d.r);grad.addColorStop(0,(d.sun||d.star)?'#fff':'#ffffffaa');grad.addColorStop(0.3,d.color);grad.addColorStop(1,'#000');ctx.fillStyle=grad;ctx.beginPath();ctx.arc(0,0,d.r,0,Math.PI*2);ctx.fill();}
+    if(d.star){ctx.strokeStyle='rgba(255,255,255,0.6)';ctx.lineWidth=1;for(let i=0;i<5;i++){const a=(Math.PI*2/5)*i;ctx.beginPath();ctx.moveTo(Math.cos(a)*d.r*0.5,Math.sin(a)*d.r*0.5);ctx.lineTo(Math.cos(a)*d.r*1.2,Math.sin(a)*d.r*1.2);ctx.stroke();}}
     if(d.stripes){ctx.globalAlpha=alpha*0.2;ctx.fillStyle='white';ctx.fillRect(-d.r,-d.r/4,d.r*2,d.r/8);ctx.fillRect(-d.r,d.r/3,d.r*2,d.r/10);ctx.globalAlpha=alpha;}
-    if(d.rings){ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=3;ctx.setLineDash([]);ctx.beginPath();ctx.ellipse(0,0,d.r*1.6,d.r*0.4,0,0,Math.PI*2);ctx.stroke();}
-    if(happyFacesEnabled()&&!d.singularity&&!d.blackhole&&d.r>=14){
+    if(d.rings){ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(0,0,d.r*1.6,d.r*0.4,0,0,Math.PI*2);ctx.stroke();}
+    if(happyFacesEnabled()&&!d.singularity&&d.r>=14){
         ctx.save();ctx.globalAlpha=alpha*0.85;const fs=d.r*0.38;
         ctx.fillStyle='rgba(0,0,0,0.7)';ctx.beginPath();ctx.arc(-fs*0.38,-fs*0.1,fs*0.18,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(fs*0.38,-fs*0.1,fs*0.18,0,Math.PI*2);ctx.fill();
         ctx.strokeStyle='rgba(0,0,0,0.7)';ctx.lineWidth=fs*0.18;ctx.lineCap='round';ctx.beginPath();ctx.arc(0,fs*0.1,fs*0.48,0.15*Math.PI,0.85*Math.PI);ctx.stroke();ctx.restore();
     }
-    // 🍑 Cheeky bum — clearly two round cheeks with a strong centre crack
-    if(cheekyBumEnabled()&&!d.singularity&&!d.blackhole&&d.r>=14){
-        ctx.save();ctx.globalAlpha=alpha*0.88;
-        const bs=d.r*0.52; // overall bum scale
-
-        // Clip to a rounded-rect bounding box so cheeks don't overflow planet edge
-        ctx.beginPath();
-        ctx.arc(-bs*0.26, bs*0.04, bs*0.46, 0, Math.PI*2); // left cheek circle
-        ctx.arc( bs*0.26, bs*0.04, bs*0.46, 0, Math.PI*2); // right cheek circle
-        ctx.clip();
-
-        // Left cheek — filled circle
-        ctx.fillStyle='rgba(0,0,0,0.52)';
-        ctx.beginPath();ctx.arc(-bs*0.26, bs*0.04, bs*0.45, 0, Math.PI*2);ctx.fill();
-        // Right cheek — filled circle
-        ctx.beginPath();ctx.arc( bs*0.26, bs*0.04, bs*0.45, 0, Math.PI*2);ctx.fill();
-
-        // Strong crack — thick dark line straight down the middle
-        ctx.strokeStyle='rgba(0,0,0,0.78)';
-        ctx.lineWidth=Math.max(2, bs*0.18);
-        ctx.lineCap='round';
-        ctx.beginPath();
-        ctx.moveTo(0, -bs*0.38);
-        ctx.quadraticCurveTo(bs*0.06, bs*0.12, 0, bs*0.52);
-        ctx.stroke();
-
-        ctx.restore();
-    }
-    // ── Planet skin overlay ───────────────────────────────────────────────────
-    const skin=activeSkin();
-    if(skin&&!d.singularity&&!d.blackhole){
-        const t=Date.now()/1000;
-        ctx.save();
-        // Clip to planet circle so skin stays inside
-        ctx.beginPath();ctx.arc(0,0,d.r,0,Math.PI*2);ctx.clip();
-        if(skin==='skin_rainbow'){
-            // Animated hue cycle — colour rotates over time
-            const hue=(t*60+lvl*36)%360;
-            ctx.globalAlpha=alpha*0.35;
-            ctx.fillStyle=`hsl(${hue},100%,60%)`;
-            ctx.fillRect(-d.r,-d.r,d.r*2,d.r*2);
-        } else if(skin==='skin_fire'){
-            // Flickering warm glow at base of planet
-            const flicker=0.25+0.15*Math.sin(t*12+lvl);
-            const fg=ctx.createRadialGradient(0,d.r*0.3,0,0,d.r*0.3,d.r*1.1);
-            fg.addColorStop(0,`rgba(255,220,60,${flicker+0.1})`);
-            fg.addColorStop(0.4,`rgba(255,80,0,${flicker})`);
-            fg.addColorStop(1,'rgba(255,0,0,0)');
-            ctx.globalAlpha=alpha*0.55;ctx.fillStyle=fg;ctx.fillRect(-d.r,-d.r,d.r*2,d.r*2);
-        } else if(skin==='skin_ice'){
-            // Cool blue-white shimmer
-            const shine=0.15+0.1*Math.sin(t*4+lvl*1.5);
-            const ig=ctx.createRadialGradient(-d.r*0.35,-d.r*0.35,0,0,0,d.r);
-            ig.addColorStop(0,`rgba(200,240,255,${shine+0.3})`);
-            ig.addColorStop(0.5,`rgba(100,200,255,${shine})`);
-            ig.addColorStop(1,'rgba(0,100,200,0)');
-            ctx.globalAlpha=alpha*0.45;ctx.fillStyle=ig;ctx.fillRect(-d.r,-d.r,d.r*2,d.r*2);
-            // Frost lines
-            ctx.globalAlpha=alpha*0.12;ctx.strokeStyle='white';ctx.lineWidth=1;ctx.setLineDash([2,4]);
-            for(let i=0;i<3;i++){ctx.beginPath();ctx.moveTo(-d.r,(-d.r/2)+i*d.r*0.5);ctx.lineTo(d.r,(-d.r/3)+i*d.r*0.4);ctx.stroke();}
-            ctx.setLineDash([]);
-        } else if(skin==='skin_neon'){
-            // Pulsing coloured rim
-            const pulse=0.4+0.4*Math.sin(t*5+lvl);
-            const hue=(lvl*36)%360;
-            ctx.globalAlpha=alpha*pulse;
-            ctx.strokeStyle=`hsl(${hue},100%,70%)`;ctx.lineWidth=4;ctx.setLineDash([]);
-            ctx.beginPath();ctx.arc(0,0,d.r*0.88,0,Math.PI*2);ctx.stroke();
-            ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,d.r*0.7,0,Math.PI*2);ctx.stroke();
-        } else if(skin==='skin_galaxy'){
-            // Swirling nebula of dots
-            ctx.globalAlpha=alpha*0.4;
-            for(let i=0;i<8;i++){
-                const a=t*0.8+(Math.PI*2/8)*i;
-                const r2=d.r*(0.3+0.35*(i%3)*0.3);
-                const hue=(t*30+i*45)%360;
-                ctx.fillStyle=`hsl(${hue},80%,70%)`;
-                ctx.beginPath();ctx.arc(Math.cos(a)*r2,Math.sin(a)*r2,Math.max(1.5,d.r*0.08),0,Math.PI*2);ctx.fill();
-            }
-        } else if(skin==='skin_gold'){
-            // Shiny gold foil gradient
-            const gleam=0.15+0.1*Math.sin(t*3+lvl);
-            const gg=ctx.createLinearGradient(-d.r,-d.r,d.r,d.r);
-            gg.addColorStop(0,`rgba(255,220,80,${gleam+0.25})`);
-            gg.addColorStop(0.4,`rgba(255,180,20,${gleam})`);
-            gg.addColorStop(0.7,`rgba(200,140,0,${gleam+0.1})`);
-            gg.addColorStop(1,`rgba(255,210,60,${gleam+0.15})`);
-            ctx.globalAlpha=alpha*0.5;ctx.fillStyle=gg;ctx.fillRect(-d.r,-d.r,d.r*2,d.r*2);
-        }
-        ctx.restore();
-    }
     ctx.restore();
 }
-
-// Draw glitter sparkle on top of a planet (called from afterRender loop)
-function drawGlitterOverlay(ctx,x,y,r){
-    const t=Date.now()/300;
-    ctx.save();ctx.translate(x,y);
-    for(let i=0;i<6;i++){
-        const a=t+(Math.PI*2/6)*i;
-        const px=Math.cos(a)*(r*0.85), py=Math.sin(a)*(r*0.85);
-        const pulse=0.5+0.5*Math.sin(t*2+i);
-        ctx.save();ctx.globalAlpha=pulse*0.9;ctx.fillStyle='#fef08a';
-        ctx.beginPath();
-        // 4-pointed star shape
-        ctx.moveTo(px,py-4*pulse);ctx.lineTo(px+1.5,py);ctx.lineTo(px,py+4*pulse);ctx.lineTo(px-1.5,py);ctx.closePath();ctx.fill();
-        ctx.restore();
-    }
-    // Inner glow ring
-    const pulse2=0.3+0.3*Math.sin(t*3);
-    ctx.strokeStyle='rgba(254,240,138,'+pulse2+')';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,r*1.1,0,Math.PI*2);ctx.stroke();
-    ctx.restore();
-}
-function drawPreviewCanvas(id,lvl,size,isGlitter=false){
+function drawPreviewCanvas(id,lvl,size){
     const canvas=document.getElementById(id);if(!canvas)return;
     canvas.width=canvas.height=size;const ctx=canvas.getContext('2d');ctx.clearRect(0,0,size,size);
     if(lvl<0)return;
     const p=PLANET_DATA[lvl],scale=(size/2-4)/p.r;
     ctx.save();ctx.translate(size/2,size/2);ctx.scale(scale,scale);drawPlanet(ctx,0,0,lvl,0);ctx.restore();
-    if(isGlitter){
-        // ✨ sparkle border on preview
-        ctx.save();ctx.strokeStyle='#fef08a';ctx.lineWidth=2;ctx.shadowColor='#fef08a';ctx.shadowBlur=6;ctx.beginPath();ctx.arc(size/2,size/2,size/2-2,0,Math.PI*2);ctx.stroke();ctx.restore();
-    }
 }
-function updatePreview(){
-    drawPreviewCanvas('next-vis',nextLevel,48,nextIsGlitter);
-    drawPreviewCanvas('after-next-vis',afterNextLevel,36,afterNextIsGlitter);
-    drawPreviewCanvas('hold-vis',holdLevel,44,holdIsGlitter);
-}
+function updatePreview(){drawPreviewCanvas('next-vis',nextLevel,48);drawPreviewCanvas('after-next-vis',afterNextLevel,36);drawPreviewCanvas('hold-vis',holdLevel,44);}
 
 // ── Hold slot ─────────────────────────────────────────────────────────────────
 function activateHold(){
     if(!gameStarted||isPaused)return;
     if(holdUsedThisDrop){showToast('Hold already used this drop!','var(--danger)');return;}
-    if(holdLevel<0){
-        holdLevel=nextLevel;holdIsGlitter=nextIsGlitter;
-        nextLevel=afterNextLevel;nextIsGlitter=afterNextIsGlitter;
-        afterNextLevel=getNextPlanetLevel();afterNextIsGlitter=shouldBeGlitter();
-    } else {
-        const tmp=holdLevel,tmpG=holdIsGlitter;
-        holdLevel=nextLevel;holdIsGlitter=nextIsGlitter;
-        nextLevel=tmp;nextIsGlitter=tmpG;
-    }
-    holdUsedThisDrop=true;anTrack('button','hold');playSound('hold');haptic(12);
+    if(holdLevel<0){holdLevel=nextLevel;nextLevel=afterNextLevel;afterNextLevel=getNextPlanetLevel();}
+    else{const tmp=holdLevel;holdLevel=nextLevel;nextLevel=tmp;}
+    holdUsedThisDrop=true;playSound('hold');haptic(12);
     const box=document.getElementById('hold-box');box.classList.remove('flash');void box.offsetWidth;box.classList.add('flash');
     updatePreview();
 }
 
 // ── Spawn / merge ─────────────────────────────────────────────────────────────
-function spawn(x,y,lvl,isGlitter=false){
-    const restitution=_modState.softLanding?0.08:0.3;
-    const b=Bodies.circle(x,y,PLANET_DATA[lvl].r,{restitution,friction:0.1,plugin:{lvl,merged:false,warn:0,timestamp:Date.now(),isGlitter}});
+function spawn(x,y,lvl){
+    const b=Bodies.circle(x,y,PLANET_DATA[lvl].r,{restitution:0.3,friction:0.1,plugin:{lvl,merged:false,warn:0,timestamp:Date.now()}});
     Composite.add(engine.world,b);
 }
 function createExplosion(x,y,color){if(!settings.particles)return;for(let i=0;i<15;i++)particles.push({x,y,vx:(Math.random()-0.5)*12,vy:(Math.random()-0.5)*12,life:1.0,color});}
-
-// ── Glitter wildcard merge ────────────────────────────────────────────────────
-function performGlitterMerge(glitterBody, targetBody){
-    if(glitterBody.plugin.merged||targetBody.plugin.merged)return;
-    glitterBody.plugin.merged=targetBody.plugin.merged=true;
-    const nl=Math.min(targetBody.plugin.lvl+1, PLANET_DATA.length-1);
-    const mid={x:(glitterBody.position.x+targetBody.position.x)/2, y:(glitterBody.position.y+targetBody.position.y)/2};
-    // Big sparkle explosion
-    for(let i=0;i<30;i++) particles.push({x:mid.x,y:mid.y,vx:(Math.random()-0.5)*16,vy:(Math.random()-0.5)*16,life:1.0,color:['#fef08a','#f472b6','#38bdf8','#ffffff','#4ade80'][Math.floor(Math.random()*5)]});
-    screenFlash();screenShake(10,200);haptic(50);playSound('bigmerge');
-    showToast(`✨ GLITTER! ${targetBody.plugin.lvl===PLANET_DATA.length-1?'MAX LEVEL!':PLANET_DATA[nl].name+' upgrade!'}`, 'var(--gold)');
-    score+=nl*200; // bonus points for glitter merge
-    sessionDust+=nl*2;
-    const scoreEl=document.getElementById('score-label');scoreEl.innerText=score.toLocaleString();scoreEl.classList.remove('pop');void scoreEl.offsetWidth;scoreEl.classList.add('pop');
-    refreshDustHUD();
-    const dots=document.querySelectorAll('.evo-dot');if(dots[nl])dots[nl].classList.add('active');
-    Composite.remove(engine.world,[glitterBody,targetBody]);
-    spawn(mid.x,mid.y,nl);
-    _sMerges++;_sBestPlanet=Math.max(_sBestPlanet,nl);
-    _sMergesByLevel[Math.min(nl,9)]++;
-    anTrack('merge');anTrack('glitter');
-    earnAchievement('first_merge');
-    earnAchievement('glitter_merge');
-    if(nl>=3) earnAchievement('reach_auroris');
-}
 
 function performMerge(a,b){
     if(a.plugin.merged||b.plugin.merged)return;
@@ -1656,53 +892,21 @@ function performMerge(a,b){
     if(comboDecayTimer)clearTimeout(comboDecayTimer);
     comboDecayTimer=setTimeout(()=>{comboCount=0;updateComboMeter();},graceMs+100);
     updateComboMeter();
-    if(fartSoundsEnabled()){
-        // Planet Gas mode: fart sound replaces normal merge/bigmerge sounds
-        playFart(nl);
-    } else {
-        nl>=6?playSound('bigmerge'):playSound('merge');
-    }
+    nl>=6?playSound('bigmerge'):playSound('merge');
     if(nl>=6){screenShake(nl*1.5,180+nl*10);haptic(Math.min(nl*8,60));}
     createExplosion(mid.x,mid.y,PLANET_DATA[Math.min(nl,9)].color);
-    const modMult=_modState.scoreSurge*_modState.riskBonus;
-    score+=Math.round(nl*100*comboCount*(doubleScoreMerges>0?2:1)*modMult);
-    applyModsOnMerge(nl,mid.x,mid.y);
-    if(doubleScoreMerges>0){doubleScoreMerges--;if(doubleScoreMerges===0)showToast('Double score finished!','var(--accent)');}
+    score+=nl*100*comboCount;
     const dustEarned=Math.ceil(nl*dustBonus());sessionDust+=dustEarned;
     const scoreEl=document.getElementById('score-label');scoreEl.innerText=score.toLocaleString();scoreEl.classList.remove('pop');void scoreEl.offsetWidth;scoreEl.classList.add('pop');
     refreshDustHUD();updateSessionBar();
     if(gamesPlayed>1&&score>previousBest&&score>(_statsCache||{best:0}).best){previousBest=score;flashNewBest();}
     const dots=document.querySelectorAll('.evo-dot');if(dots[nl])dots[nl].classList.add('active');
-    Composite.remove(engine.world,[a,b]);
-    // Two Black Holes merging → Wormhole event (no new body spawned)
-    if(nl>=PLANET_DATA.length){performWormhole(mid.x,mid.y);return;}
-    spawn(mid.x,mid.y,nl);
+    Composite.remove(engine.world,[a,b]);if(nl<PLANET_DATA.length)spawn(mid.x,mid.y,nl);
     if(_statsCache&&nl>_statsCache.discovered){_statsCache.discovered=nl;safeSet('sn_v10',_statsCache);}
     _sMerges++;_sMaxCombo=Math.max(_sMaxCombo,comboCount);_sBestPlanet=Math.max(_sBestPlanet,nl);
-    _sMergesByLevel[Math.min(nl,9)]++;
-    anTrack('merge');
-    flashPlanetName(nl);                  // flash the new planet name
-    earnAchievement('first_merge');
-    if(nl>=3) earnAchievement('reach_auroris');
-    if(nl>=5) earnAchievement('reach_orrath');
-    if(nl>=8) earnAchievement('reach_nullar');
-    if(nl>=9) earnAchievement('reach_vortex');
-    if(_sMaxCombo>=5) earnAchievement('combo_5');
     trackMission('merges',_sMerges);trackMission('combo',_sMaxCombo);trackMission('score',score);trackMission('dust',sessionDust);
 }
 function flashNewBest(){const el=document.getElementById('new-best');el.style.opacity='1';el.style.transition='opacity 0.3s';setTimeout(()=>{el.style.transition='opacity 1s';el.style.opacity='0';},1800);}
-
-// Flash the name of the newly merged planet briefly on screen
-function flashPlanetName(lvl){
-    if(lvl<2)return; // only for Krath and above — not every Mote merge
-    const pd=PLANET_DATA[Math.min(lvl,9)];
-    const el=document.getElementById('planet-name-flash');
-    el.innerText=pd.name+'!';
-    el.style.color=pd.color;
-    el.style.opacity='1';
-    clearTimeout(el._t);
-    el._t=setTimeout(()=>{el.style.opacity='0';},900);
-}
 function updateComboMeter(){
     const label=document.getElementById('combo-label'),bar=document.getElementById('combo-bar');
     if(comboCount<=1){label.style.opacity='0';bar.style.width='0%';bar.style.background='var(--gold)';return;}
@@ -1721,7 +925,6 @@ function nearMissSave(){
     const toRemove=sorted.slice(0,3);
     toRemove.forEach(b=>{createExplosion(b.position.x,b.position.y,PLANET_DATA[b.plugin.lvl].color);Composite.remove(engine.world,b);});
     reviveUsed=true;
-    anTrack('near_miss');anTrack('game_over_cause','nearMiss');
     playSound('save');screenShake(10,200);haptic(50);
     const banner=document.getElementById('near-miss-banner');
     banner.style.opacity='1';banner.style.transition='opacity 0.3s';
@@ -1733,28 +936,28 @@ function nearMissSave(){
 
 // ── Power-ups ─────────────────────────────────────────────────────────────────
 function buyPowerUp(cost,maxLvl){
+    if(gamesPlayed<3){showToast('Power-ups unlock after 3 games!','var(--wind)');return;}
     const stats=loadStats(),total=stats.dust+sessionDust;
     if(total<cost){showToast('Not enough Stardust!','var(--danger)');return;}
     if(sessionDust>=cost)sessionDust-=cost;else{stats.dust-=(cost-sessionDust);sessionDust=0;}
     _statsCache=stats;safeSet('sn_v10',stats);
     Composite.allBodies(engine.world).forEach(b=>{if(b.plugin?.lvl<=maxLvl){createExplosion(b.position.x,b.position.y,PLANET_DATA[b.plugin.lvl].color);Composite.remove(engine.world,b);}});
-    anTrack('button',maxLvl<=1?'nuke':'collapse');
     refreshDustHUD();showToast('Power-up activated! 💥','var(--success)');togglePause();
 }
 function buySeismic(){
+    if(gamesPlayed<3){showToast('Power-ups unlock after 3 games!','var(--wind)');return;}
     const cost=150,stats=loadStats(),total=stats.dust+sessionDust;
     if(total<cost){showToast('Not enough Stardust!','var(--danger)');return;}
     if(sessionDust>=cost)sessionDust-=cost;else{stats.dust-=(cost-sessionDust);sessionDust=0;}
     _statsCache=stats;safeSet('sn_v10',stats);refreshDustHUD();togglePause();
-    anTrack('button','seismic');
     setTimeout(()=>{Composite.allBodies(engine.world).forEach(b=>{if(!b.isStatic&&b.plugin?.lvl!==undefined)Body.applyForce(b,b.position,{x:(Math.random()-0.5)*0.015,y:isFlipped?0.02:-0.02});});screenShake(14,350);playSound('seismic');showToast('🌍 Seismic Pulse!','var(--accent)');},300);
 }
 function buyLaserStrike(){
+    if(gamesPlayed<3){showToast('Power-ups unlock after 3 games!','var(--wind)');return;}
     const cost=400,stats=loadStats(),total=stats.dust+sessionDust;
     if(total<cost){showToast('Not enough Stardust!','var(--danger)');return;}
     if(sessionDust>=cost)sessionDust-=cost;else{stats.dust-=(cost-sessionDust);sessionDust=0;}
     _statsCache=stats;safeSet('sn_v10',stats);refreshDustHUD();
-    anTrack('button','laser');
     isPaused=false;engine.enabled=true;document.getElementById('pause-menu').style.display='none';
     laserMode=true;laserTargets=[];laserShip=null;laserBeams=[];
     document.getElementById('laser-overlay').classList.add('active');
@@ -1771,9 +974,9 @@ function fireLaser(){
 
 // ── Gravity flip ──────────────────────────────────────────────────────────────
 function flipGravity(){
+    if(gamesPlayed<3){showToast('Gravity flip unlocks after 3 games!','var(--wind)');return;}
     if(gravityCharge<CHARGE_TIME){showToast('Gravity recharging…','var(--gold)');return;}
     isFlipped=!isFlipped;engine.gravity.y*=-1;gravityCharge=0;
-    anTrack('button','gravity');
     playSound('flip');screenShake(12,300);haptic(30);setNebulaMood('flipped');
     _sFlips++;trackMission('flips',_sFlips);
 }
@@ -1803,41 +1006,12 @@ function drawLaserShip(ctx){
 }
 
 // ── Comet ─────────────────────────────────────────────────────────────────────
-function scheduleComet(){if(cometTimer)clearTimeout(cometTimer);const d=cometInterval();cometTimer=setTimeout(()=>{if(gameStarted&&!isPaused)trySpawnComet();else scheduleComet();},d);}
+function scheduleComet(){if(cometTimer)clearTimeout(cometTimer);const d=COMET_INTERVAL_MIN+Math.random()*(COMET_INTERVAL_MAX-COMET_INTERVAL_MIN);cometTimer=setTimeout(()=>{if(gameStarted&&!isPaused)trySpawnComet();else scheduleComet();},d);}
 function cometCorridorClear(y,r){const bodies=Composite.allBodies(engine.world).filter(b=>!b.isStatic&&b.plugin?.lvl!==undefined);for(const b of bodies){const br=PLANET_DATA[b.plugin.lvl].r;if(Math.abs(b.position.y-y)<br+r+10)return false;}return true;}
 function trySpawnComet(){const r=14;for(let i=0;i<8;i++){const y=PLAY_H*0.2+Math.random()*PLAY_H*0.45;if(cometCorridorClear(y,r)){spawnComet(y,r);return;}}scheduleComet();}
 function spawnComet(y,r=14){const fromLeft=Math.random()>0.5,angle=(Math.random()*25-12)*(Math.PI/180),speed=COMET_SPEED+Math.random()*2;comet={x:fromLeft?-40:width+40,y,vx:fromLeft?speed*Math.cos(angle):-speed*Math.cos(angle),vy:speed*Math.sin(angle),radius:r,alive:true};cometTail=[];const btn=document.getElementById('comet-btn');btn.style.display='block';btn.style.pointerEvents='auto';updateCometBtn();const crossTime=(width+80)/speed*(1000/60)+500;setTimeout(()=>{if(comet&&comet.alive)dismissComet();},crossTime);}
 function updateCometBtn(){if(!comet)return;const btn=document.getElementById('comet-btn');btn.style.left=(comet.x-35)+'px';btn.style.top=(comet.y+TOP_BAR-35)+'px';}
-function catchComet(){
-    if(!comet||!comet.alive)return;
-    // Pause physics and show choice
-    if(gameStarted&&!isPaused){isPaused=true;engine.enabled=false;}
-    const cx=comet.x,cy=comet.y;
-    for(let i=0;i<40;i++){const a=(Math.PI*2/40)*i,sp=4+Math.random()*8;particles.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1.0,color:i%3===0?'#fbbf24':i%3===1?'#38bdf8':'#ffffff'});}
-    playSound('comet');screenShake(10,250);haptic(40);
-    anTrack('button','comet');
-    _dismissComet();
-    document.getElementById('comet-choice').style.display='flex';
-}
-function cometChoice(type){
-    document.getElementById('comet-choice').style.display='none';
-    // Resume physics
-    if(gameStarted){isPaused=false;engine.enabled=true;scheduleComet();scheduleAnomaly();}
-    if(type==='vacuum'){
-        const toRemove=Composite.allBodies(engine.world).filter(b=>!b.isStatic&&b.plugin?.lvl===0);
-        toRemove.forEach(b=>{createExplosion(b.position.x,b.position.y,PLANET_DATA[0].color);Composite.remove(engine.world,b);});
-        showToast(`🌀 Vacuum! Removed ${toRemove.length} tiny planets`,'var(--danger)');
-        haptic(30);_cometTrailHue=0; // red trail
-    } else if(type==='gravity'){
-        gravityCharge=CHARGE_TIME;
-        showToast('🌀 Gravity Surge! Flip recharged!','var(--gold)');haptic(30);
-        _cometTrailHue=48; // gold trail
-    } else if(type==='double'){
-        doubleScoreMerges=3;
-        showToast('✨ Double Score! Next 3 merges ×2!','var(--accent)');haptic(30);
-        _cometTrailHue=195; // cyan trail
-    }
-}
+function catchComet(){if(!comet||!comet.alive)return;const cx=comet.x,cy=comet.y;for(let i=0;i<40;i++){const a=(Math.PI*2/40)*i,sp=4+Math.random()*8;particles.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1.0,color:i%3===0?'#fbbf24':i%3===1?'#38bdf8':'#ffffff'});}playSound('comet');screenShake(10,250);haptic(40);gravityCharge=CHARGE_TIME;showToast('☄️ COMET CAUGHT! Gravity recharged!','var(--accent)');_dismissComet();scheduleComet();}
 function _dismissComet(){comet=null;cometTail=[];const btn=document.getElementById('comet-btn');btn.style.display='none';btn.style.pointerEvents='none';}
 function dismissComet(){_dismissComet();scheduleComet();}
 function drawComet(ctx){
@@ -1845,7 +1019,7 @@ function drawComet(ctx){
     comet.x+=comet.vx;comet.y+=comet.vy;cometTail.push({x:comet.x,y:comet.y});if(cometTail.length>32)cometTail.shift();
     if(comet.x<-60||comet.x>width+60||comet.y<-60||comet.y>PLAY_H+60){dismissComet();return;}
     updateCometBtn();
-    for(let i=0;i<cometTail.length-1;i++){const t=i/cometTail.length;ctx.save();ctx.globalAlpha=t*0.6;ctx.strokeStyle=`hsl(${_cometTrailHue+t*30},100%,${60+t*30}%)`;ctx.lineWidth=t*8;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(cometTail[i].x,cometTail[i].y);ctx.lineTo(cometTail[i+1].x,cometTail[i+1].y);ctx.stroke();ctx.restore();}
+    for(let i=0;i<cometTail.length-1;i++){const t=i/cometTail.length;ctx.save();ctx.globalAlpha=t*0.6;ctx.strokeStyle=`hsl(${190+t*40},100%,${60+t*30}%)`;ctx.lineWidth=t*8;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(cometTail[i].x,cometTail[i].y);ctx.lineTo(cometTail[i+1].x,cometTail[i+1].y);ctx.stroke();ctx.restore();}
     const grd=ctx.createRadialGradient(comet.x,comet.y,2,comet.x,comet.y,comet.radius*2.5);grd.addColorStop(0,'rgba(255,255,255,1)');grd.addColorStop(0.3,'rgba(56,189,248,0.8)');grd.addColorStop(1,'rgba(56,189,248,0)');
     ctx.save();ctx.fillStyle=grd;ctx.beginPath();ctx.arc(comet.x,comet.y,comet.radius*2.5,0,Math.PI*2);ctx.fill();ctx.restore();
     ctx.save();ctx.fillStyle='#ffffff';ctx.shadowColor='#38bdf8';ctx.shadowBlur=15;ctx.beginPath();ctx.arc(comet.x,comet.y,comet.radius*0.6,0,Math.PI*2);ctx.fill();ctx.restore();
@@ -1854,132 +1028,26 @@ function drawComet(ctx){
 
 // ── Solar wind ────────────────────────────────────────────────────────────────
 function scheduleAnomaly(){
-    if(anomalyTimer)clearTimeout(anomalyTimer);const d=anomalyInterval();anomalyTimer=setTimeout(()=>{if(gameStarted&&!isPaused)warnAnomaly();else scheduleAnomaly();},d);
+    if(gamesPlayed<3){anomalyTimer=setTimeout(scheduleAnomaly,5000);return;}
+    if(anomalyTimer)clearTimeout(anomalyTimer);const d=ANOMALY_INTERVAL_MIN+Math.random()*(ANOMALY_INTERVAL_MAX-ANOMALY_INTERVAL_MIN);anomalyTimer=setTimeout(()=>{if(gameStarted&&!isPaused)warnAnomaly();else scheduleAnomaly();},d);
 }
 function warnAnomaly(){const w=document.getElementById('anomaly-warn');w.innerText='⚠️ SOLAR WIND INCOMING!';w.style.display='block';setTimeout(()=>{w.style.display='none';startAnomaly();},3000);}
 function startAnomaly(){const dir=Math.random()>0.5?1:-1;anomaly={type:'solar_wind',dir,force:0.0003,endTime:Date.now()+ANOMALY_DURATION};const b=document.getElementById('anomaly-banner');b.innerText=`🌬️ SOLAR WIND — pushing ${dir>0?'RIGHT':'LEFT'}`;b.style.display='block';setNebulaMood('wind');}
 function stopAnomaly(){anomaly=null;document.getElementById('anomaly-banner').style.display='none';setNebulaMood('normal');scheduleAnomaly();}
-function applyAnomaly(bodies){if(!anomaly)return;if(Date.now()>anomaly.endTime){stopAnomaly();return;}
-    const fMult=_modState.volatileStars?1.8:1;
-    bodies.forEach(b=>{if(!b.isStatic&&b.plugin?.lvl!==undefined)Body.applyForce(b,b.position,{x:anomaly.dir*anomaly.force*fMult,y:0});});}
+function applyAnomaly(bodies){if(!anomaly)return;if(Date.now()>anomaly.endTime){stopAnomaly();return;}bodies.forEach(b=>{if(!b.isStatic&&b.plugin?.lvl!==undefined)Body.applyForce(b,b.position,{x:anomaly.dir*anomaly.force,y:0});});}
 
-// ── Black Hole (Vortex lvl 9) ─────────────────────────────────────────────────
-// The Black Hole actively pulls lvl 0/1/2 planets toward itself every frame
-// (handled in beforeUpdate). Additionally, every 4 seconds it consumes the
-// nearest small planet that is within its capture radius.
-const BH_CAPTURE_R=120; // px — must be within this to get consumed
-const BH_PULL_FORCE=0.0006; // gravitational pull force per frame
-
+// ── Black hole ────────────────────────────────────────────────────────────────
 function startBlackHole(){
-    if(blackHoleTimer)return;
-    showToast('🕳️ BLACK HOLE! Small planets are being pulled in…','#f472b6');
+    if(blackHoleTimer)return;showToast('🕳️ BLACK HOLE ACTIVE!','#f472b6');
     blackHoleTimer=setInterval(()=>{
         if(!gameStarted||isPaused)return;
-        const holes=Composite.allBodies(engine.world).filter(b=>!b.isStatic&&b.plugin?.lvl===9);
-        if(!holes.length){clearInterval(blackHoleTimer);blackHoleTimer=null;return;}
-        // Consume nearest small planet within capture radius
-        holes.forEach(bh=>{
-            const targets=Composite.allBodies(engine.world).filter(b=>
-                !b.isStatic&&b.plugin?.lvl!==undefined&&b.plugin.lvl<=2&&b!==bh);
-            if(!targets.length)return;
-            targets.sort((a,b)=>
-                Math.hypot(a.position.x-bh.position.x,a.position.y-bh.position.y)-
-                Math.hypot(b.position.x-bh.position.x,b.position.y-bh.position.y));
-            const nearest=targets[0];
-            const dist=Math.hypot(nearest.position.x-bh.position.x,nearest.position.y-bh.position.y);
-            if(dist<BH_CAPTURE_R){
-                createExplosion(nearest.position.x,nearest.position.y,PLANET_DATA[nearest.plugin.lvl].color);
-                Composite.remove(engine.world,nearest);
-                score+=50;sessionDust+=1;
-                document.getElementById('score-label').innerText=score.toLocaleString();
-                refreshDustHUD();playSound('blackhole');
-            }
-        });
+        const nexii=Composite.allBodies(engine.world).filter(b=>!b.isStatic&&b.plugin?.lvl===9);
+        if(!nexii.length){clearInterval(blackHoleTimer);blackHoleTimer=null;return;}
+        const nx=nexii[0];const targets=Composite.allBodies(engine.world).filter(b=>!b.isStatic&&b.plugin?.lvl<=1);if(!targets.length)return;
+        targets.sort((a,b)=>Math.hypot(a.position.x-nx.position.x,a.position.y-nx.position.y)-Math.hypot(b.position.x-nx.position.x,b.position.y-nx.position.y));
+        const v=targets[0];createExplosion(v.position.x,v.position.y,PLANET_DATA[v.plugin.lvl].color);Composite.remove(engine.world,v);
+        score+=50;sessionDust+=1;document.getElementById('score-label').innerText=score.toLocaleString();refreshDustHUD();playSound('blackhole');
     },4000);
-}
-
-// ── Wormhole event ────────────────────────────────────────────────────────────
-// Triggered when two level-9 Black Holes merge. A wormhole tears open at the
-// merge point, pulls nearby planets into it, then collapses. No new body
-// is spawned — both Black Holes are simply consumed by the event.
-const WORMHOLE_RADIUS=200; // px — affected zone
-let _wormholeAnim=null;    // {x,y,t,maxT} — canvas animation state
-
-function performWormhole(x,y){
-    wormholeActive=true;
-    // Freeze physics briefly for dramatic effect
-    if(engine)engine.enabled=false;
-    playSound('blackhole');screenShake(18,500);
-    if(settings.haptic&&navigator.vibrate)navigator.vibrate([80,60,80,60,120]);
-    showToast('🌀 WORMHOLE! Space tears open…','#f472b6');
-    earnAchievement('wormhole');anTrack('wormhole');
-
-    // Remove all planets within wormhole radius
-    let consumed=0;
-    Composite.allBodies(engine.world).forEach(b=>{
-        if(b.isStatic||b.plugin?.lvl===undefined)return;
-        const dist=Math.hypot(b.position.x-x,b.position.y-y);
-        if(dist<WORMHOLE_RADIUS){
-            createExplosion(b.position.x,b.position.y,PLANET_DATA[b.plugin.lvl].color);
-            Composite.remove(engine.world,b);
-            consumed++;
-        }
-    });
-
-    score+=consumed*200; // big bonus for wormhole clear
-    sessionDust+=consumed*3;
-    document.getElementById('score-label').innerText=score.toLocaleString();
-    refreshDustHUD();
-
-    // Start canvas animation (drawn in afterRender)
-    _wormholeAnim={x,y,t:0,maxT:90}; // 90 frames ≈ 1.5s at 60fps
-
-    // Resume physics after animation completes
-    setTimeout(()=>{
-        wormholeActive=false;
-        _wormholeAnim=null;
-        if(engine&&gameStarted)engine.enabled=true;
-        if(blackHoleTimer){clearInterval(blackHoleTimer);blackHoleTimer=null;}
-        showToast(`🌀 Wormhole collapsed — ${consumed} planets consumed!`,'var(--gold)');
-    },1500);
-}
-
-function drawWormhole(ctx){
-    if(!_wormholeAnim)return;
-    const {x,y,t,maxT}=_wormholeAnim;
-    _wormholeAnim.t++;
-    const progress=t/maxT; // 0→1
-    const opening=progress<0.4?progress/0.4:1; // expand phase
-    const closing=progress>0.6?(progress-0.6)/0.4:1; // collapse phase (1 → 0)
-    const scale=progress<0.4?opening:(progress>0.6?1-closing:1);
-    const r=WORMHOLE_RADIUS*scale;
-
-    ctx.save();
-    // Outer event ring — bright pink
-    const outerPulse=0.6+0.4*Math.sin(t*0.3);
-    ctx.strokeStyle='#f472b6';ctx.lineWidth=4*scale;ctx.globalAlpha=outerPulse*scale;
-    ctx.setLineDash([]);ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke();
-
-    // Swirl lines
-    ctx.globalAlpha=0.5*scale;
-    for(let i=0;i<8;i++){
-        const a=(Math.PI*2/8)*i+t*0.08;
-        const x1=x+Math.cos(a)*r*0.2,y1=y+Math.sin(a)*r*0.2;
-        const x2=x+Math.cos(a+0.5)*r,y2=y+Math.sin(a+0.5)*r;
-        const grad=ctx.createLinearGradient(x1,y1,x2,y2);
-        grad.addColorStop(0,'#f472b6');grad.addColorStop(1,'transparent');
-        ctx.strokeStyle=grad;ctx.lineWidth=2;
-        ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
-    }
-
-    // Dark void centre
-    ctx.globalAlpha=0.85*scale;
-    const voidGrad=ctx.createRadialGradient(x,y,0,x,y,r*0.6);
-    voidGrad.addColorStop(0,'rgba(0,0,0,0.95)');
-    voidGrad.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=voidGrad;ctx.beginPath();ctx.arc(x,y,r*0.6,0,Math.PI*2);ctx.fill();
-
-    ctx.restore();
 }
 
 // ── Ghost Y ───────────────────────────────────────────────────────────────────
@@ -1993,7 +1061,6 @@ function calcGhostY(x,flipped){
 
 // ── End screen ────────────────────────────────────────────────────────────────
 function showEndScreen(dustEarned,wasNewBest){
-    // Card A: The Run
     document.getElementById('end-score').innerText=score.toLocaleString();
     document.getElementById('end-merges').innerText=_sMerges;
     document.getElementById('end-best-planet').innerText=_sBestPlanet>=0?PLANET_DATA[Math.min(_sBestPlanet,9)].name:'—';
@@ -2009,76 +1076,33 @@ function showEndScreen(dustEarned,wasNewBest){
     // Daily run result
     const drEl=document.getElementById('daily-run-result');
     if(isDailyRun){
-        const today=new Date().toDateString(),existing=getDailyRunStatus();
-        if(!existing||score>existing){safeSet('sn_daily_run',{date:today,score});drEl.innerText=`🌅 Daily Run best: ${score.toLocaleString()} — saved!`;}
-        else{drEl.innerText=`🌅 Daily Run: your best is ${existing.toLocaleString()}`;}
-        drEl.style.display='block';updateDailyRunUI();
+        const today=new Date().toDateString();
+        const existing=getDailyRunStatus();
+        if(!existing||score>existing){
+            safeSet('sn_daily_run',{date:today,score});
+            drEl.innerText=`🌅 Daily Run best: ${score.toLocaleString()} — saved!`;
+        } else {
+            drEl.innerText=`🌅 Daily Run: your best is ${existing.toLocaleString()}`;
+        }
+        drEl.style.display='block';
+        updateDailyRunUI();
     } else { drEl.style.display='none'; }
 
-    // Card B: The Career (ranked only)
-    const careerCard=document.getElementById('career-card');
+    // RP change
+    const rpCard=document.getElementById('rp-change-card');
     if(isRankedMode&&!isDailyRun){
         const delta=calcRPChange(score);
         const {oldRP,newRP}=applyRPChange(delta);
         const oldRank=getRankFromRP(oldRP),newRank=getRankFromRP(newRP);
         const rankChanged=oldRank.name!==newRank.name;
         const sign=delta>=0?'+':'',color=delta>=0?'var(--success)':'var(--danger)';
-
-        // RP change section
-        let rpHtml=`<div style="display:flex;align-items:center;justify-content:space-between;">`;
-        rpHtml+=`<span style="font-size:0.85em">${newRank.icon} ${newRank.name}</span>`;
-        rpHtml+=`<span style="font-size:1.4em;font-weight:900;color:${color}">${sign}${delta} RP</span></div>`;
-        rpHtml+=`<div style="font-size:0.72em;opacity:0.55;margin-top:3px">${newRP.toLocaleString()} RP total</div>`;
-        if(rankChanged){const up=newRank.min>oldRank.min;rpHtml+=`<div style="margin-top:6px;font-weight:900;color:${up?'var(--gold)':'var(--danger)'};font-size:0.9em">${up?'🎉 RANK UP':'📉 RANK DOWN'}: ${newRank.icon} ${newRank.name}</div>`;playSound(up?'rank_up':'rank_down');}
-        document.getElementById('rp-change-card').innerHTML=rpHtml;
-
-        // Progress to next rank
-        const progEl=document.getElementById('career-rank-progress');
-        const nextRankIdx=getRankIndex(newRP)+1;
-        if(nextRankIdx<RANKS.length){
-            const nextRank=RANKS[nextRankIdx];
-            const pct=Math.min(100,Math.round((newRP-newRank.min)/(nextRank.min-newRank.min)*100));
-            progEl.innerHTML=`<div style="font-size:0.7em;opacity:0.55;margin-bottom:4px">Progress to ${nextRank.icon} ${nextRank.name}</div><div style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--accent);border-radius:3px;transition:width 0.8s"></div></div><div style="font-size:0.65em;opacity:0.4;margin-top:2px">${pct}% complete</div>`;
-        } else {
-            progEl.innerHTML=`<div style="color:var(--gold);font-weight:900">👑 Grand Admiral — Maximum Rank!</div>`;
-        }
-
-        careerCard.style.display='block';
+        let html=`<div style="font-size:0.72em;opacity:0.55;margin-bottom:4px">⚔️ RANKED RESULT</div>`;
+        html+=`<div style="font-size:1.5em;font-weight:900;color:${color}">${sign}${delta} RP</div>`;
+        html+=`<div style="font-size:0.78em;margin-top:3px">${newRP.toLocaleString()} RP total</div>`;
+        if(rankChanged){const up=newRank.min>oldRank.min;html+=`<div style="margin-top:7px;font-size:0.88em;font-weight:900;color:${up?'var(--gold)':'var(--danger)'}">${up?'🎉 RANK UP':'📉 RANK DOWN'}: ${newRank.icon} ${newRank.name}</div>`;playSound(up?'rank_up':'rank_down');}
+        rpCard.style.display='block';rpCard.style.background=delta>=0?'rgba(74,222,128,0.08)':'rgba(239,68,68,0.08)';rpCard.style.border=`1px solid ${delta>=0?'rgba(74,222,128,0.3)':'rgba(239,68,68,0.3)'}`;rpCard.innerHTML=html;
         updateRankHUD(newRP);
-    } else { careerCard.style.display='none'; }
-
-    // Merge chart — bar chart of merges by planet level
-    const chartEl=document.getElementById('merge-chart');
-    const maxMerges=Math.max(1,..._sMergesByLevel);
-    const chartHtml=_sMergesByLevel.map((count,lvl)=>{
-        if(count===0)return'';
-        const pd=PLANET_DATA[lvl];
-        const pct=Math.round(count/maxMerges*100);
-        return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-            <div style="font-size:0.6em;width:48px;text-align:right;opacity:0.7;flex-shrink:0">${pd.name}</div>
-            <div style="flex:1;height:12px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden">
-                <div style="height:100%;width:${pct}%;background:${pd.color==='#000000'?'#888':pd.color};border-radius:4px;transition:width 0.6s;opacity:0.85"></div>
-            </div>
-            <div style="font-size:0.65em;width:20px;text-align:right;opacity:0.6;flex-shrink:0">${count}</div>
-        </div>`;
-    }).filter(Boolean).join('');
-    chartEl.innerHTML=chartHtml||'<div style="font-size:0.7em;opacity:0.4;text-align:center">No merges this run</div>';
-
-    // Galaxy Build — show mods picked this run
-    const buildCard=document.getElementById('run-build-card');
-    const buildList=document.getElementById('run-build-list');
-    if(_runMods.length>0){
-        buildList.innerHTML=_runMods.map(id=>{
-            const mod=MOD_DEFS.find(m=>m.id===id);
-            return mod?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:0.82em">
-                <span style="font-size:1.2em">${mod.icon}</span>
-                <div><b style="color:var(--wind)">${mod.title}</b><div style="font-size:0.8em;opacity:0.5">${mod.desc}</div></div>
-            </div>`:'';
-        }).join('');
-        buildCard.style.display='block';
-    } else {
-        buildCard.style.display='none';
-    }
+    } else { rpCard.style.display='none'; }
 
     document.getElementById('end-screen').style.display='flex';
 }
@@ -2090,16 +1114,20 @@ function togglePause(){
     if(!gameStarted)return;
     isPaused=!isPaused;engine.enabled=!isPaused;
     document.getElementById('pause-menu').style.display=isPaused?'flex':'none';
+    // Show/hide power-ups based on gamesPlayed
+    const ppSection=document.getElementById('power-ups-section');
+    const newbieNote=document.getElementById('newbie-note');
+    if(ppSection)ppSection.style.display=gamesPlayed<3?'none':'block';
+    if(newbieNote)newbieNote.style.display=gamesPlayed<3?'block':'none';
     if(isPaused){renderDiscoveryLog();if(cometTimer)clearTimeout(cometTimer);if(anomalyTimer)clearTimeout(anomalyTimer);}
     else{scheduleComet();scheduleAnomaly();}
 }
-function confirmAbandon(){anTrack('game_over_cause','abandon');isPaused=false;document.getElementById('pause-menu').style.display='none';gameOver();}
+function confirmAbandon(){isPaused=false;document.getElementById('pause-menu').style.display='none';gameOver();}
 function restartMission(){saveStats(false);isPaused=false;document.getElementById('pause-menu').style.display='none';isDailyRun=false;startGame();}
 
 function gameOver(){
     const dustEarned=sessionDust;
     const wasNewBest=gamesPlayed>1&&score>(_statsCache?_statsCache.best:0);
-    anTrack('session_end',{score});
     saveStats(true);gameStarted=false;
     if(runner){Runner.stop(runner);runner=null;}
     if(render){Render.stop(render);if(render.canvas)render.canvas.remove();render=null;}
@@ -2107,29 +1135,18 @@ function gameOver(){
     if(cometTimer)clearTimeout(cometTimer);if(anomalyTimer)clearTimeout(anomalyTimer);
     if(blackHoleTimer){clearInterval(blackHoleTimer);blackHoleTimer=null;}
     anomaly=null;_dismissComet();laserMode=false;laserShip=null;laserTargets=[];
-    wormholeActive=false;_wormholeAnim=null;
-    document.getElementById('comet-choice').style.display='none';
-    document.getElementById('mod-picker').classList.remove('active');
-    document.getElementById('active-mods-hud').innerHTML='';
     document.getElementById('laser-overlay').classList.remove('active');
+    document.getElementById('anomaly-banner').style.display='none';
     document.getElementById('anomaly-warn').style.display='none';
     document.getElementById('ranked-badge').style.display='none';
     document.getElementById('daily-run-badge').style.display='none';
     document.getElementById('quick-restart-btn').style.display='none';
     document.getElementById('stardust-hud').style.display='none';
     document.getElementById('top-bar').style.display='none';
-    const pbEl=document.getElementById('pb-label');if(pbEl)pbEl.style.display='none';
     document.getElementById('bottom-bar').style.display='none';
     document.getElementById('evo-bar').style.display='none';
     document.getElementById('session-bar-wrap').style.display='none';
     setNebulaMood('normal');safeSet('sn_last_played',Date.now());
-    checkAchievements();
-    // Pass & Play: redirect end-of-game flow
-    if(ppActive){ppEndTurn(score);return;}
-    // PWA: show banner after 2nd game if not dismissed
-    if(totalGamesEver()===2&&_pwaPrompt&&!safeGet('sn_pwa_dismissed')){
-        setTimeout(()=>document.getElementById('pwa-banner').style.display='block',1500);
-    }
     showEndScreen(dustEarned,wasNewBest);
 }
 
@@ -2149,80 +1166,21 @@ function renderDiscoveryLog(){
 
 // ── Tutorial ──────────────────────────────────────────────────────────────────
 const TUT_STEPS=[
-    {
-        text:'Welcome to <b>Supernova: Infinity!</b> 🚀<br><br><b>Drag left and right</b> to aim your planet, then <b>lift your finger</b> to drop it. A ghost preview shows exactly where it will land.',
-        spotFn:()=>({x:width/2,y:TOP_BAR+90,r:65}),
-        arrowFn:()=>({x:width/2-10,y:TOP_BAR+55}),
-        label:'STEP 1 OF 6'
-    },
-    {
-        text:'Drop planets of the <b>same type</b> on top of each other — they <b>merge</b> into a bigger planet and score points!<br><br>Merge quickly to build a <b style="color:var(--gold)">COMBO CHAIN</b> for bonus points!',
-        spotFn:()=>({x:width/2,y:TOP_BAR+PLAY_H*0.5,r:80}),
-        arrowFn:()=>({x:width/2-10,y:TOP_BAR+PLAY_H*0.32}),
-        label:'STEP 2 OF 6'
-    },
-    {
-        text:'⚠️ Don\'t let planets pile up past the <b style="color:var(--danger)">red danger line</b>!<br><br>You\'ll get a 7-second warning. If it\'s your first time, <b style="color:var(--success)">3 planets are automatically cleared</b> to save you!',
-        spotFn:()=>({x:width/2,y:TOP_BAR+85,r:50}),
-        arrowFn:()=>({x:width/2-10,y:TOP_BAR+48}),
-        label:'STEP 3 OF 6'
-    },
-    {
-        text:'Tap <b style="color:var(--gold)">G</b> to <b>flip gravity</b> — all planets fall the other way! Great for clearing space.<br><br>It takes 6 minutes to recharge, but catching a <b>☄️ comet</b> instantly refills it.',
-        spotFn:()=>({x:width-40,y:height-BOT_BAR/2,r:44}),
-        arrowFn:()=>({x:width-84,y:height-BOT_BAR-34}),
-        label:'STEP 4 OF 6'
-    },
-    {
-        text:'Tap <b style="color:var(--accent)">HOLD</b> to bank your current planet and swap it back later — one use per drop.<br><br>The <b>NEXT</b> and <b>AFTER</b> previews show your upcoming two planets.',
-        spotFn:()=>({x:width/2,y:height-BOT_BAR/2,r:90}),
-        arrowFn:()=>({x:width/2-80,y:height-BOT_BAR-34}),
-        label:'STEP 5 OF 6'
-    },
-    {
-        text:'Earn <b style="color:var(--gold)">✨ Stardust</b> on every merge — spend it on <b>power-ups</b> during a game (pause menu) or <b>permanent upgrades</b> in Constellation.<br><br>Play <b>RANKED</b> mode to earn RP and climb the leaderboard. Good luck! 🪐',
-        spotFn:()=>({x:width/2,y:height/2,r:60}),
-        arrowFn:()=>({x:width/2-10,y:height/2-80}),
-        label:'STEP 6 OF 6'
-    },
+    {text:'<b>Drag left and right</b> to aim, then <b>lift your finger</b> to drop a planet.',spotFn:()=>({x:width/2,y:TOP_BAR+80,r:60}),arrowFn:()=>({x:width/2-10,y:TOP_BAR+50}),label:'STEP 1 OF 3'},
+    {text:'Drop planets of the <b>same type</b> on each other to <b>merge</b> them. Chain merges for a <b>COMBO!</b>',spotFn:()=>({x:width/2,y:TOP_BAR+PLAY_H*0.5,r:80}),arrowFn:()=>({x:width/2-10,y:TOP_BAR+PLAY_H*0.3}),label:'STEP 2 OF 3'},
+    {text:'Don\'t let planets cross the <b style="color:var(--danger)">red line</b>. Use the <b style="color:var(--gold)">G button</b> to flip gravity — unlocks after game 3!',spotFn:()=>({x:width-40,y:height-BOT_BAR/2,r:44}),arrowFn:()=>({x:width-80,y:height-BOT_BAR-30}),label:'STEP 3 OF 3'},
 ];
-
-// startTutorial can be called from home screen (no engine running) or mid-game
-function startTutorial(){
-    tutStep=0;tutActive=true;
-    if(engine&&gameStarted)engine.enabled=false;
-    document.getElementById('tutorial-overlay').classList.add('active');
-    showTutStep(0);
-}
+function startTutorial(){tutStep=0;tutActive=true;if(engine)engine.enabled=false;document.getElementById('tutorial-overlay').classList.add('active');showTutStep(0);}
 function showTutStep(i){
     const step=TUT_STEPS[i];if(!step){endTutorial();return;}
-    document.getElementById('tut-step-label').innerText=step.label;
-    document.getElementById('tut-text').innerHTML=step.text;
-    const sp=step.spotFn(),spot=document.getElementById('tut-spotlight');
-    spot.style.width=(sp.r*2)+'px';spot.style.height=(sp.r*2)+'px';
-    spot.style.left=(sp.x-sp.r)+'px';spot.style.top=(sp.y-sp.r)+'px';
-    const ap=step.arrowFn(),arrow=document.getElementById('tut-arrow');
-    arrow.style.left=ap.x+'px';arrow.style.top=ap.y+'px';
-    const card=document.getElementById('tut-card'),cardTop=sp.y+sp.r+18;
-    card.style.top=(cardTop+220<height?cardTop:sp.y-sp.r-220)+'px';
-    card.style.left=Math.max(10,Math.min(width-300,sp.x-140))+'px';
+    document.getElementById('tut-step-label').innerText=step.label;document.getElementById('tut-text').innerHTML=step.text;
+    const sp=step.spotFn(),spot=document.getElementById('tut-spotlight');spot.style.width=(sp.r*2)+'px';spot.style.height=(sp.r*2)+'px';spot.style.left=(sp.x-sp.r)+'px';spot.style.top=(sp.y-sp.r)+'px';
+    const ap=step.arrowFn(),arrow=document.getElementById('tut-arrow');arrow.style.left=ap.x+'px';arrow.style.top=ap.y+'px';
+    const card=document.getElementById('tut-card'),cardTop=sp.y+sp.r+18;card.style.top=(cardTop+200<height?cardTop:sp.y-sp.r-200)+'px';card.style.left=Math.max(10,Math.min(width-300,sp.x-140))+'px';
     document.getElementById('tut-btn').innerText=i===TUT_STEPS.length-1?"LET'S GO! 🚀":"GOT IT →";
 }
 function tutNext(){tutStep++;if(tutStep>=TUT_STEPS.length){endTutorial();return;}showTutStep(tutStep);}
-function endTutorial(){
-    tutActive=false;
-    document.getElementById('tutorial-overlay').classList.remove('active');
-    if(engine&&gameStarted)engine.enabled=true;
-    const wasFirstTime=!safeGet('sn_tutdone');
-    safeSet('sn_tutdone',true);
-    anTrack(wasFirstTime?'tut_done':'tut_skip');
-}
-// Replay tutorial from home screen — clears tutdone so it shows next game too
-function replayTutorial(){
-    anTrack('button','replay');
-    safeSet('sn_tutdone',false);
-    startTutorial();
-}
+function endTutorial(){tutActive=false;document.getElementById('tutorial-overlay').classList.remove('active');if(engine&&gameStarted)engine.enabled=true;safeSet('sn_tutdone',true);}
 
 // ── Start game ────────────────────────────────────────────────────────────────
 function startGame(){
@@ -2256,29 +1214,12 @@ function startGame(){
 
     score=0;sessionDust=0;isFlipped=false;isPaused=false;
     engine.gravity.y=1;gameStarted=true;comboCount=0;particles=[];
-    gravityCharge=CHARGE_TIME;holdUsedThisDrop=false;
+    gravityCharge=CHARGE_TIME;holdLevel=-1;holdUsedThisDrop=false;
     anomaly=null;document.getElementById('anomaly-banner').style.display='none';
     laserMode=false;laserShip=null;laserTargets=[];laserBeams=[];
-    reviveUsed=false;_sessionMilestoneIdx=0;doubleScoreMerges=0;
-    wormholeActive=false;_wormholeAnim=null;
-    _dropStreakCount=0;_lastDropGhostY=0;
-    _sMergesByLevel=new Array(10).fill(0);
-    _cometTrailHue=190;
-    if(_slowMoTimer)clearTimeout(_slowMoTimer);
-    _slowMoActive=false;
-    if(engine)engine.timing.timeScale=1;
-    resetMods(); // clear all run modifiers
+    reviveUsed=false;_sessionMilestoneIdx=0;
     gamesPlayed++;_sMerges=0;_sMaxCombo=0;_sFlips=0;_sBestPlanet=0;_runStartTime=Date.now();
-    _anSessionStart=Date.now();
-    const _anMode=isDailyRun?'daily':isRankedMode?'ranked':'free';
-    anTrack('session_start',_anMode);
     previousBest=(_statsCache||loadStats()).best;
-    // Show personal best indicator if player has a previous score to chase
-    const pbEl=document.getElementById('pb-label'),pbVal=document.getElementById('pb-val');
-    if(previousBest>0&&pbEl&&pbVal){
-        pbEl.style.display='block';
-        pbVal.innerText=previousBest.toLocaleString();
-    } else if(pbEl){ pbEl.style.display='none'; }
 
     // Seed daily RNG if daily run
     if(isDailyRun)seedRNG(getDailySeed());
@@ -2287,12 +1228,10 @@ function startGame(){
     document.getElementById('session-bar').style.width='0%';
     document.getElementById('evo-bar').innerHTML=PLANET_DATA.map(p=>`<div class="evo-dot" style="background:${p.color}"></div>`).join('');
 
-    nextLevel=getNextPlanetLevel();nextIsGlitter=shouldBeGlitter();
-    afterNextLevel=getNextPlanetLevel();afterNextIsGlitter=shouldBeGlitter();
-    holdLevel=-1;holdIsGlitter=false;
+    nextLevel=getNextPlanetLevel();afterNextLevel=getNextPlanetLevel();
     updatePreview();loadStats();initEvents();setNebulaMood('normal');
     comet=null;cometTail=[];if(cometTimer)clearTimeout(cometTimer);_dismissComet();scheduleComet();scheduleAnomaly();
-    if(!gravityTooltipShown){gravityTooltipShown=true;const tip=document.getElementById('g-tooltip');tip.classList.add('show');setTimeout(()=>tip.classList.remove('show'),3500);}
+    if(!gravityTooltipShown&&gamesPlayed>=3){gravityTooltipShown=true;const tip=document.getElementById('g-tooltip');tip.classList.add('show');setTimeout(()=>tip.classList.remove('show'),3500);}
     if(gamesPlayed===1&&!safeGet('sn_tutdone'))setTimeout(startTutorial,800);
 }
 
@@ -2303,113 +1242,50 @@ function initEvents(){
     Events.on(engine,'beforeUpdate',()=>{
         if(!gameStarted||isPaused)return;
         const bodies=Composite.allBodies(engine.world).filter(b=>!b.isStatic&&b.plugin?.lvl!==undefined);
-        // Scale gravity down as the board fills up — prevents end-game crushing
-        const bodyCount=bodies.length;
-        // Disable planetary gravity entirely above 15 bodies — at that density it just squeezes everything
-        const gravScale=bodyCount>=16?0:Math.max(0.15, 1 - Math.max(0,bodyCount-6)*0.055);
-        const gravMod=_modState.gravMult*((_modState.precisionField)?1.2:1);
-        const infMod=_modState.precisionField?0.7:1; // smaller range for precision field
-        for(let i=0;i<bodies.length;i++){const att=bodies[i];if(att.plugin.lvl<MAL)continue;const aD=PLANET_DATA[att.plugin.lvl],inf=aD.r*5*infMod;for(let j=0;j<bodies.length;j++){if(i===j)continue;const tgt=bodies[j];const dx=att.position.x-tgt.position.x,dy=att.position.y-tgt.position.y;const distSq=dx*dx+dy*dy,dist=Math.sqrt(distSq);if(dist>inf||dist<aD.r||att.plugin.lvl<=tgt.plugin.lvl)continue;const force=Math.min(GC*(aD.r*aD.r)/distSq, 0.0008)*gravScale*gravMod;Body.applyForce(tgt,tgt.position,{x:(dx/dist)*force,y:(dy/dist)*force});}}
+        for(let i=0;i<bodies.length;i++){const att=bodies[i];if(att.plugin.lvl<MAL)continue;const aD=PLANET_DATA[att.plugin.lvl],inf=aD.r*5;for(let j=0;j<bodies.length;j++){if(i===j)continue;const tgt=bodies[j];const dx=att.position.x-tgt.position.x,dy=att.position.y-tgt.position.y;const distSq=dx*dx+dy*dy,dist=Math.sqrt(distSq);if(dist>inf||dist<aD.r||att.plugin.lvl<=tgt.plugin.lvl)continue;const force=GC*(aD.r*aD.r)/distSq;Body.applyForce(tgt,tgt.position,{x:(dx/dist)*force,y:(dy/dist)*force});}}
         applyAnomaly(bodies);
-        // Black hole (lvl 9) pulls lvl 0/1/2 planets toward it each frame
-        const holes=bodies.filter(b=>b.plugin.lvl===9);
-        if(holes.length){
-            const smallBodies=bodies.filter(b=>b.plugin.lvl<=2);
-            holes.forEach(bh=>{
-                smallBodies.forEach(tgt=>{
-                    const dx=bh.position.x-tgt.position.x,dy=bh.position.y-tgt.position.y;
-                    const distSq=dx*dx+dy*dy,dist=Math.sqrt(distSq);
-                    if(dist<1)return;
-                    const force=BH_PULL_FORCE/distSq*dist; // normalised pull
-                    Body.applyForce(tgt,tgt.position,{x:(dx/dist)*force,y:(dy/dist)*force});
-                });
-            });
-        }
         const hasNexus=bodies.some(b=>b.plugin.lvl===9);
         if(hasNexus&&!blackHoleTimer)startBlackHole();
         if(!hasNexus&&blackHoleTimer){clearInterval(blackHoleTimer);blackHoleTimer=null;}
     });
-    Events.on(engine,'collisionStart',e=>{
-        e.pairs.forEach(p=>{
-            const A=p.bodyA, B=p.bodyB;
-            if(!A.plugin||!B.plugin)return;
-            // Glitter wildcard: upgrades the non-glitter planet by 1 level
-            if(A.plugin.isGlitter&&!A.plugin.merged&&!B.plugin.merged&&B.plugin.lvl!==undefined){
-                performGlitterMerge(A,B);
-            } else if(B.plugin.isGlitter&&!B.plugin.merged&&!A.plugin.merged&&A.plugin.lvl!==undefined){
-                performGlitterMerge(B,A);
-            } else if(A.plugin?.lvl===B.plugin?.lvl){
-                performMerge(A,B);
-            }
-        });
-    });
+    Events.on(engine,'collisionStart',e=>{e.pairs.forEach(p=>{if(p.bodyA.plugin?.lvl===p.bodyB.plugin?.lvl)performMerge(p.bodyA,p.bodyB);});});
     let dangerActive=false;
     Events.on(render,'afterRender',()=>{
         if(!gameStarted||isPaused)return;
         const ctx=render.context,limitY=isFlipped?PLAY_H-80:80;let danger=false;
         ctx.save();
         ctx.setLineDash([5,8]);ctx.strokeStyle='rgba(56,189,248,0.4)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(currentX,isFlipped?PLAY_H:0);ctx.lineTo(currentX,isFlipped?PLAY_H-100:100);ctx.stroke();
-        const ghostY=calcGhostY(currentX,isFlipped);
-        // Magnetic aim mod — snap ghost X toward nearest planet
-        const displayX=modSnapX(currentX);
-        drawPlanet(ctx,displayX,ghostY,nextLevel,0,0.18);
+        const ghostY=calcGhostY(currentX,isFlipped);drawPlanet(ctx,currentX,ghostY,nextLevel,0,0.18);
         ctx.setLineDash([3,5]);ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(currentX,isFlipped?PLAY_H-100:100);ctx.lineTo(currentX,ghostY);ctx.stroke();
         ctx.setLineDash([10,10]);ctx.strokeStyle='rgba(239,68,68,0.5)';ctx.beginPath();ctx.moveTo(0,limitY);ctx.lineTo(width,limitY);ctx.stroke();ctx.restore();
-        if(settings.particles&&!PERF_LOW){particles=particles.filter(p=>p.life>0);particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life-=0.02;ctx.save();ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();ctx.restore();});}
-        else if(settings.particles&&PERF_LOW){// low-end: max 20 particles, faster decay
-            particles=particles.filter(p=>p.life>0);
-            const cap=particles.slice(-20);
-            cap.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life-=0.04;ctx.save();ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();ctx.restore();});
-            particles=cap;
-        }
-        drawComet(ctx);drawLaserShip(ctx);drawWormhole(ctx);
-        // Compute board density once, outside the per-body loop
-        const boardCount=Composite.allBodies(engine.world).filter(b=>!b.isStatic).length;
+        if(settings.particles){particles=particles.filter(p=>p.life>0);particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life-=0.02;ctx.save();ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();ctx.restore();});}
+        drawComet(ctx);drawLaserShip(ctx);
         Composite.allBodies(engine.world).forEach(b=>{
             if(b.isStatic||b.plugin?.lvl===undefined)return;
             const lvl=b.plugin.lvl;
             drawPlanet(ctx,b.position.x,b.position.y,lvl,b.angle,1,laserTargets.includes(b));
-            if(b.plugin.isGlitter) drawGlitterOverlay(ctx,b.position.x,b.position.y,PLANET_DATA[lvl].r);
-            // Only draw gravity rings when board is sparse — visual clutter at late game
-            if(lvl>=3&&lvl<9&&boardCount<=10){const pd=PLANET_DATA[lvl],inf=pd.r*4,alpha=Math.min(0.03+(lvl-3)*0.01,0.12);ctx.save();ctx.strokeStyle=pd.color;ctx.globalAlpha=alpha;ctx.lineWidth=1;ctx.setLineDash([3,6]);ctx.beginPath();ctx.arc(b.position.x,b.position.y,inf,0,Math.PI*2);ctx.stroke();ctx.restore();}
-            if(lvl===9){
-                // Black hole: animated pink glow halo showing the pull zone
-                const pulse=0.15+0.1*Math.sin(Date.now()/300);
-                ctx.save();ctx.strokeStyle='#f472b6';ctx.globalAlpha=pulse;ctx.lineWidth=1;ctx.setLineDash([2,4]);
-                ctx.beginPath();ctx.arc(b.position.x,b.position.y,BH_CAPTURE_R,0,Math.PI*2);ctx.stroke();
-                ctx.restore();
-            }
+            if(lvl>=3){const pd=PLANET_DATA[lvl],inf=pd.r*5,alpha=Math.min(0.04+(lvl-3)*0.012,0.18);ctx.save();ctx.strokeStyle=pd.color;ctx.globalAlpha=alpha;ctx.lineWidth=1;ctx.setLineDash([3,6]);ctx.beginPath();ctx.arc(b.position.x,b.position.y,inf,0,Math.PI*2);ctx.stroke();ctx.restore();}
+            if(lvl===9&&blackHoleTimer){const pulse=0.3+0.2*Math.sin(Date.now()/400);ctx.save();ctx.strokeStyle='#f472b6';ctx.globalAlpha=pulse;ctx.lineWidth=3;ctx.setLineDash([]);ctx.beginPath();ctx.arc(b.position.x,b.position.y,PLANET_DATA[9].r*1.35,0,Math.PI*2);ctx.stroke();ctx.restore();}
             const crossing=isFlipped?b.position.y>limitY:b.position.y<limitY;
             if(crossing&&(Date.now()-b.plugin.timestamp>2000)){
                 danger=true;if(!b.plugin.warn)b.plugin.warn=Date.now();
-                const graceMs=7000+dangerTimeBonus()+_modState.dangerPenalty;
+                const graceMs=7000+dangerTimeBonus();
                 if(Date.now()-b.plugin.warn>graceMs){
                     // Near miss save intercept
                     if(!reviveUsed){nearMissSave();}
-                    else{anTrack('game_over_cause','danger');gameOver();}
+                    else{gameOver();}
                 }
             }else{b.plugin.warn=0;}
         });
         const dangerEl=document.getElementById('danger-alert');dangerEl.style.display=danger?'block':'none';dangerEl.style.top=isFlipped?(height-BOT_BAR-60)+'px':(TOP_BAR+10)+'px';
-        if(danger!==dangerActive){
-            dangerActive=danger;
-            setNebulaMood(danger?'danger':anomaly?'wind':isFlipped?'flipped':'normal');
-            if(danger&&!_slowMoActive)triggerSlowMo(1400); // clutch moment — brief slow-mo
-        }
+        if(danger!==dangerActive){dangerActive=danger;setNebulaMood(danger?'danger':anomaly?'wind':isFlipped?'flipped':'normal');}
         const rechargeRate=200*gravSpeedBonus();if(gravityCharge<CHARGE_TIME)gravityCharge+=rechargeRate;
         document.getElementById('g-progress').style.clipPath=`inset(${100-gravityCharge/CHARGE_TIME*100}% 0 0 0)`;
     });
 }
 
 // ── Input ─────────────────────────────────────────────────────────────────────
-let _rawX=width/2; // unsmoothed pointer X
-window.addEventListener('pointermove',e=>{_rawX=e.clientX;});
-// Smooth currentX toward _rawX — reduces jitter, improves feel
-// Run in rAF so it's independent of physics tick rate
-(function smoothInput(){
-    currentX+=((_rawX-currentX)*0.35); // lerp factor: 0.35 = responsive but smooth
-    requestAnimationFrame(smoothInput);
-})();
+window.addEventListener('pointermove',e=>{currentX=e.clientX;});
 window.addEventListener('pointerup',e=>{
     if(laserMode){
         if(e.target.closest('#laser-cancel'))return;
@@ -2424,591 +1300,18 @@ window.addEventListener('pointerup',e=>{
     if(!gameStarted||isPaused)return;
     if(Date.now()-lastDropTime<600)return;
     if(e.target.closest('.icon-btn,.btn,.shop-btn,#gravity-ui,.toggle,#bottom-bar,#top-bar,#hold-box'))return;
-    // Record drop accuracy: compare where player dropped vs ghost prediction
-    const dropX=currentX;
-    const predictedY=calcGhostY(dropX,isFlipped);
-    _lastDropGhostY=predictedY;
-    spawn(dropX,isFlipped?PLAY_H-100:80,nextLevel,nextIsGlitter);playSound('drop');haptic(8);
-    // Skill shot: if drop X is within 1 planet-radius of ghost X, instant +50 bonus
-    const ghostXNow=dropX; // ghost tracks currentX so they're the same at drop moment
-    // Perfect aim = within half a planet radius of dead centre of ghost column
-    const perfectThreshold=PLANET_DATA[nextLevel].r*0.9;
-    if(Math.abs(_rawX-dropX)<perfectThreshold){
-        score+=50;
-        const scoreEl=document.getElementById('score-label');
-        scoreEl.innerText=score.toLocaleString();
-        if(settings.particles){
-            for(let i=0;i<8;i++) particles.push({x:dropX,y:isFlipped?PLAY_H-110:90,vx:(Math.random()-0.5)*8,vy:(Math.random()-0.5)*6-2,life:0.8,color:'#fbbf24'});
-        }
-    }
-    // Accurate drop: dropped within 25px of where ghost was aimed
-    // We check this 400ms later once the planet has started settling
-    const droppedLevel=nextLevel;
-    setTimeout(()=>{
-        if(!gameStarted)return;
-        const r=PLANET_DATA[droppedLevel].r;
-        // Find the most recently dropped body near the predicted landing spot
-        const nearby=Composite.allBodies(engine.world).filter(b=>
-            !b.isStatic&&b.plugin?.lvl===droppedLevel&&
-            Math.abs(b.position.x-dropX)<r*2&&
-            Math.abs(b.position.y-_lastDropGhostY)<r*3
-        );
-        if(nearby.length>0){
-            _dropStreakCount++;
-            if(_dropStreakCount>=5){
-                anTrack('accuracy_streak',_dropStreakCount);
-                for(let i=0;i<20;i++) particles.push({x:dropX,y:TOP_BAR+40,vx:(Math.random()-0.5)*10,vy:Math.random()*6+2,life:1.0,color:'#4ade80'});
-                const ds=document.getElementById('drop-streak');
-                ds.innerText=`🎯 ${_dropStreakCount} ACCURATE DROPS!`;
-                ds.style.opacity='1';
-                clearTimeout(ds._t);
-                ds._t=setTimeout(()=>{ds.style.opacity='0';},1800);
-                if(_dropStreakCount===5) playSound('milestone');
-            }
-        } else {
-            _dropStreakCount=0; // miss resets streak
-        }
-    },400);
+    spawn(currentX,isFlipped?PLAY_H-100:80,nextLevel);playSound('drop');haptic(8);
     const dots=document.querySelectorAll('.evo-dot');if(dots[nextLevel])dots[nextLevel].classList.add('active');
     _sBestPlanet=Math.max(_sBestPlanet,nextLevel);
-    // Advance preview queue with glitter state
-    nextLevel=afterNextLevel;nextIsGlitter=afterNextIsGlitter;
-    afterNextLevel=getNextPlanetLevel();afterNextIsGlitter=shouldBeGlitter();
+    nextLevel=afterNextLevel;afterNextLevel=getNextPlanetLevel();
     holdUsedThisDrop=false;updatePreview();lastDropTime=Date.now();
 });
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&gameStarted&&!isPaused)togglePause();});
 
-// ── Galaxy Builds (run modifiers) ────────────────────────────────────────────
-// Lightweight roguelike layer: players pick 1 of 3 upgrades at score milestones.
-// Mods are active for the current run only — reset on new game.
-// Score milestones that trigger a pick:
-const MOD_MILESTONES=[5000,15000,30000]; // up to 3 picks per run
-
-const MOD_DEFS=[
-    // ── Gravity mods ──
-    {id:'heavy_core',   icon:'🪨', title:'Heavy Core',
-     desc:'Planetary gravity is 40% stronger — planets cluster faster.',
-     type:'gravity', typeColor:'#38bdf8',
-     apply:()=>{ _modState.gravMult=1.4; },
-    },
-    {id:'echo_pull',    icon:'🔁', title:'Echo Pull',
-     desc:'Gravity pulses in waves — every 3s a brief surge pulls everything inward.',
-     type:'gravity', typeColor:'#38bdf8',
-     apply:()=>{ _modState.echoPull=true; },
-    },
-    {id:'precision_field',icon:'🎯',title:'Precision Field',
-     desc:'Gravity range is 30% smaller but +20% stronger — rewards accurate drops.',
-     type:'gravity', typeColor:'#38bdf8',
-     apply:()=>{ _modState.precisionField=true; },
-    },
-    // ── Merge mods ──
-    {id:'chain_reaction',icon:'⛓️',title:'Chain Reaction',
-     desc:'5% chance any merge triggers a second free merge nearby.',
-     type:'merge', typeColor:'#f472b6',
-     apply:()=>{ _modState.chainReaction=true; },
-    },
-    {id:'overcharge',   icon:'⚡', title:'Overcharge',
-     desc:'Every 5th merge creates a shockwave that pushes nearby planets apart.',
-     type:'merge', typeColor:'#f472b6',
-     apply:()=>{ _modState.overcharge=true; },
-    },
-    {id:'double_score', icon:'💰', title:'Score Surge',
-     desc:'All merge scores are +25% for this run.',
-     type:'merge', typeColor:'#f472b6',
-     apply:()=>{ _modState.scoreSurge=1.25; },
-    },
-    // ── Risk/Reward mods ──
-    {id:'unstable_orbit',icon:'🌀',title:'Unstable Orbit',
-     desc:'Danger grace period −2s, but all scores +40%. High risk, high reward.',
-     type:'risk', typeColor:'#ef4444',
-     apply:()=>{ _modState.dangerPenalty=-2000; _modState.riskBonus=1.4; },
-    },
-    {id:'volatile_stars',icon:'💥',title:'Volatile Stars',
-     desc:'Solar wind anomalies are 50% more frequent and stronger.',
-     type:'risk', typeColor:'#ef4444',
-     apply:()=>{ _modState.volatileStars=true; },
-    },
-    // ── Control mods ──
-    {id:'magnetic_aim', icon:'🧲', title:'Magnetic Aim',
-     desc:'Ghost snaps gently toward the nearest planet — easier precise drops.',
-     type:'control', typeColor:'#4ade80',
-     apply:()=>{ _modState.magneticAim=true; },
-    },
-    {id:'soft_landing', icon:'🪶', title:'Soft Landing',
-     desc:'Dropped planets have 60% less bounce — stack more precisely.',
-     type:'control', typeColor:'#4ade80',
-     apply:()=>{ _modState.softLanding=true; },
-    },
-];
-
-// Active mod state for this run — read throughout gameplay
-let _runMods=[];   // array of picked mod IDs
-let _modState={    // flat state read by gameplay code — reset in startGame
-    gravMult:1,         // gravity force multiplier
-    echoPull:false,     // gravity surge every 3s
-    precisionField:false,// smaller but stronger gravity
-    chainReaction:false, // 5% chance second merge
-    overcharge:false,    // shockwave every 5th merge
-    scoreSurge:1,        // merge score multiplier
-    dangerPenalty:0,     // ms added to danger grace (negative = less time)
-    riskBonus:1,         // score multiplier from risk mods
-    volatileStars:false, // stronger anomalies
-    magneticAim:false,   // ghost snaps toward nearest planet
-    softLanding:false,   // low restitution drops
-};
-let _modMergeCount=0;   // counts merges for overcharge
-let _echoPullTimer=null; // interval for echo pull
-let _nextModMilestoneIdx=0; // which milestone we're waiting for
-
-function resetMods(){
-    _runMods=[];
-    _modMergeCount=0;
-    _nextModMilestoneIdx=0;
-    if(_echoPullTimer){clearInterval(_echoPullTimer);_echoPullTimer=null;}
-    _modState={gravMult:1,echoPull:false,precisionField:false,
-        chainReaction:false,overcharge:false,scoreSurge:1,
-        dangerPenalty:0,riskBonus:1,volatileStars:false,
-        magneticAim:false,softLanding:false};
-    updateModsHUD();
-}
-
-function checkModMilestone(){
-    if(_nextModMilestoneIdx>=MOD_MILESTONES.length)return;
-    if(score>=MOD_MILESTONES[_nextModMilestoneIdx]){
-        _nextModMilestoneIdx++;
-        setTimeout(()=>offerMods(),400); // slight delay so score pop settles
-    }
-}
-
-function offerMods(){
-    if(!gameStarted||isPaused)return;
-    // Pause physics while choosing
-    isPaused=true;if(engine)engine.enabled=false;
-    // Pick 3 random mods not already taken
-    const available=MOD_DEFS.filter(m=>!_runMods.includes(m.id));
-    const shuffled=available.sort(()=>Math.random()-0.5).slice(0,3);
-    const milestone=MOD_MILESTONES[_nextModMilestoneIdx-1];
-    document.getElementById('mod-picker-milestone').innerText=
-        `🎯 ${milestone.toLocaleString()} REACHED`;
-    const container=document.getElementById('mod-picker-choices');
-    container.innerHTML='';
-    shuffled.forEach(mod=>{
-        const card=document.createElement('div');
-        card.className='mod-card';
-        card.innerHTML=`<div class="mod-card-icon">${mod.icon}</div>
-            <div class="mod-card-title">${mod.title}</div>
-            <div class="mod-card-desc">${mod.desc}</div>
-            <span class="mod-card-type" style="color:${mod.typeColor};border:1px solid ${mod.typeColor}33;background:${mod.typeColor}15">${mod.type.toUpperCase()}</span>`;
-        card.onclick=()=>pickMod(mod.id);
-        container.appendChild(card);
-    });
-    document.getElementById('mod-picker').classList.add('active');
-    haptic(20);
-}
-
-function pickMod(id){
-    const mod=MOD_DEFS.find(m=>m.id===id);
-    if(!mod)return;
-    _runMods.push(id);
-    mod.apply();
-    // Start echo pull interval if chosen
-    if(id==='echo_pull'&&!_echoPullTimer){
-        _echoPullTimer=setInterval(()=>{
-            if(!gameStarted||isPaused)return;
-            Composite.allBodies(engine.world).forEach(b=>{
-                if(b.isStatic||b.plugin?.lvl===undefined)return;
-                const cx=width/2,cy=PLAY_H/2;
-                const dx=cx-b.position.x,dy=cy-b.position.y;
-                const dist=Math.sqrt(dx*dx+dy*dy)||1;
-                Body.applyForce(b,b.position,{x:(dx/dist)*0.0012,y:(dy/dist)*0.0012});
-            });
-            screenShake(3,150);
-        },3000);
-    }
-    // Apply soft landing to already-spawned bodies
-    if(id==='soft_landing'){
-        Composite.allBodies(engine.world).forEach(b=>{
-            if(!b.isStatic)b.restitution=0.08;
-        });
-    }
-    document.getElementById('mod-picker').classList.remove('active');
-    isPaused=false;if(engine)engine.enabled=true;
-    showToast(`${mod.icon} ${mod.title} active!`,'var(--wind)');
-    updateModsHUD();
-    anTrack('button','mod_pick');
-}
-
-function updateModsHUD(){
-    const hud=document.getElementById('active-mods-hud');
-    if(!hud)return;
-    if(!_runMods.length){hud.innerHTML='';return;}
-    hud.innerHTML=_runMods.map(id=>{
-        const mod=MOD_DEFS.find(m=>m.id===id);
-        return mod?`<div class="mod-pip" style="color:${mod.typeColor}">${mod.icon} ${mod.title}</div>`:'';
-    }).join('');
-}
-
-// Called from performMerge to handle chain reaction and overcharge
-function applyModsOnMerge(lvl, midX, midY){
-    _modMergeCount++;
-    // Overcharge: every 5th merge → shockwave
-    if(_modState.overcharge&&_modMergeCount%5===0){
-        Composite.allBodies(engine.world).forEach(b=>{
-            if(b.isStatic||b.plugin?.lvl===undefined)return;
-            const dx=b.position.x-midX,dy=b.position.y-midY;
-            const dist=Math.sqrt(dx*dx+dy*dy)||1;
-            if(dist<120){
-                const force=0.008*(1-dist/120);
-                Body.applyForce(b,b.position,{x:(dx/dist)*force,y:(dy/dist)*force});
-            }
-        });
-        screenShake(6,150);
-        showToast('⚡ Overcharge!','var(--wind)');
-    }
-    // Chain reaction: 5% chance auto-merge a random matching pair nearby
-    if(_modState.chainReaction&&Math.random()<0.05){
-        const bodies=Composite.allBodies(engine.world).filter(b=>!b.isStatic&&b.plugin?.lvl!==undefined&&!b.plugin.merged);
-        for(let i=0;i<bodies.length-1;i++){
-            for(let j=i+1;j<bodies.length;j++){
-                const a=bodies[i],b2=bodies[j];
-                if(a.plugin.lvl===b2.plugin.lvl&&a.plugin.lvl<8){
-                    const dist=Math.hypot(a.position.x-b2.position.x,a.position.y-b2.position.y);
-                    if(dist<PLANET_DATA[a.plugin.lvl].r*4){
-                        setTimeout(()=>performMerge(a,b2),100);
-                        showToast('⛓️ Chain Reaction!','#f472b6');
-                        return; // only one chain per merge
-                    }
-                }
-            }
-        }
-    }
-}
-
-// Magnetic aim: snap ghost X toward nearest planet when enabled
-function modSnapX(x){
-    if(!_modState.magneticAim||!engine)return x;
-    const bodies=Composite.allBodies(engine.world).filter(b=>!b.isStatic&&b.plugin?.lvl!==undefined);
-    if(!bodies.length)return x;
-    let nearest=null,nearDist=Infinity;
-    bodies.forEach(b=>{
-        const d=Math.abs(b.position.x-x);
-        if(d<nearDist){nearDist=d;nearest=b;}
-    });
-    if(nearest&&nearDist<80){
-        // Lerp 20% toward nearest planet X
-        return x+(nearest.position.x-x)*0.2;
-    }
-    return x;
-}
-
-// ── Pilot name ────────────────────────────────────────────────────────────────
-function getPilotName(){return safeGet('sn_pilot_name')||'';}
-function savePilotName(){
-    const input=document.getElementById('pilot-input');
-    const name=(input.value||'').trim().slice(0,16)||'Pilot';
-    safeSet('sn_pilot_name',name);
-    document.getElementById('pilot-name-overlay').classList.remove('active');
-    updatePilotNameDisplay();
-}
-function saveSettingsPilotName(){
-    const input=document.getElementById('settings-pilot-input');
-    const name=(input.value||'').trim().slice(0,16);
-    if(!name)return;
-    safeGet('sn_pilot_name'); // ensure exists
-    safeSet('sn_pilot_name',name);
-    showToast('Pilot name saved!','var(--success)');
-    updatePilotNameDisplay();
-}
-function updatePilotNameDisplay(){
-    const name=getPilotName();
-    const el=document.getElementById('pilot-name-val');
-    if(el)el.innerText=name||'—';
-    const si=document.getElementById('settings-pilot-input');
-    if(si)si.value=name;
-}
-function checkPilotName(){
-    if(!getPilotName()){
-        document.getElementById('pilot-name-overlay').classList.add('active');
-        setTimeout(()=>{const i=document.getElementById('pilot-input');if(i)i.focus();},300);
-    }
-    updatePilotNameDisplay();
-}
-// Allow Enter key on pilot name inputs
-document.addEventListener('keydown',e=>{
-    if(e.key==='Enter'){
-        const ov=document.getElementById('pilot-name-overlay');
-        if(ov&&ov.classList.contains('active')){savePilotName();return;}
-    }
-});
-
-// ── Pass & Play ───────────────────────────────────────────────────────────────
-let ppScores=[0,0], ppCurrentPlayer=0, ppTurnsLeft=0, ppActive=false;
-const PP_TURNS_PER_PLAYER=1; // each player plays one full game
-function showPassPlay(){document.getElementById('passplay-screen').style.display='flex';}
-function hidePassPlay(){document.getElementById('passplay-screen').style.display='none';}
-function startPassPlay(){
-    const p1=(document.getElementById('pp-p1-name').value||'Player 1').trim().slice(0,12);
-    const p2=(document.getElementById('pp-p2-name').value||'Player 2').trim().slice(0,12);
-    safeSet('sn_pp_names',[p1,p2]);
-    ppScores=[0,0];ppCurrentPlayer=0;ppActive=true;ppTurnsLeft=PP_TURNS_PER_PLAYER;
-    hidePassPlay();
-    showPPTurnBanner(0,'Get ready!');
-}
-function showPPTurnBanner(playerIdx,msg){
-    const names=safeGet('sn_pp_names')||['Player 1','Player 2'];
-    const banner=document.getElementById('passplay-turn-banner');
-    document.getElementById('pp-turn-icon').innerText=playerIdx===0?'👤':'👥';
-    document.getElementById('pp-turn-name').innerText=names[playerIdx]+"'s Turn";
-    document.getElementById('pp-turn-msg').innerText=msg;
-    banner.style.display='flex';
-}
-function ppTurnGo(){
-    document.getElementById('passplay-turn-banner').style.display='none';
-    startGame();
-}
-function ppEndTurn(finalScore){
-    // Called from gameOver when ppActive
-    const names=safeGet('sn_pp_names')||['Player 1','Player 2'];
-    ppScores[ppCurrentPlayer]=finalScore;
-    if(ppCurrentPlayer===0){
-        // Switch to player 2
-        ppCurrentPlayer=1;
-        showPPTurnBanner(1,`${names[0]} scored ${finalScore.toLocaleString()}. Pass the phone!`);
-    } else {
-        // Both played — show result
-        ppActive=false;
-        const winner=ppScores[0]>ppScores[1]?0:(ppScores[1]>ppScores[0]?1:-1);
-        const resultMsg=winner===-1?`It's a tie! ${ppScores[0].toLocaleString()} each 🤝`
-            :`${names[winner]} wins! 🏆\n${names[0]}: ${ppScores[0].toLocaleString()} · ${names[1]}: ${ppScores[1].toLocaleString()}`;
-        setTimeout(()=>{
-            const banner=document.getElementById('passplay-turn-banner');
-            document.getElementById('pp-turn-icon').innerText=winner===-1?'🤝':'🏆';
-            document.getElementById('pp-turn-name').innerText=winner===-1?'TIE GAME!':`${names[winner]} Wins!`;
-            document.getElementById('pp-turn-msg').innerText=winner===-1?`Both scored ${ppScores[0].toLocaleString()}`:`${names[0]}: ${ppScores[0].toLocaleString()} · ${names[1]}: ${ppScores[1].toLocaleString()}`;
-            const btn=document.getElementById('pp-turn-btn');
-            btn.innerText='🏠 Home';btn.onclick=()=>{
-                banner.style.display='none';
-                document.getElementById('end-screen').style.display='none';
-                document.getElementById('home-screen').style.display='flex';
-                btn.innerText='▶ START MY TURN';
-                btn.onclick=ppTurnGo;
-            };
-            banner.style.display='flex';
-        },800);
-    }
-}
-
-// ── PWA install prompt ────────────────────────────────────────────────────────
-let _pwaPrompt=null;
-window.addEventListener('beforeinstallprompt',e=>{
-    e.preventDefault();_pwaPrompt=e;
-    // Show banner after 2 games if not already installed
-    const games=totalGamesEver();
-    if(games>=2&&!safeGet('sn_pwa_dismissed')){
-        setTimeout(()=>document.getElementById('pwa-banner').style.display='block',2000);
-    }
-});
-function pwaBannerInstall(){
-    document.getElementById('pwa-banner').style.display='none';
-    if(_pwaPrompt){_pwaPrompt.prompt();_pwaPrompt.userChoice.then(()=>{_pwaPrompt=null;});}
-}
-function pwaBannerDismiss(){
-    document.getElementById('pwa-banner').style.display='none';
-    safeSet('sn_pwa_dismissed',true);
-}
-
-// ── Analytics (local only — nothing sent off-device) ─────────────────────────
-// Storage key: sn_analytics — all data stays in localStorage
-// Dashboard accessible by tapping the SUPERNOVA title 5 times
-const AN_KEY = 'sn_analytics';
-let _anTitleTaps = 0, _anTitleTimer = null;
-let _anSessionStart = 0; // ms timestamp when current game started
-
-function anGet() {
-    return safeGet(AN_KEY) || {
-        totalSessions: 0,
-        uniqueDays: [],          // array of date strings
-        sessionsByDay: {},       // {dateStr: count}
-        scoresByDay: {},         // {dateStr: [scores]}
-        gameDurations: [],       // seconds, last 50
-        gameOverCauses: {},      // {danger,nearMiss,abandon,wormhole}
-        buttonPresses: {},       // {gravity,hold,comet,nuke,collapse,seismic,laser,ranked,daily,replay}
-        mergesTotal: 0,
-        wormholes: 0,
-        glitterMerges: 0,
-        nearMissSaves: 0,
-        tutorialCompleted: 0,
-        tutorialSkipped: 0,
-        constPurchases: {},      // {id: count}
-        modeUsage: {free:0, ranked:0, daily:0},
-        avgAccuracyStreak: 0,    // running average peak accuracy streak
-        topStreaks: [],           // last 20 peak streaks
-    };
-}
-function anSave(data) { safeSet(AN_KEY, data); }
-
-// Core tracker — call anTrack(event, value?) throughout the game
-function anTrack(event, value) {
-    try {
-        const d = anGet();
-        const today = new Date().toDateString();
-        switch(event) {
-            case 'session_start':
-                d.totalSessions++;
-                d.sessionsByDay[today] = (d.sessionsByDay[today]||0) + 1;
-                if(!d.uniqueDays.includes(today)) d.uniqueDays.push(today);
-                // Keep only last 90 days of day-keyed data to cap storage
-                const cutoff = new Date(Date.now()-90*86400000).toDateString();
-                Object.keys(d.sessionsByDay).forEach(k=>{ if(k<cutoff) delete d.sessionsByDay[k]; });
-                Object.keys(d.scoresByDay).forEach(k=>{ if(k<cutoff) delete d.scoresByDay[k]; });
-                d.modeUsage[value] = (d.modeUsage[value]||0) + 1;
-                // Session reward: 3rd game of the day earns bonus stardust
-                if(d.sessionsByDay[today]===3){
-                    const stats=safeGet('sn_v10')||{best:0,dust:0,discovered:2,rp:0};
-                    stats.dust+=150;safeSet('sn_v10',stats);_statsCache=stats;
-                    setTimeout(()=>{refreshDustHUD();showToast('🎁 3 games today! +150✨ bonus!','var(--gold)');},800);
-                }
-                break;
-            case 'session_end':
-                if(!d.scoresByDay[today]) d.scoresByDay[today] = [];
-                d.scoresByDay[today].push(value.score);
-                if(d.scoresByDay[today].length > 50) d.scoresByDay[today] = d.scoresByDay[today].slice(-50);
-                const dur = Math.round((Date.now()-_anSessionStart)/1000);
-                d.gameDurations.push(dur);
-                if(d.gameDurations.length > 50) d.gameDurations = d.gameDurations.slice(-50);
-                break;
-            case 'game_over_cause':
-                d.gameOverCauses[value] = (d.gameOverCauses[value]||0) + 1;
-                break;
-            case 'button':
-                d.buttonPresses[value] = (d.buttonPresses[value]||0) + 1;
-                break;
-            case 'merge':       d.mergesTotal++; break;
-            case 'wormhole':    d.wormholes++; break;
-            case 'glitter':     d.glitterMerges++; break;
-            case 'near_miss':   d.nearMissSaves++; break;
-            case 'tut_done':    d.tutorialCompleted++; break;
-            case 'tut_skip':    d.tutorialSkipped++; break;
-            case 'const_buy':   d.constPurchases[value]=(d.constPurchases[value]||0)+1; break;
-            case 'accuracy_streak':
-                d.topStreaks.push(value);
-                if(d.topStreaks.length>20) d.topStreaks=d.topStreaks.slice(-20);
-                d.avgAccuracyStreak = Math.round(d.topStreaks.reduce((a,b)=>a+b,0)/d.topStreaks.length);
-                break;
-        }
-        anSave(d);
-    } catch(e) {} // analytics must never crash the game
-}
-
-// Dashboard
-let _anTitleTapCount = 0, _anTitleTapTimer = null;
-function handleTitleTap() {
-    _anTitleTapCount++;
-    clearTimeout(_anTitleTapTimer);
-    if(_anTitleTapCount >= 5) { _anTitleTapCount=0; showAnalytics(); return; }
-    _anTitleTapTimer = setTimeout(()=>{ _anTitleTapCount=0; }, 1500);
-}
-function showAnalytics() {
-    const d = anGet();
-    const today = new Date().toDateString();
-    const todaySessions = d.sessionsByDay[today] || 0;
-    const todayScores = d.scoresByDay[today] || [];
-    const todayBest = todayScores.length ? Math.max(...todayScores) : 0;
-    const todayAvg = todayScores.length ? Math.round(todayScores.reduce((a,b)=>a+b,0)/todayScores.length) : 0;
-    const allScores = Object.values(d.scoresByDay).flat();
-    const allTimeBest = allScores.length ? Math.max(...allScores) : 0;
-    const avgDur = d.gameDurations.length ? Math.round(d.gameDurations.reduce((a,b)=>a+b,0)/d.gameDurations.length) : 0;
-    const totalMins = Math.round(d.gameDurations.reduce((a,b)=>a+b,0)/60);
-
-    // Button press totals for heatmap
-    const bp = d.buttonPresses;
-    const maxPress = Math.max(1,...Object.values(bp));
-    const btnNames = {gravity:'G Flip',hold:'Hold',comet:'Comet',nuke:'Nuke',collapse:'Collapse',seismic:'Seismic',laser:'Laser',ranked:'Ranked',daily:'Daily Run',replay:'Tutorial'};
-
-    // Game over causes
-    const goc = d.gameOverCauses;
-    const totalGO = Math.max(1, Object.values(goc).reduce((a,b)=>a+b,0));
-
-    // Busiest day
-    const dayEntries = Object.entries(d.sessionsByDay).sort((a,b)=>b[1]-a[1]);
-    const busiestDay = dayEntries[0] ? `${dayEntries[0][0]} (${dayEntries[0][1]} games)` : '—';
-
-    document.getElementById('analytics-content').innerHTML = `
-    <div class="analytics-card">
-        <div class="analytics-title">📅 Today</div>
-        <div class="analytics-row"><span>Games played today</span><span class="analytics-val">${todaySessions}</span></div>
-        <div class="analytics-row"><span>Today's best score</span><span class="analytics-val">${todayBest.toLocaleString()}</span></div>
-        <div class="analytics-row"><span>Today's avg score</span><span class="analytics-val">${todayAvg.toLocaleString()}</span></div>
-    </div>
-    <div class="analytics-card">
-        <div class="analytics-title">🚀 All Time</div>
-        <div class="analytics-row"><span>Total sessions</span><span class="analytics-val">${d.totalSessions}</span></div>
-        <div class="analytics-row"><span>Days played</span><span class="analytics-val">${d.uniqueDays.length}</span></div>
-        <div class="analytics-row"><span>All-time best</span><span class="analytics-val">${allTimeBest.toLocaleString()}</span></div>
-        <div class="analytics-row"><span>Avg game duration</span><span class="analytics-val">${avgDur}s</span></div>
-        <div class="analytics-row"><span>Total playtime</span><span class="analytics-val">${totalMins} min</span></div>
-        <div class="analytics-row"><span>Busiest day</span><span class="analytics-val" style="font-size:0.75em">${busiestDay}</span></div>
-    </div>
-    <div class="analytics-card">
-        <div class="analytics-title">🎮 Gameplay Events</div>
-        <div class="analytics-row"><span>Total merges</span><span class="analytics-val">${d.mergesTotal.toLocaleString()}</span></div>
-        <div class="analytics-row"><span>Near miss saves</span><span class="analytics-val">${d.nearMissSaves}</span></div>
-        <div class="analytics-row"><span>Wormholes triggered</span><span class="analytics-val">${d.wormholes}</span></div>
-        <div class="analytics-row"><span>Glitter merges</span><span class="analytics-val">${d.glitterMerges}</span></div>
-        <div class="analytics-row"><span>Avg accuracy streak</span><span class="analytics-val">${d.avgAccuracyStreak}</span></div>
-    </div>
-    <div class="analytics-card">
-        <div class="analytics-title">💀 Why Games End</div>
-        ${['danger','nearMiss','abandon'].map(k=>{
-            const count=goc[k]||0, pct=Math.round(count/totalGO*100);
-            const label={danger:'Danger line',nearMiss:'Near miss (saved)',abandon:'Abandoned'}[k];
-            return `<div style="margin-bottom:8px"><div class="analytics-row" style="border:none;padding:2px 0"><span>${label}</span><span class="analytics-val">${count} (${pct}%)</span></div><div class="analytics-bar-wrap"><div class="analytics-bar" style="width:${pct}%"></div></div></div>`;
-        }).join('')}
-    </div>
-    <div class="analytics-card">
-        <div class="analytics-title">🔘 Button Heatmap</div>
-        ${Object.entries(btnNames).map(([k,label])=>{
-            const count=bp[k]||0, pct=Math.round(count/maxPress*100);
-            return `<div style="margin-bottom:6px"><div class="analytics-row" style="border:none;padding:1px 0"><span style="font-size:0.78em">${label}</span><span class="analytics-val">${count}</span></div><div class="analytics-bar-wrap"><div class="analytics-bar" style="width:${pct}%;background:${pct>60?'var(--gold)':pct>30?'var(--accent)':'var(--wind)'}"></div></div></div>`;
-        }).join('')}
-    </div>
-    <div class="analytics-card">
-        <div class="analytics-title">🕹️ Mode Usage</div>
-        ${Object.entries(d.modeUsage).map(([k,v])=>{
-            const label={free:'Free Play',ranked:'Ranked',daily:'Daily Run'}[k]||k;
-            const pct=Math.round(v/Math.max(1,d.totalSessions)*100);
-            return `<div class="analytics-row"><span>${label}</span><span class="analytics-val">${v} (${pct}%)</span></div>`;
-        }).join('')}
-    </div>
-    <div class="analytics-card">
-        <div class="analytics-title">🌌 Constellation Purchases</div>
-        ${Object.keys(d.constPurchases).length ? Object.entries(d.constPurchases).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="analytics-row"><span style="font-size:0.8em">${k}</span><span class="analytics-val">${v}×</span></div>`).join('') : '<div style="font-size:0.75em;opacity:0.4">No purchases yet</div>'}
-    </div>`;
-    document.getElementById('analytics-screen').style.display='flex';
-}
-function hideAnalytics(){document.getElementById('analytics-screen').style.display='none';}
-function analyticsExport(){
-    const d=anGet();
-    const allScores=Object.values(d.scoresByDay).flat();
-    const text=`📊 Supernova: Infinity — My Stats\n`+
-        `Total games: ${d.totalSessions} · Days played: ${d.uniqueDays.length}\n`+
-        `All-time best: ${allScores.length?Math.max(...allScores).toLocaleString():'0'}\n`+
-        `Merges: ${d.mergesTotal} · Wormholes: ${d.wormholes}\n`+
-        `Avg accuracy streak: ${d.avgAccuracyStreak}\n`+
-        `#SupernovaInfinity`;
-    if(navigator.share)navigator.share({title:'My Supernova Stats',text}).catch(()=>{});
-    else navigator.clipboard.writeText(text).then(()=>showToast('Stats copied!','var(--success)')).catch(()=>{});
-}
-function analyticsReset(){
-    if(!confirm('Reset all analytics data? This cannot be undone.'))return;
-    safeSet(AN_KEY,null);
-    showAnalytics(); // re-render empty
-    showToast('Analytics data reset.','var(--accent)');
-}
+// ── Boot ──────────────────────────────────────────────────────────────────────
 loadSettings();checkDailyBonus();checkIdleDust();initMissions();loadStats();
 updateDailyRunUI();
 const _ss=safeGet('sn_streak')||{count:0};updateStreakDisplay(_ss.count,false);
-checkPilotName(); // show name entry on first launch
 </script>
 </body>
 </html>
